@@ -112,8 +112,8 @@ export default function IdentityVerificationPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [showPrefixDropdown, setShowPrefixDropdown] = useState(false)
 
-  // Language modal state (Default language is English)
-  const [selectedLang, setSelectedLang] = useState<Language>("en")
+  // Language modal state (Default language is Azerbaijan)
+  const [selectedLang, setSelectedLang] = useState<Language>("az")
   const [isLangModalOpen, setIsLangModalOpen] = useState(false)
 
   // Loading state (2 second loader)
@@ -234,16 +234,16 @@ export default function IdentityVerificationPage() {
           {/* Header Actions: Language Flag & Support (Only shown on Details screen) */}
           {screen === "details" && (
             <div className="flex items-center gap-3">
-              {/* Flag Button (Shows English flag when English language is active) */}
+              {/* Flag Button (Shows Azerbaijan flag by default when Azerbaijan language is active) */}
               <button
                 onClick={() => setIsLangModalOpen(true)}
                 className="p-1 rounded-full hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
                 title="Change Language"
               >
-                {selectedLang === "en" ? (
-                  <UKFlag className="w-7 h-7 sm:w-8 sm:h-8" />
-                ) : (
+                {selectedLang === "az" ? (
                   <AzerbaijanFlag className="w-7 h-7 sm:w-8 sm:h-8" />
+                ) : (
+                  <UKFlag className="w-7 h-7 sm:w-8 sm:h-8" />
                 )}
               </button>
 
