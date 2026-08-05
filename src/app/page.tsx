@@ -50,18 +50,18 @@ type ScreenType = "details" | "otp"
 // Translations dictionary
 const t = {
   az: {
-    title: "Şəxsiyyət vəsiqənizin məlumatlarını daxil edin.",
-    subtitle: "Şəxsiyyətinizi təsdiqləmək üçün seriya nömrəsini və FİN kodunu daxil edin.",
+    title: "ŞƏXSİYYƏT VƏSİQƏSİ MƏLUMATLARINI QEYD ET",
+    subtitle: "Şəxsiyyətinizi təsdiq etmək üçün vəsiqənizin seriya nömrəsini və FİN kodunu daxil edin.",
     resident: "Rezident",
     nonResident: "Qeyri-rezident",
-    select: "Seçin",
-    idPlaceholder: "Vəsiqənizin nömrəsini daxil edin",
-    finPlaceholder: "FİN kodunuzu daxil edin",
-    termsText: "Bank hesabının açılması üçün ",
+    select: "Seç",
+    idPlaceholder: "Vəsiqə nömrəsini daxil edin",
+    finPlaceholder: "FİN kodu daxil edin",
+    termsText: "Zəhmət olmasa ",
     termsLink1: "İstifadə şərtləri",
-    termsText2: " və ",
-    termsLink2: "Bank Hesabı Ərizəsi",
-    termsText3: " ilə tanış olduğumu təsdiq edirəm.",
+    termsText2: " sənədini və ",
+    termsLink2: "Bank hesabının açılmasına dair ərizə",
+    termsText3: " ilə tanış olun və təsdiq edin",
     continueBtn: "Davam et",
     support: "Dəstək",
     langTitle: "Dil seçimi",
@@ -105,7 +105,7 @@ export default function IdentityVerificationPage() {
 
   // ID Details Form State
   const [residency, setResidency] = useState<"resident" | "non-resident">("resident")
-  const [idPrefix, setIdPrefix] = useState("AZE")
+  const [idPrefix, setIdPrefix] = useState("AA")
   const [idNumber, setIdNumber] = useState("")
   const [finCode, setFinCode] = useState("")
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -184,7 +184,7 @@ export default function IdentityVerificationPage() {
   }
 
   return (
-    <div className="h-[100dvh] w-full bg-[#f3f4f6] text-gray-900 flex flex-col font-sans selection:bg-[#1d439b]/20 relative overflow-hidden">
+    <div className="h-[100dvh] w-full bg-[#FFFFFF] text-gray-900 flex flex-col font-sans selection:bg-[#2272FF]/20 relative overflow-hidden">
       
       {/* Main Responsive Mobile Page Container */}
       <div className="w-full max-w-lg sm:max-w-xl mx-auto flex-1 flex flex-col px-5 sm:px-8 pt-3 pb-5 justify-between h-[100dvh]">
@@ -209,8 +209,8 @@ export default function IdentityVerificationPage() {
                 )}
               </button>
 
-              {/* Support Button with #1d439b theme */}
-              <button className="bg-[#1d439b]/15 hover:bg-[#1d439b]/25 active:scale-95 text-[#1d439b] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer">
+              {/* Support Button with #2272FF theme */}
+              <button className="bg-[#2272FF]/15 hover:bg-[#2272FF]/25 active:scale-95 text-[#2272FF] px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer">
                 <MessageSquare className="w-4 h-4 fill-current stroke-none" />
                 <span>{text.support}</span>
               </button>
@@ -235,13 +235,13 @@ export default function IdentityVerificationPage() {
                 </div>
 
                 {/* Segmented Control Tabs (Resident / Non-resident) */}
-                <div className="bg-[#e4e7eb] p-1 rounded-full flex items-center shadow-inner">
+                <div className="bg-[#EFEDF1] p-1 rounded-full flex items-center shadow-inner">
                   <button
                     type="button"
                     onClick={() => setResidency("resident")}
                     className={`flex-1 py-2.5 sm:py-3 text-center text-sm font-semibold rounded-full transition-all cursor-pointer ${
                       residency === "resident"
-                        ? "bg-white text-gray-900 shadow-sm border border-[#1d439b]/80"
+                        ? "bg-white text-gray-900 shadow-sm border border-[#2272FF]"
                         : "text-gray-400 hover:text-gray-600"
                     }`}
                   >
@@ -252,7 +252,7 @@ export default function IdentityVerificationPage() {
                     onClick={() => setResidency("non-resident")}
                     className={`flex-1 py-2.5 sm:py-3 text-center text-sm font-semibold rounded-full transition-all cursor-pointer ${
                       residency === "non-resident"
-                        ? "bg-white text-gray-900 shadow-sm border border-[#1d439b]/80"
+                        ? "bg-white text-gray-900 shadow-sm border border-[#2272FF]"
                         : "text-gray-400 hover:text-gray-600"
                     }`}
                   >
@@ -262,7 +262,7 @@ export default function IdentityVerificationPage() {
 
                 {/* Input 1: ID Serial Number with Select Dropdown */}
                 <div className="relative p-0.5">
-                  <div className="bg-[#e4e7eb] rounded-2xl px-4 py-3 flex items-center gap-3 transition-all focus-within:ring-2 focus-within:ring-[#1d439b]/40 focus-within:bg-white border border-transparent focus-within:border-[#1d439b]">
+                  <div className="bg-[#EFEDF1] rounded-2xl px-4 py-3 flex items-center gap-3 transition-all focus-within:ring-2 focus-within:ring-[#2272FF]/40 focus-within:bg-white border border-transparent focus-within:border-[#2272FF]">
                     {/* Prefix Selector Button */}
                     <div className="relative">
                       <button
@@ -277,17 +277,17 @@ export default function IdentityVerificationPage() {
                       {/* Prefix Options Dropdown */}
                       {showPrefixDropdown && (
                         <div className="absolute top-10 left-0 z-30 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-24 text-xs font-medium text-gray-800 animate-slide-up">
-                          {["AZE", "AA", "MYI", text.select].map((pref) => (
+                          {["AA", "AZE", "MYI", text.select].map((pref) => (
                             <div
                               key={pref}
                               onClick={() => {
                                 setIdPrefix(pref)
                                 setShowPrefixDropdown(false)
                               }}
-                              className="px-3 py-2 hover:bg-[#1d439b]/10 cursor-pointer flex items-center justify-between"
+                              className="px-3 py-2 hover:bg-[#2272FF]/10 cursor-pointer flex items-center justify-between"
                             >
                               <span>{pref}</span>
-                              {idPrefix === pref && <Check className="w-3 h-3 text-[#1d439b]" />}
+                              {idPrefix === pref && <Check className="w-3 h-3 text-[#2272FF]" />}
                             </div>
                           ))}
                         </div>
@@ -300,21 +300,21 @@ export default function IdentityVerificationPage() {
                       value={idNumber}
                       onChange={(e) => setIdNumber(e.target.value)}
                       placeholder={text.idPlaceholder}
-                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-400 w-full"
+                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:font-bold placeholder:text-[#B2B7BA] w-full"
                     />
                   </div>
                 </div>
 
                 {/* Input 2: FIN Code */}
                 <div className="p-0.5">
-                  <div className="bg-[#e4e7eb] rounded-2xl px-4.5 py-3.5 flex items-center transition-all focus-within:ring-2 focus-within:ring-[#1d439b]/40 focus-within:bg-white border border-transparent focus-within:border-[#1d439b]">
+                  <div className="bg-[#EFEDF1] rounded-2xl px-4.5 py-3.5 flex items-center transition-all focus-within:ring-2 focus-within:ring-[#2272FF]/40 focus-within:bg-white border border-transparent focus-within:border-[#2272FF]">
                     <input
                       type="text"
                       value={finCode}
                       onChange={(e) => setFinCode(e.target.value.toUpperCase())}
                       placeholder={text.finPlaceholder}
                       maxLength={7}
-                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-400 w-full uppercase tracking-wider"
+                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:font-bold placeholder:text-[#B2B7BA] w-full uppercase tracking-wider"
                     />
                   </div>
                 </div>
@@ -328,12 +328,12 @@ export default function IdentityVerificationPage() {
                     onClick={() => setAcceptedTerms(!acceptedTerms)}
                     className={`w-5 h-5 mt-0.5 rounded-[5px] border transition-all flex items-center justify-center flex-shrink-0 cursor-pointer ${
                       acceptedTerms
-                        ? "bg-white border-[#1d439b] text-[#1d439b] shadow-xs"
+                        ? "bg-white border-[#2272FF] text-[#2272FF] shadow-xs"
                         : "bg-white border-gray-300 hover:border-gray-400"
                     }`}
                   >
                     {acceptedTerms && (
-                      <Check className="w-3.5 h-3.5 stroke-[3] text-[#1d439b]" />
+                      <Check className="w-3.5 h-3.5 stroke-[3] text-[#2272FF]" />
                     )}
                   </button>
                   <label
@@ -341,9 +341,9 @@ export default function IdentityVerificationPage() {
                     className="text-xs sm:text-sm text-gray-400 leading-snug cursor-pointer select-none"
                   >
                     {text.termsText}
-                    <span className="text-[#1d439b] font-medium hover:underline">{text.termsLink1}</span>
+                    <span className="text-[#2272FF] font-medium hover:underline">{text.termsLink1}</span>
                     {text.termsText2}
-                    <span className="text-[#1d439b] font-medium hover:underline">{text.termsLink2}</span>
+                    <span className="text-[#2272FF] font-medium hover:underline">{text.termsLink2}</span>
                     {text.termsText3}
                   </label>
                 </div>
@@ -357,8 +357,8 @@ export default function IdentityVerificationPage() {
                   onClick={handleContinue}
                   className={`w-full py-3.5 sm:py-4 font-semibold text-base rounded-full transition-all flex items-center justify-center gap-2 ${
                     isDetailsValid && !loading
-                      ? "bg-[#1d439b] hover:bg-[#15347a] active:scale-[0.99] text-white shadow-md shadow-[#1d439b]/25 cursor-pointer"
-                      : "bg-[#1d439b]/50 text-white/80 cursor-not-allowed opacity-80"
+                      ? "bg-[#2272FF] hover:bg-[#1a5ce0] active:scale-[0.99] text-white shadow-md shadow-[#2272FF]/25 cursor-pointer"
+                      : "bg-[#EEEEEE] text-[#B2B7BA] cursor-not-allowed"
                   }`}
                 >
                   {loading ? (
@@ -389,10 +389,10 @@ export default function IdentityVerificationPage() {
                 {/* OTP Input Field */}
                 <div className="p-0.5">
                   <div
-                    className={`bg-[#e4e7eb] rounded-2xl px-4.5 py-3.5 flex items-center transition-all border ${
+                    className={`bg-[#EFEDF1] rounded-2xl px-4.5 py-3.5 flex items-center transition-all border ${
                       otpError
                         ? "border-red-500 bg-red-50/20 ring-2 ring-red-500/20"
-                        : "border-transparent focus-within:ring-2 focus-within:ring-[#1d439b]/40 focus-within:bg-white focus-within:border-[#1d439b]"
+                        : "border-transparent focus-within:ring-2 focus-within:ring-[#2272FF]/40 focus-within:bg-white focus-within:border-[#2272FF]"
                     }`}
                   >
                     <input
@@ -404,7 +404,7 @@ export default function IdentityVerificationPage() {
                         if (otpError) setOtpError(null)
                       }}
                       placeholder={text.otpPlaceholder}
-                      className="bg-transparent border-none outline-none text-xl sm:text-2xl font-bold tracking-widest text-gray-900 placeholder:text-gray-400 placeholder:text-base placeholder:tracking-normal w-full"
+                      className="bg-transparent border-none outline-none text-xl sm:text-2xl font-bold tracking-widest text-gray-900 placeholder:font-bold placeholder:text-[#B2B7BA] placeholder:text-base placeholder:tracking-normal w-full"
                     />
                   </div>
 
@@ -429,7 +429,7 @@ export default function IdentityVerificationPage() {
                         setTimer(60)
                         setOtpError(null)
                       }}
-                      className="text-sm font-bold text-[#1d439b] hover:underline cursor-pointer"
+                      className="text-sm font-bold text-[#2272FF] hover:underline cursor-pointer"
                     >
                       {text.resendBtn}
                     </button>
@@ -445,8 +445,8 @@ export default function IdentityVerificationPage() {
                   disabled={!isOtpValid || loading}
                   className={`w-full py-3.5 sm:py-4 font-semibold text-base rounded-full transition-all flex items-center justify-center gap-2 ${
                     isOtpValid && !loading
-                      ? "bg-[#1d439b] hover:bg-[#15347a] active:scale-[0.99] text-white shadow-md shadow-[#1d439b]/25 cursor-pointer"
-                      : "bg-[#1d439b]/50 text-white/80 cursor-not-allowed opacity-80"
+                      ? "bg-[#2272FF] hover:bg-[#1a5ce0] active:scale-[0.99] text-white shadow-md shadow-[#2272FF]/25 cursor-pointer"
+                      : "bg-[#EEEEEE] text-[#B2B7BA] cursor-not-allowed"
                   }`}
                 >
                   {loading ? (
@@ -500,7 +500,7 @@ export default function IdentityVerificationPage() {
                 }}
                 className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer text-left ${
                   selectedLang === "az"
-                    ? "bg-[#1d439b]/10 border-[#1d439b] shadow-xs"
+                    ? "bg-[#2272FF]/10 border-[#2272FF] shadow-xs"
                     : "bg-[#f8fafc] border-gray-100 hover:bg-gray-100/70"
                 }`}
               >
@@ -511,7 +511,7 @@ export default function IdentityVerificationPage() {
                   </span>
                 </div>
                 {selectedLang === "az" && (
-                  <div className="w-6 h-6 rounded-full bg-[#1d439b] flex items-center justify-center text-white">
+                  <div className="w-6 h-6 rounded-full bg-[#2272FF] flex items-center justify-center text-white">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   </div>
                 )}
@@ -526,7 +526,7 @@ export default function IdentityVerificationPage() {
                 }}
                 className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer text-left ${
                   selectedLang === "en"
-                    ? "bg-[#1d439b]/10 border-[#1d439b] shadow-xs"
+                    ? "bg-[#2272FF]/10 border-[#2272FF] shadow-xs"
                     : "bg-[#f8fafc] border-gray-100 hover:bg-gray-100/70"
                 }`}
               >
@@ -537,7 +537,7 @@ export default function IdentityVerificationPage() {
                   </span>
                 </div>
                 {selectedLang === "en" && (
-                  <div className="w-6 h-6 rounded-full bg-[#1d439b] flex items-center justify-center text-white">
+                  <div className="w-6 h-6 rounded-full bg-[#2272FF] flex items-center justify-center text-white">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   </div>
                 )}
