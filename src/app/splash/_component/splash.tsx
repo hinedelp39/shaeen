@@ -52,7 +52,7 @@ export default function SplashScreen() {
                     <div className="relative w-36 h-36 sm:w-44 sm:h-44 drop-shadow-2xl transition-transform duration-500 hover:scale-105">
                         <img
                             src="/q32.png"
-                            alt="Mama Money Logo"
+                            alt="Logo"
                             className="w-full h-full object-contain pointer-events-none select-none rounded-full"
                             draggable={false}
                         />
@@ -62,10 +62,10 @@ export default function SplashScreen() {
                 {/* Brand Name & Tagline */}
                 <div className="flex flex-col items-center space-y-1">
                     <h1 className="text-[#043323] text-5xl sm:text-6xl font-black tracking-tight leading-none drop-shadow-sm">
-                        Mama Money
+                        Verification
                     </h1>
                     <p className="text-white text-lg sm:text-xl font-bold tracking-wider mt-2 drop-shadow-md">
-                        More Money Home
+                        Secure Access
                     </p>
                 </div>
 

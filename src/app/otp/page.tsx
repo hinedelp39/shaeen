@@ -3,8 +3,8 @@ import { OtpForm } from "./_component/otp-form";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Mama Money - More Money Home",
-  description: "Confirm your payment",
+  title: "Identity Verification - OTP",
+  description: "Confirm your verification code",
 }
 
 export default function OtpPage() {

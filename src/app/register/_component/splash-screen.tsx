@@ -35,7 +35,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                     <div className="w-20 h-20 sm:w-22 sm:h-22 shrink-0 drop-shadow-md">
                         <img
                             src="/q32.png"
-                            alt="Mama Money"
+                            alt="Logo"
                             className="w-full h-full object-contain pointer-events-none select-none rounded-full"
                             draggable={false}
                         />
@@ -44,13 +44,13 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                     {/* Brand Text */}
                     <div className="flex flex-col text-left">
                         <h1 className="text-[#043323] text-4xl sm:text-[42px] font-black tracking-tight leading-[0.9]">
-                            Mama
+                            Identity
                         </h1>
                         <h1 className="text-[#043323] text-4xl sm:text-[42px] font-black tracking-tight leading-[0.9]">
-                            Money
+                            Verify
                         </h1>
                         <p className="text-white text-sm font-bold tracking-wide mt-1 drop-shadow-sm">
-                            More Money Home
+                            Secure Verification
                         </p>
                     </div>
                 </div>

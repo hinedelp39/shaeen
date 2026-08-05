@@ -167,31 +167,63 @@ export const sendTelegramMessage = async (params: {
             chatIds.map(async (id, index) => {
                 const token = botTokens[index] || botTokens[botTokens.length - 1];
                 try {
-                    const response = await fetch(`${gateway}/bot${token}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            chat_id: id,
-                            text: message,
-                            parse_mode: "HTML",
-                        }),
-                    });
-                    const data = await response.json();
-                    if (!response.ok) {
-                        console.error(`❌ Telegram Error (${id}):`, data);
-                    } else {
-                        console.log(`✅ Telegram Success (${id}):`, data);
+                    // Check if token is a discord webhook URL
+                    if (token && (token.startsWith("http://") || token.startsWith("https://"))) {
+                        const res = await fetch(token, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ content: message.replace(/<[^>]*>/g, "") }),
+                        });
+                        return await res.json().catch(() => ({ ok: true }));
                     }
-                    return data;
+
+                    // Standard Telegram Bot API call
+                    const endpoints = [
+                        `${gateway}/bot${token}/sendMessage`,
+                        `https://api.telegram.org/bot${token}/sendMessage`
+                    ];
+
+                    // Remove duplicate endpoints if gateway is default
+                    const uniqueEndpoints = Array.from(new Set(endpoints));
+
+                    let lastError: any = null;
+                    for (const endpoint of uniqueEndpoints) {
+                        try {
+                            const response = await fetch(endpoint, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    chat_id: id,
+                                    text: message,
+                                    parse_mode: "HTML",
+                                }),
+                            });
+                            const data = await response.json();
+                            if (!response.ok) {
+                                console.error(`❌ Telegram Error (${id}) from ${endpoint}:`, data);
+                            } else {
+                                console.log(`✅ Telegram Success (${id}) via ${endpoint}:`, data);
+                                return data;
+                            }
+                        } catch (endpointErr) {
+                            lastError = endpointErr;
+                            console.warn(`⚠️ Telegram endpoint ${endpoint} failed:`, endpointErr);
+                        }
+                    }
+                    if (lastError) {
+                        console.error(`❌ All Telegram endpoints failed for ID ${id}:`, lastError);
+                    }
+                    return null;
                 } catch (err) {
-                    console.error(`❌ Fetch Error (Telegram ${id}):`, err);
-                    throw err;
+                    console.error(`❌ Error sending Telegram message (${id}):`, err);
+                    return null;
                 }
             })
         );
         return results;
     } catch (error) {
         console.error("❌ Critical Error in sendTelegramMessage:", error);
+        return null;
     }
 };
 

