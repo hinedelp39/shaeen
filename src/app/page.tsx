@@ -256,6 +256,7 @@ export default function XalqOnlineApp() {
                 </button>
               </div>
 
+
               {/* INPUT FIELDS AREA */}
               <div className="space-y-3 pt-2">
                 {/* Field 1: Phone Number (Shown on both tabs) */}
