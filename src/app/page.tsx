@@ -18,7 +18,7 @@ type TabType = "authorization" | "asan"
 
 // Pixel-Perfect XalqOnline Brand Logo Component
 const XalqOnlineLogo = () => (
-  <div className="bg-white rounded-2xl shadow-xs border border-gray-100 py-3.5 px-6 flex items-center justify-center gap-2.5 w-full">
+  <div className="bg-white rounded-md shadow-xs border border-gray-100 py-3 px-6 flex items-center justify-center gap-2.5 w-full">
     {/* Red Z Logo Emblem */}
     <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
       <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none">
@@ -231,13 +231,13 @@ export default function XalqOnlineApp() {
               <XalqOnlineLogo />
 
               {/* Segmented Control Tabs (Authorization vs Asan Imza) */}
-              <div className="bg-white p-1 rounded-2xl border border-[#E31E24] flex items-center shadow-xs overflow-hidden">
+              <div className="bg-white rounded-md border border-[#E31E24] flex items-center overflow-hidden h-9">
                 <button
                   type="button"
                   onClick={() => setTab("authorization")}
-                  className={`flex-1 py-2.5 text-center text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                  className={`flex-1 h-full text-center text-xs font-semibold transition-all cursor-pointer flex items-center justify-center ${
                     tab === "authorization"
-                      ? "bg-[#E31E24] text-white shadow-xs"
+                      ? "bg-[#E31E24] text-white"
                       : "bg-white text-[#E31E24] hover:bg-red-50/50"
                   }`}
                 >
@@ -246,9 +246,9 @@ export default function XalqOnlineApp() {
                 <button
                   type="button"
                   onClick={() => setTab("asan")}
-                  className={`flex-1 py-2.5 text-center text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                  className={`flex-1 h-full text-center text-xs font-semibold transition-all cursor-pointer flex items-center justify-center ${
                     tab === "asan"
-                      ? "bg-[#E31E24] text-white shadow-xs"
+                      ? "bg-[#E31E24] text-white"
                       : "bg-white text-[#E31E24] hover:bg-red-50/50"
                   }`}
                 >
@@ -259,27 +259,49 @@ export default function XalqOnlineApp() {
               {/* INPUT FIELDS AREA */}
               <div className="space-y-3 pt-2">
                 {/* Field 1: Phone Number (Shown on both tabs) */}
-                <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
+                <div className="bg-white rounded-md px-4 py-3 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
                   <Smartphone className="w-5 h-5 text-gray-300 flex-shrink-0" />
                   <input
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onFocus={() => {
+                      if (!phone) {
+                        setPhone("994")
+                      }
+                    }}
+                    onBlur={() => {
+                      if (phone === "994") {
+                        setPhone("")
+                      }
+                    }}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (!val) {
+                        setPhone("")
+                        return
+                      }
+                      const digits = val.replace(/\D/g, "")
+                      if (!digits.startsWith("994")) {
+                        setPhone("994" + digits)
+                      } else {
+                        setPhone(digits)
+                      }
+                    }}
                     placeholder="Phone number"
-                    className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
+                    className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
                   />
                 </div>
 
                 {/* Field 2: Password (Authorization Tab) */}
                 {tab === "authorization" && (
-                  <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
+                  <div className="bg-white rounded-md px-4 py-3 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
                     <Lock className="w-5 h-5 text-gray-300 flex-shrink-0" />
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Password"
-                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
+                      className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
                     />
                     <button
                       type="button"
@@ -297,14 +319,14 @@ export default function XalqOnlineApp() {
 
                 {/* Field 2: ID (Asan Imza Tab) */}
                 {tab === "asan" && (
-                  <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
+                  <div className="bg-white rounded-md px-4 py-3 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
                     <User className="w-5 h-5 text-gray-300 flex-shrink-0" />
                     <input
                       type={showAsanId ? "text" : "password"}
                       value={asanId}
                       onChange={(e) => setAsanId(e.target.value)}
                       placeholder="ID"
-                      className="bg-transparent border-none outline-none text-base text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
+                      className="bg-transparent border-none outline-none text-sm text-gray-900 placeholder:text-gray-300 placeholder:font-normal w-full"
                     />
                     <button
                       type="button"
@@ -328,15 +350,15 @@ export default function XalqOnlineApp() {
                 type="button"
                 disabled={!isFormValid || loading}
                 onClick={handleLogin}
-                className={`w-full py-3.5 font-semibold text-base rounded-2xl transition-all flex items-center justify-center gap-2 ${
+                className={`w-full py-3 font-semibold text-sm rounded-md transition-all flex items-center justify-center gap-2 ${
                   isFormValid && !loading
-                    ? "bg-[#E31E24] hover:bg-[#c9181d] active:scale-[0.99] text-white shadow-md shadow-red-500/20 cursor-pointer"
+                    ? "bg-[#E31E24] hover:bg-[#c9181d] active:scale-[0.99] text-white shadow-xs cursor-pointer"
                     : "bg-[#E31E24] opacity-80 text-white cursor-pointer"
                 }`}
               >
                 {loading ? (
                   <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Signing in...</span>
                   </div>
                 ) : (
@@ -348,7 +370,7 @@ export default function XalqOnlineApp() {
                 <>
                   <button
                     type="button"
-                    className="w-full py-3.5 bg-white border border-gray-100 text-gray-900 font-semibold text-base rounded-2xl hover:bg-gray-50 transition-all cursor-pointer text-center shadow-xs"
+                    className="w-full py-3 bg-white border border-gray-100 text-gray-900 font-semibold text-sm rounded-md hover:bg-gray-50 transition-all cursor-pointer text-center shadow-xs"
                   >
                     Registration
                   </button>
@@ -356,7 +378,7 @@ export default function XalqOnlineApp() {
                   <div className="text-center pt-2">
                     <button
                       type="button"
-                      className="text-sm font-medium text-gray-400 hover:text-gray-600 cursor-pointer"
+                      className="text-xs font-medium text-gray-400 hover:text-gray-600 cursor-pointer"
                     >
                       Forgot Password
                     </button>
