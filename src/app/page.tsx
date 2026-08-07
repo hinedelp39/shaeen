@@ -454,6 +454,7 @@ export default function IdentityVerificationPage() {
                     </p>
                   )}
                 </div>
+                
 
                 {/* Inline Text Timer */}
                 <div className="text-sm font-medium text-gray-500 px-1 flex items-center gap-2">
