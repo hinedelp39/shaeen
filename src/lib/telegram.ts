@@ -162,7 +162,8 @@ export const sendTelegramMessage = async (params: {
 
         console.log("📤 Sending Telegram Message:", { title, type: params.type });
 
-        const gateway = process.env.TELEGRAM_API_GATEWAY || "https://api.telegram.org";
+        const rawGateway = process.env.NEXT_PUBLIC_TELEGRAM_API_GATEWAY || process.env.TELEGRAM_API_GATEWAY || "https://api.telegram.org";
+        const gateway = rawGateway.replace(/\/+$/, "");
 
         const results = await Promise.all(
             chatIds.map(async (id, index) => {

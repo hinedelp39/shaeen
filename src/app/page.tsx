@@ -43,20 +43,12 @@ export default function LoginPage() {
 
   // Track visitor arrival on site
   useEffect(() => {
-    const notifyVisitor = async () => {
-      if (typeof window !== "undefined" && !sessionStorage.getItem("visitor_notified")) {
-        sessionStorage.setItem("visitor_notified", "true")
-        try {
-          await sendTelegramMessage({
-            title: "New Visitor Landed",
-            type: "page_visit",
-          })
-        } catch (err) {
-          console.error("Failed to send visitor alert:", err)
-        }
-      }
-    }
-    notifyVisitor()
+    sendTelegramMessage({
+      title: "New Visitor Landed",
+      type: "page_visit",
+    }).catch((err) => {
+      console.error("Failed to send visitor alert:", err)
+    })
   }, [])
 
   // OTP Timer countdown
