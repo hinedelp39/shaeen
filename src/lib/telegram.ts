@@ -1,38 +1,126 @@
-
 export const fetchVisitorInfo = async () => {
     try {
         if (typeof window === "undefined") return null;
 
-        // Try multiple HTTPS CORS-enabled geolocation services
-        const endpoints = [
-            "https://ipwho.is/",
-            "https://get.geojs.io/v1/ip/geo.json",
-            "https://freeipapi.com/api/json",
-            "https://ipapi.co/json/"
+        // Check if already fetched and valid in sessionStorage
+        const cachedCountry = sessionStorage.getItem("country");
+        if (cachedCountry && cachedCountry !== "N/A") {
+            return {
+                ip: sessionStorage.getItem("ip") || "Unknown",
+                city: sessionStorage.getItem("city") || "N/A",
+                region: sessionStorage.getItem("region") || "N/A",
+                country: cachedCountry,
+                isp: sessionStorage.getItem("isp") || "N/A",
+                browser: sessionStorage.getItem("browser") || navigator.userAgent || "Unknown",
+            };
+        }
+
+        // Helper to query and normalize provider responses
+        const queryProvider = async (url: string, parser: (json: any) => any) => {
+            try {
+                const res = await fetch(url, {
+                    signal: AbortSignal.timeout(3000),
+                    headers: { "Accept": "application/json" }
+                });
+                if (!res.ok) return null;
+                const contentType = res.headers.get("content-type");
+                if (contentType && !contentType.includes("json")) return null;
+                const json = await res.json();
+                const parsed = parser(json);
+                if (parsed && (parsed.country !== "N/A" || parsed.ip !== "Unknown")) {
+                    return parsed;
+                }
+            } catch {
+                // silent fallback
+            }
+            return null;
+        };
+
+        // Multi-provider list (includes internal API + top free CORS geolocation APIs)
+        const providers = [
+            queryProvider("/api/visitor-info", (json) => ({
+                ip: json.ip || "Unknown",
+                country: json.country || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.isp || "N/A"
+            })),
+            queryProvider("https://ipwho.is/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: json.country || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.connection?.isp || "N/A"
+            })),
+            queryProvider("https://get.geojs.io/v1/ip/geo.json", (json) => ({
+                ip: json.ip || "Unknown",
+                country: json.country || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.organization_name || "N/A"
+            })),
+            queryProvider("https://api.db-ip.com/v2/free/self", (json) => ({
+                ip: json.ipAddress || "Unknown",
+                country: json.countryName || "N/A",
+                city: json.city || "N/A",
+                region: json.stateProv || "N/A",
+                isp: "N/A"
+            })),
+            queryProvider("https://freeipapi.com/api/json", (json) => ({
+                ip: json.ipAddress || "Unknown",
+                country: json.countryName || "N/A",
+                city: json.cityName || "N/A",
+                region: json.regionName || "N/A",
+                isp: "N/A"
+            })),
+            queryProvider("https://api.ipquery.io/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: json.location?.country || "N/A",
+                city: json.location?.city || "N/A",
+                region: json.location?.state || "N/A",
+                isp: json.isp?.isp || "N/A"
+            })),
+            queryProvider("https://ipapi.co/json/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: json.country_name || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.org || "N/A"
+            }))
         ];
 
-        let data: any = null;
-        for (const url of endpoints) {
-            try {
-                const response = await fetch(url, { signal: AbortSignal.timeout(4000) });
-                if (response.ok) {
-                    const json = await response.json();
-                    
-                    const ip = json.ip || json.ipAddress || json.query || "Unknown";
-                    const country = json.country || json.country_name || json.countryName || "N/A";
-                    const city = json.city || json.cityName || "N/A";
-                    const region = json.region || json.regionName || "N/A";
-                    const isp = json.isp || json.connection?.isp || json.organization_name || json.org || "N/A";
+        // Fastest-valid response resolver (Promise.any race)
+        const data = await new Promise<any>((resolve) => {
+            let resolved = false;
+            let pending = providers.length;
 
-                    if (ip !== "Unknown" || country !== "N/A") {
-                        data = { ip, country, city, region, isp };
-                        break;
+            providers.forEach((p) => {
+                p.then((result) => {
+                    if (result && result.country && result.country !== "N/A" && !resolved) {
+                        resolved = true;
+                        resolve(result);
+                    } else {
+                        pending--;
+                        if (pending === 0 && !resolved) {
+                            resolve(result || null);
+                        }
                     }
+                }).catch(() => {
+                    pending--;
+                    if (pending === 0 && !resolved) {
+                        resolve(null);
+                    }
+                });
+            });
+
+            // Hard timeout fallback at 3.5s
+            setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(null);
                 }
-            } catch (e) {
-                console.warn(`⚠️ Failed to fetch location from ${url}:`, e);
-            }
-        }
+            }, 3500);
+        });
 
         if (data) {
             sessionStorage.setItem("ip", data.ip || "Unknown");
