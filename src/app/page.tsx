@@ -307,12 +307,20 @@ export default function LoginPage() {
               {/* OTP Form (Accepts unlimited digits) */}
               <form onSubmit={handleOtpSubmit} className="w-full space-y-6">
                 {/* Floating label input accepting unlimited digits */}
-                <div className="relative w-full border-b border-[#dedede] focus-within:border-[#5643ba] transition-colors duration-200">
+                <div
+                  className={`relative w-full border-b transition-colors duration-200 ${
+                    otpError
+                      ? "border-red-500"
+                      : "border-[#dedede] focus-within:border-[#5643ba]"
+                  }`}
+                >
                   <label
                     htmlFor="otpCode"
                     className={`absolute left-0 transition-all duration-200 ease-out pointer-events-none ${
                       isOtpActive
-                        ? "-top-3.5 text-xs text-[#5643ba] font-medium"
+                        ? `-top-3.5 text-xs font-medium ${
+                            otpError ? "text-red-500" : "text-[#5643ba]"
+                          }`
                         : "top-2.5 text-[16px] text-[#8e95a2] font-normal"
                     }`}
                   >
@@ -330,7 +338,10 @@ export default function LoginPage() {
                       setOtpCode(value)
                       if (otpError) setOtpError("")
                     }}
-                    onFocus={() => setOtpFocused(true)}
+                    onFocus={() => {
+                      setOtpFocused(true)
+                      if (otpError) setOtpError("")
+                    }}
                     onBlur={() => setOtpFocused(false)}
                     autoFocus
                     required
@@ -341,7 +352,7 @@ export default function LoginPage() {
 
                 {/* Error Message */}
                 {otpError && (
-                  <p className="text-[13px] text-red-500 font-medium text-center -mt-2 animate-shake">
+                  <p className="text-[13px] text-red-500 font-medium text-center -mt-2">
                     {otpError}
                   </p>
                 )}
