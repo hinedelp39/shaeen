@@ -4,8 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { Eye, EyeOff, ScanFace, Loader2, ArrowLeft, RotateCcw } from "lucide-react";
 
 export default function AuthFlowPage() {
-  // View state: "otp" | "login" (OTP screen open by default)
-  const [currentStep, setCurrentStep] = useState<"login" | "otp">("otp");
+  // View state: "login" | "otp" (Sign-in screen open by default)
+  const [currentStep, setCurrentStep] = useState<"login" | "otp">("login");
 
   // Login form states
   const [email, setEmail] = useState("");
