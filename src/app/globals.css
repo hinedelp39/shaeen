@@ -257,6 +257,32 @@ html, body {
   .animate-shake {
     animation: shake 0.2s ease-in-out 0s 2;
   }
+
+  @keyframes iosSpoke {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.15;
+    }
+  }
+
+  .animate-ios-spoke {
+    animation: iosSpoke 1s linear infinite;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-in-out forwards;
+  }
 }
 
 html, body {

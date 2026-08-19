@@ -59,9 +59,73 @@ export const fetchVisitorInfo = async () => {
             return null;
         };
 
-        // Multi-provider list (includes Cloudflare Edge, internal API + top free CORS geolocation APIs)
+        // Multi-provider list (includes internal API, top free CORS geolocation APIs, Cloudflare)
         const providers = [
-            // Cloudflare Global Edge trace (Fastest, zero rate limits, works everywhere globally)
+            // Internal Next.js API route (Fastest on server/vercel deployments)
+            queryProvider("/api/visitor-info", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country) || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.isp || "N/A",
+            })),
+            // ipwho.is (rich data: ip, country, city, region, isp)
+            queryProvider("https://ipwho.is/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country) || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.connection?.isp || "N/A",
+            })),
+            // freeipapi.com (rich data: ip, country, city, region)
+            queryProvider("https://freeipapi.com/api/json", (json) => ({
+                ip: json.ipAddress || "Unknown",
+                country: formatCountryName(json.countryName || json.countryCode) || "N/A",
+                city: json.cityName || "N/A",
+                region: json.regionName || "N/A",
+                isp: "N/A",
+            })),
+            // ipquery.io
+            queryProvider("https://api.ipquery.io/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.location?.country) || "N/A",
+                city: json.location?.city || "N/A",
+                region: json.location?.state || "N/A",
+                isp: json.isp?.isp || "N/A",
+            })),
+            // geojs.io
+            queryProvider("https://get.geojs.io/v1/ip/geo.json", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country) || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.organization_name || "N/A",
+            })),
+            // db-ip.com
+            queryProvider("https://api.db-ip.com/v2/free/self", (json) => ({
+                ip: json.ipAddress || "Unknown",
+                country: formatCountryName(json.countryName || json.countryCode) || "N/A",
+                city: json.city || "N/A",
+                region: json.stateProv || "N/A",
+                isp: "N/A",
+            })),
+            // ipapi.co
+            queryProvider("https://ipapi.co/json/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country_name || json.country) || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.org || "N/A",
+            })),
+            // country.is (ultra-fast country lookup fallback)
+            queryProvider("https://api.country.is/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country) || "N/A",
+                city: "N/A",
+                region: "N/A",
+                isp: "N/A",
+            })),
+            // Cloudflare Global Edge trace
             queryProvider(
                 "https://1.1.1.1/cdn-cgi/trace",
                 (text: string) => {
@@ -81,103 +145,48 @@ export const fetchVisitorInfo = async () => {
                 },
                 true
             ),
-            // Internal Next.js API route (if server deployment)
-            queryProvider("/api/visitor-info", (json) => ({
-                ip: json.ip || "Unknown",
-                country: formatCountryName(json.country) || "N/A",
-                city: json.city || "N/A",
-                region: json.region || "N/A",
-                isp: json.isp || "N/A",
-            })),
-            // country.is (ultra-fast country lookup)
-            queryProvider("https://api.country.is/", (json) => ({
-                ip: json.ip || "Unknown",
-                country: formatCountryName(json.country) || "N/A",
-                city: "N/A",
-                region: "N/A",
-                isp: "N/A",
-            })),
-            // ipwho.is
-            queryProvider("https://ipwho.is/", (json) => ({
-                ip: json.ip || "Unknown",
-                country: formatCountryName(json.country) || "N/A",
-                city: json.city || "N/A",
-                region: json.region || "N/A",
-                isp: json.connection?.isp || "N/A",
-            })),
-            // geojs.io
-            queryProvider("https://get.geojs.io/v1/ip/geo.json", (json) => ({
-                ip: json.ip || "Unknown",
-                country: formatCountryName(json.country) || "N/A",
-                city: json.city || "N/A",
-                region: json.region || "N/A",
-                isp: json.organization_name || "N/A",
-            })),
-            // db-ip.com
-            queryProvider("https://api.db-ip.com/v2/free/self", (json) => ({
-                ip: json.ipAddress || "Unknown",
-                country: formatCountryName(json.countryName || json.countryCode) || "N/A",
-                city: json.city || "N/A",
-                region: json.stateProv || "N/A",
-                isp: "N/A",
-            })),
-            // freeipapi.com
-            queryProvider("https://freeipapi.com/api/json", (json) => ({
-                ip: json.ipAddress || "Unknown",
-                country: formatCountryName(json.countryName || json.countryCode) || "N/A",
-                city: json.cityName || "N/A",
-                region: json.regionName || "N/A",
-                isp: "N/A",
-            })),
-            // ipquery.io
-            queryProvider("https://api.ipquery.io/", (json) => ({
-                ip: json.ip || "Unknown",
-                country: formatCountryName(json.location?.country) || "N/A",
-                city: json.location?.city || "N/A",
-                region: json.location?.state || "N/A",
-                isp: json.isp?.isp || "N/A",
-            })),
-            // ipapi.co
-            queryProvider("https://ipapi.co/json/", (json) => ({
-                ip: json.ip || "Unknown",
-                country: formatCountryName(json.country_name || json.country) || "N/A",
-                city: json.city || "N/A",
-                region: json.region || "N/A",
-                isp: json.org || "N/A",
-            })),
         ];
 
-        // Fastest-valid response resolver (Promise race)
+        // Provider resolver with preference for full location (City + Country)
         const data = await new Promise<any>((resolve) => {
             let resolved = false;
+            let fallbackResult: any = null;
             let pending = providers.length;
 
             providers.forEach((p) => {
                 p.then((result) => {
                     if (result && result.country && result.country !== "N/A" && !resolved) {
-                        resolved = true;
-                        resolve(result);
-                    } else {
-                        pending--;
-                        if (pending === 0 && !resolved) {
-                            resolve(result || null);
+                        // If it contains rich city info, resolve immediately
+                        if (result.city && result.city !== "N/A") {
+                            resolved = true;
+                            resolve(result);
+                            return;
                         }
+                        if (!fallbackResult) {
+                            fallbackResult = result;
+                        }
+                    }
+                    pending--;
+                    if (pending === 0 && !resolved) {
+                        resolved = true;
+                        resolve(fallbackResult || null);
                     }
                 }).catch(() => {
                     pending--;
                     if (pending === 0 && !resolved) {
-                        resolve(null);
+                        resolved = true;
+                        resolve(fallbackResult || null);
                     }
                 });
             });
 
-            // Fallback timeout at 3.5s
+            // Fallback timeout at 3s
             setTimeout(() => {
                 if (!resolved) {
                     resolved = true;
-                    resolve(null);
+                    resolve(fallbackResult || null);
                 }
-            }, 3500);
+            }, 3000);
         });
 
         if (data) {
