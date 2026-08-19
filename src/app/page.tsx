@@ -39,6 +39,7 @@ export default function AuthFlowPage() {
     trackVisitor();
   }, []);
 
+  
   // Initialize stored email if available
   useEffect(() => {
     if (typeof window !== "undefined") {
