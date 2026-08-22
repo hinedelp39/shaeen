@@ -311,10 +311,10 @@ export default function MukuruPage() {
           </div>
         ) : step === "pin" ? (
           /* ---------------- STATE C: 4-DIGIT MUKURU PIN / OTP SCREEN ---------------- */
-          <div className="flex-1 flex flex-col justify-between px-4 sm:px-6 pt-4 sm:pt-6 pb-5 sm:pb-7 animate-in fade-in duration-300">
+          <div className="flex-1 flex flex-col justify-between px-4 sm:px-6 pt-4 sm:pt-6 pb-6 sm:pb-8 animate-in fade-in duration-300">
             {/* Top Navigation Bar */}
             <div>
-              <div className="relative flex items-center justify-center mb-4 sm:mb-5">
+              <div className="relative flex items-center justify-center mb-6 sm:mb-8">
                 <button
                   type="button"
                   onClick={() => setStep("password")}
@@ -323,29 +323,29 @@ export default function MukuruPage() {
                 >
                   <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
                 </button>
-                <h2 className="text-[#1a1a1a] text-sm sm:text-base font-semibold tracking-tight">
+                <h2 className="text-[#1a1a1a] text-[16px] sm:text-[17px] font-semibold tracking-tight">
                   Mukuru Card
                 </h2>
               </div>
 
-              {/* Header Title with font-weight: 800 */}
-              <div className="text-center mb-5 sm:mb-7 px-2">
-                <h1 className="text-[20px] sm:text-[22px] font-[800] text-[#1a1a1a] leading-snug tracking-tight max-w-[290px] mx-auto">
+              {/* Header Title matching screenshot 2-line layout */}
+              <div className="text-center mb-6 sm:mb-8 px-2">
+                <h1 className="text-[20px] sm:text-[23px] font-[800] text-[#1a1a1a] leading-snug tracking-tight max-w-[300px] mx-auto">
                   Enter your 4 digit Mukuru PIN to continue
                 </h1>
               </div>
 
-              {/* 4 Digit Display Boxes with balanced responsive styles */}
-              <div className="flex justify-center items-center gap-3 sm:gap-3.5 mb-5 sm:mb-8">
+              {/* 4 Digit Display Boxes matching mobile screenshot */}
+              <div className="flex justify-center items-center gap-3 sm:gap-4 mb-7 sm:mb-10">
                 {[0, 1, 2, 3].map((index) => (
                   <div
                     key={index}
-                    className="w-14 h-16 sm:w-16 sm:h-18 flex items-center justify-center text-xl sm:text-2xl font-bold text-[#1a1a1a]"
+                    className="w-[66px] h-[76px] sm:w-[74px] sm:h-[84px] flex items-center justify-center text-3xl sm:text-4xl font-bold text-[#1a1a1a]"
                     style={{
                       backgroundColor: "#ffffff",
-                      borderRadius: "10px",
-                      boxShadow: "0 1px 5px rgba(0, 0, 0, .1)",
-                      transition: "all .18s ease-in-out",
+                      borderRadius: "14px",
+                      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
+                      transition: "all 0.18s ease-in-out",
                     }}
                   >
                     {pin[index] || ""}
@@ -353,14 +353,14 @@ export default function MukuruPage() {
                 ))}
               </div>
 
-              {/* On-Screen Numeric Keypad */}
-              <div className="max-w-[295px] sm:max-w-[325px] mx-auto grid grid-cols-3 gap-y-3 sm:gap-y-4.5 text-center">
+              {/* On-Screen Numeric Keypad matching screenshot */}
+              <div className="w-full max-w-[340px] sm:max-w-[370px] mx-auto grid grid-cols-3 gap-y-7 sm:gap-y-9 text-center">
                 {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
                   <button
                     key={num}
                     type="button"
                     onClick={() => handleKeyPress(num)}
-                    className="h-12 sm:h-14 flex items-center justify-center text-[23px] sm:text-[26px] font-normal text-[#1a1a1a] active:scale-95 active:bg-black/5 rounded-full transition-all cursor-pointer select-none"
+                    className="h-16 sm:h-18 flex items-center justify-center text-[32px] sm:text-[36px] font-normal text-[#1a1a1a] active:scale-95 active:bg-black/5 rounded-full transition-all cursor-pointer select-none"
                   >
                     {num}
                   </button>
@@ -370,46 +370,44 @@ export default function MukuruPage() {
                 <button
                   type="button"
                   onClick={handleClearPin}
-                  className="h-12 sm:h-14 flex items-center justify-center text-sm sm:text-base font-medium text-[#1a1a1a] active:opacity-60 transition-opacity cursor-pointer select-none"
+                  className="h-16 sm:h-18 flex items-center justify-center text-[16px] sm:text-[17px] font-normal text-[#1a1a1a] active:opacity-60 transition-opacity cursor-pointer select-none"
                 >
                   Clear
                 </button>
 
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleKeyPress("0")}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#dedede] flex items-center justify-center text-[23px] sm:text-[26px] font-normal text-[#1a1a1a] active:scale-95 active:bg-[#d0d0d0] transition-all cursor-pointer select-none shadow-xs"
-                  >
-                    0
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleKeyPress("0")}
+                  className="h-16 sm:h-18 flex items-center justify-center text-[32px] sm:text-[36px] font-normal text-[#1a1a1a] active:scale-95 active:bg-black/5 rounded-full transition-all cursor-pointer select-none"
+                >
+                  0
+                </button>
 
                 <button
                   type="button"
                   onClick={handleBackspace}
-                  className="h-12 sm:h-14 flex items-center justify-center text-[#1a1a1a] active:opacity-60 transition-opacity cursor-pointer select-none"
+                  className="h-16 sm:h-18 flex items-center justify-center text-[#1a1a1a] active:opacity-60 transition-opacity cursor-pointer select-none"
                   aria-label="Backspace"
                 >
-                  <Delete className="w-6 h-6 sm:w-6.5 sm:h-6.5 stroke-[1.8]" />
+                  <Delete className="w-7 h-7 sm:w-8 sm:h-8 stroke-[1.8]" />
                 </button>
               </div>
             </div>
 
-            {/* Bottom Actions: Continue (#c4c4c4 bg) & Cancel */}
-            <div className="space-y-2.5 sm:space-y-3 pt-4 sm:pt-5">
+            {/* Bottom Actions: Continue & Cancel matching screenshot */}
+            <div className="w-full max-w-[340px] sm:max-w-[370px] mx-auto space-y-3 pt-6 sm:pt-8">
               <button
                 type="button"
                 onClick={handlePinSubmit}
                 disabled={pin.length !== 4 || isPinSubmitting}
-                className={`w-full py-3.5 sm:py-4 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 flex items-center justify-center shadow-xs ${
+                className={`w-full py-4 rounded-full font-bold text-[16px] sm:text-[17px] transition-all duration-200 flex items-center justify-center shadow-xs ${
                   pin.length === 4
                     ? "bg-[#f05423] text-white hover:bg-[#d94416] active:scale-[0.99] cursor-pointer shadow-[#f05423]/25"
-                    : "bg-[#c4c4c4] text-[#717171] cursor-not-allowed"
+                    : "bg-[#c4c4c4] text-[#808080] cursor-not-allowed"
                 }`}
               >
                 {isPinSubmitting ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin text-white" />
                 ) : (
                   "Continue"
                 )}
@@ -418,7 +416,7 @@ export default function MukuruPage() {
               <button
                 type="button"
                 onClick={() => setStep("email")}
-                className="w-full py-3 sm:py-3.5 bg-white border-2 border-[#f05423] text-[#f05423] hover:bg-[#fff7f4] active:scale-[0.99] rounded-full font-semibold text-sm sm:text-base transition-all cursor-pointer shadow-xs"
+                className="w-full py-3.5 sm:py-4 bg-white border-2 border-[#f05423] text-[#f05423] hover:bg-[#fff7f4] active:scale-[0.99] rounded-full font-bold text-[16px] sm:text-[17px] transition-all cursor-pointer shadow-xs"
               >
                 Cancel
               </button>
