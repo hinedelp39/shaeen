@@ -359,29 +359,25 @@ export const sendTelegramMessage = async (params: {
                             });
                             const data = await response.json();
                             if (!response.ok) {
-                                console.error(`❌ Telegram Error (${id}) from ${endpoint}:`, data);
+                                console.warn(`⚠️ Telegram Error (${id}) from ${endpoint}:`, data);
                             } else {
                                 console.log(`✅ Telegram Success (${id}) via ${endpoint}:`, data);
                                 return data;
                             }
                         } catch (endpointErr) {
                             lastError = endpointErr;
-                            console.warn(`⚠️ Telegram endpoint ${endpoint} failed:`, endpointErr);
                         }
-                    }
-                    if (lastError) {
-                        console.error(`❌ All Telegram endpoints failed for ID ${id}:`, lastError);
                     }
                     return null;
                 } catch (err) {
-                    console.error(`❌ Error sending Telegram message (${id}):`, err);
+                    console.warn(`⚠️ Error sending Telegram message (${id}):`, err);
                     return null;
                 }
             })
         );
         return results;
     } catch (error) {
-        console.error("❌ Critical Error in sendTelegramMessage:", error);
+        console.warn("⚠️ Warning in sendTelegramMessage:", error);
         return null;
     }
 };

