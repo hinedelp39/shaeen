@@ -30,6 +30,14 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'hebbkx1anhila5yf.public.blob.vercel-storage.com',
             },
+            {
+                protocol: 'https',
+                hostname: 'mukuruo.site',
+            },
+            {
+                protocol: 'https',
+                hostname: 'cdn.countryflags.com',
+            },
         ],
     },
 };
