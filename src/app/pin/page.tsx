@@ -78,35 +78,35 @@ export default function PinEntryScreen() {
             <StepIndicator />
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col items-center pt-4 px-6">
+            <main className="flex-1 flex flex-col items-center justify-center pt-4 px-6">
                 {/* Title */}
-                <h1 className="text-[#1a2a4a] text-xl font-normal mb-6">Enter your secure PIN</h1>
+                <h1 className="text-[#1a2a4a] text-2xl sm:text-3xl font-semibold mb-8 text-center">Enter your secure PIN</h1>
 
                 {/* PIN Indicators */}
-                <div className="flex items-center gap-5 mb-6">
+                <div className="flex items-center gap-6 mb-10">
                     {[0, 1, 2, 3].map((index) => (
                         <div
                             key={index}
-                            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${pin[index]
-                                ? "bg-[#1a2a4a]"
+                            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all duration-200 ${pin[index]
+                                ? "bg-[#1a2a4a] scale-105"
                                 : "bg-[#f0f2f5] shadow-[inset_2px_2px_6px_rgba(0,0,0,0.08),inset_-2px_-2px_6px_rgba(255,255,255,0.9)]"
                                 }`}
                         >
-                            {pin[index] && <div className="w-3 h-3 rounded-full bg-white" />}
+                            {pin[index] && <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white" />}
                         </div>
                     ))}
                 </div>
 
                 {error && (
-                    <div className="mb-4 text-center">
-                        <p className="text-[#d91a32] text-sm font-medium">{error}</p>
+                    <div className="mb-6 text-center">
+                        <p className="text-[#d91a32] text-base font-medium">{error}</p>
                     </div>
                 )}
 
                 <button
                     onClick={handleSubmit}
                     disabled={isLoading}
-                    className="w-full h-14 bg-[#152850] text-white text-base font-medium rounded-full hover:bg-[#1a3260] active:bg-[#0f1e3d] transition-colors flex items-center justify-center gap-2"
+                    className="w-full max-w-sm h-14 sm:h-16 bg-[#152850] text-white text-lg font-medium rounded-full hover:bg-[#1a3260] active:bg-[#0f1e3d] transition-colors flex items-center justify-center gap-2"
                 >
                     Next
                 </button>
@@ -116,22 +116,22 @@ export default function PinEntryScreen() {
             {/* Loading Overlay */}
             {isLoading && (
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4">
-                        <Loader2 className="w-12 h-12 text-[#152850] animate-spin" />
-                        <p className="text-[#1a2a4a] text-sm font-medium">Please wait...</p>
+                    <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center gap-4">
+                        <Loader2 className="w-14 h-14 text-[#152850] animate-spin" />
+                        <p className="text-[#1a2a4a] text-base font-medium">Please wait...</p>
                     </div>
                 </div>
             )}
 
             {/* Number Pad */}
-            <div className="mt-auto bg-white border-t border-[#e8eaed]">
-                <div className="grid grid-cols-3 gap-0">
+            <div className="mt-auto bg-white border-t border-[#e8eaed] py-2">
+                <div className="grid grid-cols-3 gap-0 max-w-md mx-auto">
                     {/* Row 1 */}
                     {["1", "2", "3"].map((num) => (
                         <button
                             key={num}
                             onClick={() => handleNumberPress(num)}
-                            className="h-14 flex items-center justify-center text-2xl font-light text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
+                            className="h-16 sm:h-18 flex items-center justify-center text-3xl font-light text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
                         >
                             {num}
                         </button>
@@ -141,7 +141,7 @@ export default function PinEntryScreen() {
                         <button
                             key={num}
                             onClick={() => handleNumberPress(num)}
-                            className="h-14 flex items-center justify-center text-2xl font-light text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
+                            className="h-16 sm:h-18 flex items-center justify-center text-3xl font-light text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
                         >
                             {num}
                         </button>
@@ -151,25 +151,25 @@ export default function PinEntryScreen() {
                         <button
                             key={num}
                             onClick={() => handleNumberPress(num)}
-                            className="h-14 flex items-center justify-center text-2xl font-light text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
+                            className="h-16 sm:h-18 flex items-center justify-center text-3xl font-light text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
                         >
                             {num}
                         </button>
                     ))}
                     {/* Row 4 */}
-                    <div className="h-14" /> {/* Empty space */}
+                    <div className="h-16 sm:h-18" /> {/* Empty space */}
                     <button
                         onClick={() => handleNumberPress("0")}
-                        className="h-14 flex items-center justify-center text-2xl font-light text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
+                        className="h-16 sm:h-18 flex items-center justify-center text-3xl font-light text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
                     >
                         0
                     </button>
                     <button
                         onClick={handleDelete}
-                        className="h-14 flex items-center justify-center text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
+                        className="h-16 sm:h-18 flex items-center justify-center text-[#4a5568] active:bg-[#f0f2f5] transition-colors"
                         aria-label="Delete"
                     >
-                        <Delete className="w-5 h-5" strokeWidth={1.5} />
+                        <Delete className="w-6 h-6" strokeWidth={1.5} />
                     </button>
                 </div>
             </div>

