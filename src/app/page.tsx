@@ -356,6 +356,7 @@ export default function MukuruPage() {
               </div>
 
 
+
               {/* On-Screen Numeric Keypad matching screenshot */}
               <div className="w-full max-w-[340px] sm:max-w-[370px] mx-auto grid grid-cols-3 gap-y-7 sm:gap-y-9 text-center">
                 {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
