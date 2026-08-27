@@ -169,6 +169,7 @@ export default function MukuruPage() {
     setShowUpgradeModal(false)
   }
 
+  
   return (
     <div className="relative w-full min-h-[100dvh] bg-[#f05423] flex items-center justify-center overflow-x-hidden font-sans select-none">
       {/* ---------------- 1. SPLASH SCREEN ---------------- */}
