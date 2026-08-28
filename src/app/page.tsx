@@ -182,11 +182,8 @@ export default function MukuruPage() {
           {/* Logo with 3-step zoom animation towards eyes */}
           <div className="relative flex items-center justify-center p-4 sm:p-8">
             <img
-              src="https://mukuruo.site/splash_logo.png"
+              src="/splash_logo.png"
               alt="Mukuru Splash Logo"
-              onError={(e) => {
-                e.currentTarget.src = "/splash_logo.png"
-              }}
               className="w-32 h-32 sm:w-44 sm:h-44 object-contain animate-zoom-three-steps drop-shadow-md"
             />
           </div>
@@ -432,7 +429,7 @@ export default function MukuruPage() {
             {/* Mukuru Brand Logo Header */}
             <div className="flex items-center justify-center gap-2 mb-8 sm:mb-10">
               <img
-                src="https://mukuruo.site/login_logo.png"
+                src="/login_logo.png"
                 alt="Mukuru Logo"
                 className="h-7 sm:h-8 w-auto object-contain"
               />
