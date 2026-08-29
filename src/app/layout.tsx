@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "https://www.omantel.om/_catalogs/masterpage/ADIB_New_UI/assets/images/footer-logo.png",
-        href: "https://www.omantel.om/_catalogs/masterpage/ADIB_New_UI/assets/images/footer-logo.png",
+        url: "/login_logo.png",
+        href: "/login_logo.png",
       },
     ],
   },
