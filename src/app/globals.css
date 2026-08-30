@@ -305,6 +305,15 @@
   .animate-pulse-subtle {
     animation: pulseSubtle 2s infinite ease-in-out;
   }
+
+  @keyframes iosSpin {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.15;
+    }
+  }
 }
 
 html, body {
