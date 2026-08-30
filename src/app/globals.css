@@ -316,6 +316,14 @@ html, body {
   background-color: #ffffff;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  overscroll-behavior-y: none;
+  overscroll-behavior: none;
   overflow-x: hidden;
+}
+
+@media (max-width: 640px) {
+  html, body {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
 }

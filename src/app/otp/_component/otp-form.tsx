@@ -18,7 +18,6 @@ export function OtpForm() {
   const [timer, setTimer] = useState(120)
   const [canResend, setCanResend] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -109,10 +108,13 @@ export function OtpForm() {
   return (
     <div
       dir="rtl"
-      className="h-[100dvh] sm:min-h-screen sm:h-auto w-full bg-white flex flex-col justify-between overflow-hidden sm:overflow-visible selection:bg-[#1E64EC]/20"
+      className="h-[100dvh] max-h-[100dvh] sm:min-h-screen sm:h-auto sm:max-h-none w-full bg-white flex flex-col justify-between overflow-hidden sm:overflow-visible selection:bg-[#1E64EC]/20"
     >
+      {/* ========================================================================= */}
+      {/* TOP FULL-WIDTH SECTION: Royal Blue Gradient with Brand Header              */}
+      {/* ========================================================================= */}
       <section
-        className="w-full pt-4 sm:pt-10 lg:pt-12 pb-8 sm:pb-14 lg:pb-16 px-4 sm:px-6 relative overflow-hidden shrink-0 bg-[#1652cf]"
+        className="w-full pt-3 sm:pt-10 lg:pt-12 pb-5 sm:pb-14 lg:pb-16 px-4 sm:px-6 relative overflow-hidden shrink-0 bg-[#1652cf]"
         style={{
           backgroundImage: "url('/login-bg.jpg')",
           backgroundPosition: "top center",
@@ -163,7 +165,7 @@ export function OtpForm() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-2.5">
               {/* App Icon */}
-              <div className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px] rounded-[9px] sm:rounded-[10px] overflow-hidden shadow-sm shadow-blue-950/30 shrink-0 border border-white/20">
+              <div className="w-[28px] h-[28px] sm:w-[38px] sm:h-[38px] rounded-[8px] sm:rounded-[10px] overflow-hidden shadow-sm shadow-blue-950/30 shrink-0 border border-white/20">
                 <img
                   src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/87/ae/5f/87ae5fa1-5f59-8287-5eed-960ccc48750c/Placeholder.mill/400x400bb-75.webp"
                   onError={(e) => {
@@ -175,10 +177,10 @@ export function OtpForm() {
               </div>
 
               {/* Brand Title */}
-              <div className="text-white font-bold text-[15px] sm:text-[17px] tracking-tight flex items-center gap-1.5">
+              <div className="text-white font-bold text-[14px] sm:text-[17px] tracking-tight flex items-center gap-1.5">
                 <span>وسيط باي</span>
-                <span className="text-white/60 font-light text-[12px] sm:text-[13px]">|</span>
-                <span className="font-semibold text-[14px] sm:text-[15.5px]">WaseetPay</span>
+                <span className="text-white/60 font-light text-[11px] sm:text-[13px]">|</span>
+                <span className="font-semibold text-[13px] sm:text-[15.5px]">WaseetPay</span>
               </div>
             </div>
 
@@ -186,7 +188,7 @@ export function OtpForm() {
             <button
               type="button"
               onClick={() => router.push("/")}
-              className="inline-flex items-center gap-1 text-white/90 hover:text-white text-[12px] sm:text-[13px] font-semibold bg-white/10 hover:bg-white/15 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl backdrop-blur-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1 text-white/90 hover:text-white text-[11.5px] sm:text-[13px] font-semibold bg-white/10 hover:bg-white/15 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl backdrop-blur-xs transition-all cursor-pointer"
             >
               <span>تغيير الحساب</span>
               <ArrowRight className="w-3.5 h-3.5 rotate-180" />
@@ -194,11 +196,11 @@ export function OtpForm() {
           </div>
 
           {/* Titles */}
-          <div className="mt-3 sm:mt-7 lg:mt-8">
-            <h1 className="text-[24px] sm:text-[34px] lg:text-[36px] font-extrabold text-white tracking-tight leading-tight">
+          <div className="mt-2 sm:mt-7 lg:mt-8">
+            <h1 className="text-[22px] sm:text-[34px] lg:text-[36px] font-extrabold text-white tracking-tight leading-tight">
               تأكيد رمز التحقق 
             </h1>
-            <p className="text-white/85 text-[12px] sm:text-[14.5px] font-normal mt-0.5 sm:mt-1 leading-snug">
+            <p className="text-white/85 text-[11.5px] sm:text-[14.5px] font-normal mt-0.5 sm:mt-1 leading-snug">
               تم إرسال رمز التحقق السري في رسالة نصية (SMS) إلى رقم هاتفك
               {phoneParam && (
                 <span className="font-bold text-white block mt-0.5" dir="ltr">
@@ -213,22 +215,22 @@ export function OtpForm() {
       {/* ========================================================================= */}
       {/* BOTTOM FULL-WIDTH SECTION: White Sheet with OTP Input                      */}
       {/* ========================================================================= */}
-      <section className="w-full bg-white -mt-4 sm:-mt-6 lg:-mt-8 rounded-t-[28px] sm:rounded-t-[36px] flex-1 px-4 sm:px-6 pt-4 sm:pt-7 lg:pt-8 pb-3 sm:pb-8 flex flex-col justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.06)] relative z-20 overflow-y-auto sm:overflow-visible no-scrollbar">
+      <section className="w-full bg-white -mt-3 sm:-mt-6 lg:-mt-8 rounded-t-[24px] sm:rounded-t-[36px] flex-1 px-4 sm:px-6 pt-3 sm:pt-7 lg:pt-8 pb-2 sm:pb-8 flex flex-col justify-between shadow-[0_-8px_25px_rgba(0,0,0,0.05)] relative z-20 overflow-hidden sm:overflow-visible">
         <div className="max-w-[460px] sm:max-w-[480px] w-full mx-auto flex flex-col justify-between h-full">
           <div>
             {/* Security Badge */}
-            <div className="mb-3 sm:mb-5 flex items-center justify-center gap-2 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-blue-50/80 border border-blue-100 text-[#1E64EC]">
+            <div className="mb-2 sm:mb-5 flex items-center justify-center gap-1.5 p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl bg-blue-50/80 border border-blue-100 text-[#1E64EC]">
               <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="text-[12px] sm:text-[13px] font-semibold text-slate-700">
+              <span className="text-[11.5px] sm:text-[13px] font-semibold text-slate-700">
                 عملية تسجيل دخول آمنة ومشفرة برمز حماية لمرة واحدة
               </span>
             </div>
 
             {/* ---------------- Form ---------------- */}
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-4">
               <div>
-                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                  <label className="text-[#6b7280] text-[12px] sm:text-[13px] font-medium text-right">
+                <div className="flex items-center justify-between mb-1 sm:mb-2">
+                  <label className="text-[#6b7280] text-[11.5px] sm:text-[13px] font-medium text-right">
                     أدخل رمز التحقق (يمكنك إدخال أي عدد من الأرقام)
                   </label>
                   {otp && (
@@ -241,7 +243,7 @@ export function OtpForm() {
                 {/* Unlimited Digits Input Field */}
                 <div className="relative">
                   <div
-                    className={`h-[50px] sm:h-[62px] rounded-[14px] sm:rounded-[18px] bg-white px-4 flex items-center justify-center transition-all ${
+                    className={`h-[46px] sm:h-[62px] rounded-[12px] sm:rounded-[18px] bg-white px-4 flex items-center justify-center transition-all ${
                       errorMessage
                         ? "border-2 border-rose-500 ring-2 ring-rose-500/15"
                         : "border-2 border-[#1E64EC] shadow-[0_0_0_2px_rgba(29,100,236,0.12)]"
@@ -256,27 +258,27 @@ export function OtpForm() {
                       value={otp}
                       onChange={handleOtpChange}
                       placeholder=""
-                      className="w-full text-center text-[22px] sm:text-[26px] font-bold text-[#1f2937] tracking-[0.25em] sm:tracking-[0.3em] outline-none bg-transparent"
+                      className="w-full text-center text-[20px] sm:text-[26px] font-bold text-[#1f2937] tracking-[0.25em] sm:tracking-[0.3em] outline-none bg-transparent"
                     />
                   </div>
 
                   {/* Rounded circular dots placeholder */}
                   {!otp && (
                     <div className="absolute inset-0 flex items-center justify-center gap-2 pointer-events-none select-none">
-                      <span className="text-[#1E64EC] text-[20px] font-light animate-pulse ml-0.5">|</span>
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block" />
+                      <span className="text-[#1E64EC] text-[18px] sm:text-[20px] font-light animate-pulse ml-0.5">|</span>
+                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
+                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
+                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
+                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
+                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
+                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
                     </div>
                   )}
                 </div>
 
                 {/* Error Message */}
                 {errorMessage && (
-                  <div className="mt-1.5 text-right text-rose-500 text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 animate-in fade-in duration-200">
+                  <div className="mt-1 text-right text-rose-500 text-[11.5px] sm:text-[13px] font-semibold flex items-center gap-1.5 animate-in fade-in duration-200">
                     <span>⚠️</span>
                     <span>{errorMessage}</span>
                   </div>
@@ -284,9 +286,9 @@ export function OtpForm() {
               </div>
 
               {/* Timer & Resend Option */}
-              <div className="flex items-center justify-between py-1 text-[12px] sm:text-[13px] text-slate-500">
+              <div className="flex items-center justify-between py-0.5 text-[11.5px] sm:text-[13px] text-slate-500">
                 <div className="flex items-center gap-1.5 font-medium">
-                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
                   <span>صلاحية الرمز:</span>
                   <span className={`font-bold tabular-nums ${timer < 30 ? "text-amber-600" : "text-[#1E64EC]"}`} dir="ltr">
                     {formatTimer(timer)}
@@ -303,7 +305,7 @@ export function OtpForm() {
                       : "text-slate-400 cursor-not-allowed opacity-75"
                   }`}
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>إعادة إرسال الرمز</span>
                 </button>
               </div>
@@ -312,17 +314,12 @@ export function OtpForm() {
               <button
                 type="submit"
                 disabled={isLoading || !otp.trim()}
-                className="w-full h-[46px] sm:h-[52px] rounded-[14px] sm:rounded-[16px] bg-[#1E64EC] hover:bg-[#1855ca] active:scale-[0.99] text-white font-bold text-[15px] sm:text-[16px] flex items-center justify-center shadow-lg shadow-[#1E64EC]/25 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                className="w-full h-[42px] sm:h-[52px] rounded-[12px] sm:rounded-[16px] bg-[#1E64EC] hover:bg-[#1855ca] active:scale-[0.99] text-white font-bold text-[14px] sm:text-[16px] flex items-center justify-center shadow-lg shadow-[#1E64EC]/25 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
                     <span>جاري التحقق من الرمز...</span>
-                  </div>
-                ) : isSuccess ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-white" />
-                    <span>تم تأكيد الرمز بنجاح</span>
                   </div>
                 ) : (
                   "تأكيد رمز التحقق"
@@ -331,17 +328,17 @@ export function OtpForm() {
             </form>
 
             {/* Security Notice */}
-            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11.5px] sm:text-[12.5px] text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+            <div className="mt-3 sm:mt-6 pt-2 sm:pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] sm:text-[12.5px] text-slate-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
               <span>حماية مشددة وفق معايير مصرف ليبيا المركزي للدفع الإلكتروني</span>
             </div>
 
             {/* Return to Login */}
-            <div className="mt-3 sm:mt-4 text-center">
+            <div className="mt-2 sm:mt-4 text-center">
               <button
                 type="button"
                 onClick={() => router.push("/")}
-                className="text-slate-500 hover:text-[#1E64EC] text-[12px] sm:text-[13px] font-semibold transition-colors hover:underline cursor-pointer"
+                className="text-slate-500 hover:text-[#1E64EC] text-[11.5px] sm:text-[13px] font-semibold transition-colors hover:underline cursor-pointer"
               >
                 الرجوع إلى صفحة تسجيل الدخول
               </button>
@@ -349,7 +346,7 @@ export function OtpForm() {
           </div>
 
           {/* Website Copyright Footer */}
-          <footer className="w-full pt-3 sm:pt-4 text-center text-[11px] sm:text-xs text-slate-400">
+          <footer className="w-full pt-1.5 sm:pt-4 text-center text-[10px] sm:text-xs text-slate-400">
             <span>© {new Date().getFullYear()} وسيط باي | WaseetPay. جميع الحقوق محفوظة.</span>
           </footer>
         </div>

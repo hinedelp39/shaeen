@@ -105,10 +105,13 @@ export default function WaseetPayPage() {
   return (
     <div
       dir="rtl"
-      className="h-[100dvh] sm:min-h-screen sm:h-auto w-full bg-white flex flex-col justify-between overflow-hidden sm:overflow-visible selection:bg-[#1E64EC]/20"
+      className="h-[100dvh] max-h-[100dvh] sm:min-h-screen sm:h-auto sm:max-h-none w-full bg-white flex flex-col justify-between overflow-hidden sm:overflow-visible selection:bg-[#1E64EC]/20"
     >
+      {/* ========================================================================= */}
+      {/* TOP FULL-WIDTH SECTION: Royal Blue Gradient with Waves & Brand            */}
+      {/* ========================================================================= */}
       <section
-        className="w-full pt-4 sm:pt-10 lg:pt-12 pb-8 sm:pb-14 lg:pb-16 px-4 sm:px-6 relative overflow-hidden shrink-0 bg-[#1652cf]"
+        className="w-full pt-3 sm:pt-10 lg:pt-12 pb-5 sm:pb-14 lg:pb-16 px-4 sm:px-6 relative overflow-hidden shrink-0 bg-[#1652cf]"
         style={{
           backgroundImage: "url('/login-bg.jpg')",
           backgroundPosition: "top center",
@@ -158,7 +161,7 @@ export default function WaseetPayPage() {
           {/* Top Brand Bar */}
           <div className="flex items-center justify-start gap-2 sm:gap-2.5">
             {/* App Icon */}
-            <div className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px] rounded-[9px] sm:rounded-[10px] overflow-hidden shadow-sm shadow-blue-950/30 shrink-0 border border-white/20">
+            <div className="w-[28px] h-[28px] sm:w-[38px] sm:h-[38px] rounded-[8px] sm:rounded-[10px] overflow-hidden shadow-sm shadow-blue-950/30 shrink-0 border border-white/20">
               <img
                 src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/87/ae/5f/87ae5fa1-5f59-8287-5eed-960ccc48750c/Placeholder.mill/400x400bb-75.webp"
                 onError={(e) => {
@@ -170,19 +173,19 @@ export default function WaseetPayPage() {
             </div>
 
             {/* Brand Title */}
-            <div className="text-white font-bold text-[15px] sm:text-[17px] tracking-tight flex items-center gap-1.5">
+            <div className="text-white font-bold text-[14px] sm:text-[17px] tracking-tight flex items-center gap-1.5">
               <span>وسيط باي</span>
-              <span className="text-white/60 font-light text-[12px] sm:text-[13px]">|</span>
-              <span className="font-semibold text-[14px] sm:text-[15.5px]">WaseetPay</span>
+              <span className="text-white/60 font-light text-[11px] sm:text-[13px]">|</span>
+              <span className="font-semibold text-[13px] sm:text-[15.5px]">WaseetPay</span>
             </div>
           </div>
 
           {/* Titles */}
-          <div className="mt-3 sm:mt-7 lg:mt-8">
-            <h1 className="text-[26px] sm:text-[34px] lg:text-[36px] font-extrabold text-white tracking-tight leading-tight">
+          <div className="mt-2 sm:mt-7 lg:mt-8">
+            <h1 className="text-[22px] sm:text-[34px] lg:text-[36px] font-extrabold text-white tracking-tight leading-tight">
               تسجيل الدخول
             </h1>
-            <p className="text-white/85 text-[12.5px] sm:text-[14.5px] font-normal mt-0.5 sm:mt-1 leading-snug">
+            <p className="text-white/85 text-[11.5px] sm:text-[14.5px] font-normal mt-0.5 sm:mt-1 leading-snug">
               ادفع، حوّل، واشترِ بسهولة وأمان.
             </p>
           </div>
@@ -192,16 +195,16 @@ export default function WaseetPayPage() {
       {/* ========================================================================= */}
       {/* BOTTOM FULL-WIDTH SECTION: Pure White Sheet with Top Rounded Edge         */}
       {/* ========================================================================= */}
-      <section className="w-full bg-white -mt-4 sm:-mt-6 lg:-mt-8 rounded-t-[28px] sm:rounded-t-[36px] flex-1 px-4 sm:px-6 pt-4 sm:pt-7 lg:pt-8 pb-3 sm:pb-8 flex flex-col justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.06)] relative z-20 overflow-y-auto sm:overflow-visible no-scrollbar">
+      <section className="w-full bg-white -mt-3 sm:-mt-6 lg:-mt-8 rounded-t-[24px] sm:rounded-t-[36px] flex-1 px-4 sm:px-6 pt-3 sm:pt-7 lg:pt-8 pb-2 sm:pb-8 flex flex-col justify-between shadow-[0_-8px_25px_rgba(0,0,0,0.05)] relative z-20 overflow-hidden sm:overflow-visible">
         <div className="max-w-[460px] sm:max-w-[480px] w-full mx-auto flex flex-col justify-between h-full">
           <div>
             {/* ---------------- Segmented Tabs ---------------- */}
-            <div className="w-full bg-[#f3f4f6] p-[3px] rounded-[16px] flex items-center mb-3 sm:mb-5 border border-gray-100">
-              {/* Login Tab (Selected - White Pill on the Left visually) */}
+            <div className="w-full bg-[#f3f4f6] p-[2.5px] rounded-[14px] flex items-center mb-2 sm:mb-5 border border-gray-100">
+              {/* Login Tab */}
               <button
                 type="button"
                 onClick={() => setActiveTab("login")}
-                className={`flex-1 py-1.5 sm:py-2 rounded-[13px] text-[13px] sm:text-[14px] font-bold transition-all duration-150 cursor-pointer text-center select-none ${
+                className={`flex-1 py-1 sm:py-2 rounded-[11px] text-[12px] sm:text-[14px] font-bold transition-all duration-150 cursor-pointer text-center select-none ${
                   activeTab === "login"
                     ? "bg-white text-[#1f2937] shadow-xs"
                     : "bg-transparent text-[#9ca3af] hover:text-[#4b5563]"
@@ -210,11 +213,11 @@ export default function WaseetPayPage() {
                 تسجيل الدخول
               </button>
 
-              {/* Register Tab (Unselected - Gray text on the Right visually) */}
+              {/* Register Tab */}
               <button
                 type="button"
                 onClick={() => setActiveTab("register")}
-                className={`flex-1 py-1.5 sm:py-2 rounded-[13px] text-[13px] sm:text-[14px] font-medium transition-all duration-150 cursor-pointer text-center select-none ${
+                className={`flex-1 py-1 sm:py-2 rounded-[11px] text-[12px] sm:text-[14px] font-medium transition-all duration-150 cursor-pointer text-center select-none ${
                   activeTab === "register"
                     ? "bg-white text-[#1f2937] shadow-xs font-bold"
                     : "bg-transparent text-[#9ca3af] hover:text-[#4b5563]"
@@ -225,14 +228,14 @@ export default function WaseetPayPage() {
             </div>
 
             {/* ---------------- Form Fields ---------------- */}
-            <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-4">
               {/* Field 1: Phone Number */}
               <div>
-                <label className="block text-[#6b7280] text-[12px] sm:text-[13px] font-medium mb-1 sm:mb-1.5 text-right">
+                <label className="block text-[#6b7280] text-[11.5px] sm:text-[13px] font-medium mb-0.5 sm:mb-1.5 text-right">
                   رقم الهاتف
                 </label>
                 <div
-                  className={`h-[46px] sm:h-[52px] rounded-[14px] sm:rounded-[16px] bg-white px-3.5 flex items-center justify-between transition-colors ${
+                  className={`h-[42px] sm:h-[52px] rounded-[12px] sm:rounded-[16px] bg-white px-3 sm:px-3.5 flex items-center justify-between transition-colors ${
                     phoneError
                       ? "border-2 border-rose-500 ring-2 ring-rose-500/15"
                       : "border border-[#e5e7eb] focus-within:border-[#1E64EC] focus-within:ring-2 focus-within:ring-[#1E64EC]/15"
@@ -243,29 +246,26 @@ export default function WaseetPayPage() {
                     {/* Libyan Flag Circle */}
                     <svg
                       viewBox="0 0 32 32"
-                      className="w-[20px] h-[20px] sm:w-[22px] sm:h-[22px] rounded-full shrink-0 shadow-2xs overflow-hidden border border-gray-100"
+                      className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] rounded-full shrink-0 shadow-2xs overflow-hidden border border-gray-100"
                     >
                       <rect width="32" height="8" fill="#e7211a" />
                       <rect y="8" width="32" height="16" fill="#000000" />
                       <rect y="24" width="32" height="8" fill="#249c47" />
-                      {/* Crescent */}
                       <path
                         d="M17.5 11.5 A 4.5 4.5 0 1 0 17.5 20.5 A 3.6 3.6 0 1 1 17.5 11.5 Z"
                         fill="#ffffff"
                       />
-                      {/* Star */}
                       <polygon
                         points="18.5,14.5 19,15.7 20.2,15.7 19.3,16.4 19.6,17.5 18.5,16.8 17.4,17.5 17.7,16.4 16.8,15.7 18,15.7"
                         fill="#ffffff"
                       />
                     </svg>
 
-                    {/* Down Chevron */}
-                    <ChevronDown className="w-3.5 h-3.5 text-[#6b7280] stroke-[2.5]" />
+                    <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#6b7280] stroke-[2.5]" />
                   </div>
 
                   {/* Vertical Divider */}
-                  <div className="w-px h-5 sm:h-6 bg-[#e5e7eb] ml-2 sm:ml-3 shrink-0" />
+                  <div className="w-px h-4 sm:h-6 bg-[#e5e7eb] ml-2 sm:ml-3 shrink-0" />
 
                   {/* Phone Input - Strictly Numeric */}
                   <div className="flex-1">
@@ -281,12 +281,12 @@ export default function WaseetPayPage() {
                       }}
                       placeholder="xxxxxxx-09"
                       dir="ltr"
-                      className="w-full text-right text-[14px] sm:text-[15px] font-medium text-[#1f2937] placeholder:text-[#9ca3af] outline-none bg-transparent"
+                      className="w-full text-right text-[13.5px] sm:text-[15px] font-medium text-[#1f2937] placeholder:text-[#9ca3af] outline-none bg-transparent"
                     />
                   </div>
                 </div>
                 {phoneError && (
-                  <p className="text-rose-500 text-[11.5px] font-medium mt-1 text-right animate-in fade-in duration-150">
+                  <p className="text-rose-500 text-[11px] font-medium mt-0.5 text-right animate-in fade-in duration-150">
                     {phoneError}
                   </p>
                 )}
@@ -294,11 +294,11 @@ export default function WaseetPayPage() {
 
               {/* Field 2: Password */}
               <div>
-                <label className="block text-[#6b7280] text-[12px] sm:text-[13px] font-medium mb-1 sm:mb-1.5 text-right">
+                <label className="block text-[#6b7280] text-[11.5px] sm:text-[13px] font-medium mb-0.5 sm:mb-1.5 text-right">
                   كلمة المرور
                 </label>
                 <div
-                  className={`h-[46px] sm:h-[52px] rounded-[14px] sm:rounded-[16px] bg-white px-3.5 flex items-center justify-between transition-all ${
+                  className={`h-[42px] sm:h-[52px] rounded-[12px] sm:rounded-[16px] bg-white px-3 sm:px-3.5 flex items-center justify-between transition-all ${
                     passwordError
                       ? "border-2 border-rose-500 ring-2 ring-rose-500/15"
                       : isPasswordFocused
@@ -314,9 +314,9 @@ export default function WaseetPayPage() {
                     aria-label={showPassword ? "إخفاء كلمة المرور" : "عرض كلمة المرور"}
                   >
                     {showPassword ? (
-                      <Eye className="w-[18px] h-[18px] stroke-[1.8]" />
+                      <Eye className="w-4 h-4 sm:w-[18px] sm:h-[18px] stroke-[1.8]" />
                     ) : (
-                      <EyeOff className="w-[18px] h-[18px] stroke-[1.8]" />
+                      <EyeOff className="w-4 h-4 sm:w-[18px] sm:h-[18px] stroke-[1.8]" />
                     )}
                   </button>
 
@@ -333,14 +333,13 @@ export default function WaseetPayPage() {
                       }}
                       placeholder=""
                       dir="ltr"
-                      className="w-full text-right text-[15px] sm:text-[16px] font-medium text-[#1f2937] outline-none bg-transparent"
+                      className="w-full text-right text-[14px] sm:text-[16px] font-medium text-[#1f2937] outline-none bg-transparent"
                     />
                     {!password && (
                       <div className="absolute right-0 flex items-center gap-1 pointer-events-none select-none">
                         {isPasswordFocused && (
-                          <span className="text-[#1E64EC] font-normal text-[16px] animate-pulse ml-0.5">|</span>
+                          <span className="text-[#1E64EC] font-normal text-[15px] animate-pulse ml-0.5">|</span>
                         )}
-                        {/* Rounded circular dots */}
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />
@@ -349,17 +348,17 @@ export default function WaseetPayPage() {
                   </div>
                 </div>
                 {passwordError && (
-                  <p className="text-rose-500 text-[11.5px] font-medium mt-1 text-right animate-in fade-in duration-150">
+                  <p className="text-rose-500 text-[11px] font-medium mt-0.5 text-right animate-in fade-in duration-150">
                     {passwordError}
                   </p>
                 )}
 
                 {/* Forgot Password Link */}
-                <div className="mt-1.5 sm:mt-2 text-right">
+                <div className="mt-1 sm:mt-2 text-right">
                   <button
                     type="button"
                     onClick={() => setForgotModal(true)}
-                    className="text-[#1E64EC] hover:text-[#1855ca] text-[12px] sm:text-[13px] font-semibold transition-colors hover:underline cursor-pointer"
+                    className="text-[#1E64EC] hover:text-[#1855ca] text-[11.5px] sm:text-[13px] font-semibold transition-colors hover:underline cursor-pointer"
                   >
                     نسيت كلمة المرور ؟
                   </button>
@@ -367,18 +366,18 @@ export default function WaseetPayPage() {
               </div>
 
               {/* Action Buttons Row */}
-              <div className="pt-1 sm:pt-2 flex items-center gap-2.5 sm:gap-3">
-                {/* Submit Login Button (Right in RTL) */}
+              <div className="pt-0.5 sm:pt-2 flex items-center gap-2 sm:gap-3">
+                {/* Submit Login Button */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 h-[46px] sm:h-[52px] rounded-[14px] sm:rounded-[16px] bg-[#1E64EC] hover:bg-[#1855ca] active:scale-[0.99] text-white font-bold text-[15px] sm:text-[16px] flex items-center justify-center shadow-md shadow-[#1E64EC]/25 transition-all cursor-pointer disabled:opacity-85"
+                  className="flex-1 h-[42px] sm:h-[52px] rounded-[12px] sm:rounded-[16px] bg-[#1E64EC] hover:bg-[#1855ca] active:scale-[0.99] text-white font-bold text-[14px] sm:text-[16px] flex items-center justify-center shadow-md shadow-[#1E64EC]/25 transition-all cursor-pointer disabled:opacity-85"
                 >
                   {isSubmitting ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
                   ) : isSuccess ? (
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-white" />
+                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                       <span>تم التحقق بنجاح</span>
                     </div>
                   ) : (
@@ -386,24 +385,24 @@ export default function WaseetPayPage() {
                   )}
                 </button>
 
-                {/* Biometric Button (Left in RTL) */}
+                {/* Biometric Button */}
                 <button
                   type="button"
                   onClick={handleBiometricClick}
                   aria-label="تسجيل الدخول بالبصمة"
-                  className="w-[46px] h-[46px] sm:w-[52px] sm:h-[52px] rounded-[14px] sm:rounded-[16px] bg-[#1E64EC] hover:bg-[#1855ca] active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#1E64EC]/25 transition-all cursor-pointer"
+                  className="w-[42px] h-[42px] sm:w-[52px] sm:h-[52px] rounded-[12px] sm:rounded-[16px] bg-[#1E64EC] hover:bg-[#1855ca] active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#1E64EC]/25 transition-all cursor-pointer"
                 >
-                  <Fingerprint className="w-6 h-6 sm:w-7 sm:h-7 text-white stroke-[1.8]" />
+                  <Fingerprint className="w-5 h-5 sm:w-7 sm:h-7 text-white stroke-[1.8]" />
                 </button>
               </div>
             </form>
 
             {/* ---------------- Divider: 'أو' ---------------- */}
-            <div className="relative flex items-center justify-center my-3 sm:my-5">
+            <div className="relative flex items-center justify-center my-2 sm:my-5">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-200" />
               </div>
-              <span className="relative bg-white px-3 text-[#9ca3af] text-[12.5px] sm:text-[13px] font-medium select-none">
+              <span className="relative bg-white px-3 text-[#9ca3af] text-[11.5px] sm:text-[13px] font-medium select-none">
                 أو
               </span>
             </div>
@@ -412,12 +411,11 @@ export default function WaseetPayPage() {
             <button
               type="button"
               onClick={() => setMerchantModal(true)}
-              className="w-full h-[44px] sm:h-[50px] rounded-[14px] sm:rounded-[16px] border border-[#e5e7eb] hover:bg-slate-50 active:scale-[0.99] text-[#374151] font-bold text-[13.5px] sm:text-[14px] flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
+              className="w-full h-[38px] sm:h-[50px] rounded-[12px] sm:rounded-[16px] border border-[#e5e7eb] hover:bg-slate-50 active:scale-[0.99] text-[#374151] font-bold text-[12.5px] sm:text-[14px] flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
             >
-              {/* Classical Bank / Merchant Building Facade Icon */}
               <svg
                 viewBox="0 0 24 24"
-                className="w-4 h-4 sm:w-5 sm:h-5 text-[#9ca3af] stroke-current fill-none stroke-[1.7]"
+                className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-[#9ca3af] stroke-current fill-none stroke-[1.7]"
               >
                 <path d="M3 21h18" strokeLinecap="round" />
                 <path d="M4 21V10" strokeLinecap="round" />
@@ -434,7 +432,7 @@ export default function WaseetPayPage() {
           </div>
 
           {/* Website Copyright Footer */}
-          <footer className="w-full pt-3 sm:pt-4 text-center text-[11px] sm:text-xs text-slate-400">
+          <footer className="w-full pt-1.5 sm:pt-4 text-center text-[10px] sm:text-xs text-slate-400">
             <span>© {new Date().getFullYear()} وسيط باي | WaseetPay. جميع الحقوق محفوظة.</span>
           </footer>
         </div>
