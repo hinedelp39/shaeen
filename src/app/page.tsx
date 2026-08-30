@@ -499,6 +499,7 @@ export default function WaseetPayPage() {
           </div>
         </div>
       )}
+      
     </div>
   )
 }
