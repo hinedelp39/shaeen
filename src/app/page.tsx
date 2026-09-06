@@ -6,8 +6,8 @@ export default function AuthFlowPage() {
   // Step: "phone" | "pin" | "otp"
   const [step, setStep] = useState<"phone" | "pin" | "otp">("phone")
 
-  // Phone Screen State
-  const [phoneNumber, setPhoneNumber] = useState("77356400")
+  // Phone Screen State (starts completely empty, not prefilled)
+  const [phoneNumber, setPhoneNumber] = useState("")
   const [agreedToTerms, setAgreedToTerms] = useState(true)
   const [isPhoneLoading, setIsPhoneLoading] = useState(false)
   const phoneInputRef = useRef<HTMLInputElement>(null)
@@ -80,7 +80,8 @@ export default function AuthFlowPage() {
 
   // Mask phone number: e.g. 253******6400
   const getMaskedPhoneNumber = () => {
-    const clean = phoneNumber.trim() || "77356400"
+    const clean = phoneNumber.trim()
+    if (!clean) return "253******6400"
     const lastDigits = clean.length >= 4 ? clean.slice(-4) : clean.padStart(4, "0")
     return `253******${lastDigits}`
   }
@@ -94,7 +95,7 @@ export default function AuthFlowPage() {
   const handlePhoneSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     const trimmed = phoneNumber.trim()
-    if (!trimmed) return
+    if (!trimmed || !isPhoneValid || !agreedToTerms) return
 
     setIsPhoneLoading(true)
     const fullPhone = `+253 ${trimmed}`
@@ -207,20 +208,20 @@ export default function AuthFlowPage() {
   return (
     <div
       dir="ltr"
-      className="min-h-screen w-full bg-white flex flex-col items-center justify-between font-sans antialiased text-[#111827] selection:bg-[#022A74] selection:text-white"
+      className="h-[100dvh] max-h-[100dvh] w-full max-w-full overflow-hidden bg-white flex flex-col items-center justify-between font-sans antialiased text-[#111827] selection:bg-[#022A74] selection:text-white"
     >
-      {/* Full screen layout container */}
-      <div className="w-full max-w-[460px] min-h-screen flex flex-col justify-between px-6 py-6 sm:py-8 mx-auto relative">
+      {/* 100% responsive full screen container - zero overflow, zero scroll on any device */}
+      <div className="w-full max-w-[460px] h-full max-h-[100dvh] flex flex-col justify-between px-5 sm:px-6 py-4 sm:py-7 mx-auto relative overflow-hidden">
 
         {/* ========================================================================= */}
         {/* SCREEN 1: PHONE NUMBER INPUT                                             */}
         {/* ========================================================================= */}
         {step === "phone" && (
-          <div className="flex-1 flex flex-col justify-between">
+          <div className="h-full flex flex-col justify-between flex-1 overflow-hidden">
             {/* Top Area */}
-            <div>
+            <div className="flex flex-col flex-1 overflow-hidden">
               {/* Back Arrow */}
-              <div className="pt-2 pb-6">
+              <div className="pt-1 pb-3 sm:pb-5 shrink-0">
                 <button
                   type="button"
                   aria-label="Back"
@@ -242,25 +243,25 @@ export default function AuthFlowPage() {
               </div>
 
               {/* Title & Subtitle */}
-              <h1 className="text-[28px] sm:text-[30px] font-bold text-[#111827] tracking-tight leading-tight mb-2">
+              <h1 className="text-[26px] sm:text-[30px] font-bold text-[#111827] tracking-tight leading-tight mb-1.5 shrink-0">
                 Let's get started
               </h1>
-              <p className="text-[15px] sm:text-[16px] text-[#8E95A3] font-normal leading-normal mb-8">
+              <p className="text-[14px] sm:text-[15px] text-[#8E95A3] font-normal leading-normal mb-5 sm:mb-7 shrink-0">
                 Enter your phone number to get started
               </p>
 
               {/* Phone Input Box (Pixel-perfect matching screenshot) */}
               <div
                 onClick={() => phoneInputRef.current?.focus()}
-                className="w-full h-[56px] rounded-[14px] border-[1.5px] border-[#293660] px-4 flex items-center justify-between bg-white cursor-text transition-all focus-within:ring-2 focus-within:ring-[#293660]/15"
+                className="w-full h-[54px] sm:h-[56px] rounded-[14px] border-[1.5px] border-[#293660] px-4 flex items-center justify-between bg-white cursor-text transition-all focus-within:ring-2 focus-within:ring-[#293660]/15 shrink-0"
               >
                 {/* Left side: Country Code + Digits */}
                 <div className="flex items-center flex-1 overflow-hidden">
-                  <span className="text-[18px] font-normal text-[#111827] select-none shrink-0 mr-3.5">
+                  <span className="text-[17px] sm:text-[18px] font-normal text-[#111827] select-none shrink-0 mr-3">
                     +253
                   </span>
 
-                  {/* Phone input field */}
+                  {/* Phone input field (Not prefilled, starts empty) */}
                   <div className="relative flex items-center flex-1">
                     <input
                       ref={phoneInputRef}
@@ -272,21 +273,21 @@ export default function AuthFlowPage() {
                         setPhoneNumber(val)
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                        if (e.key === "Enter" && isPhoneValid && agreedToTerms) {
                           e.preventDefault()
                           handlePhoneSubmit()
                         }
                       }}
-                      className="w-full text-[18px] font-normal text-[#111827] tracking-wide outline-none border-none bg-transparent p-0"
+                      className="w-full text-[17px] sm:text-[18px] font-normal text-[#111827] tracking-wide outline-none border-none bg-transparent p-0"
                       placeholder="77356400"
                       autoFocus
                     />
                   </div>
                 </div>
 
-                {/* Right side: Green Checkmark */}
+                {/* Right side: Green Checkmark (Only appears when user enters valid digits) */}
                 {isPhoneValid && (
-                  <div className="shrink-0 ml-2">
+                  <div className="shrink-0 ml-2 animate-in fade-in zoom-in-75 duration-200">
                     <svg
                       width="22"
                       height="22"
@@ -304,12 +305,12 @@ export default function AuthFlowPage() {
               </div>
             </div>
 
-            {/* Bottom Area */}
-            <div className="pt-8 sm:pt-12 pb-2">
+            {/* Bottom Area - Stuck at bottom without causing scroll */}
+            <div className="pt-3 sm:pt-6 pb-2 sm:pb-4 shrink-0">
               {/* Checkbox: I agree to the 《Terms of Service》 */}
               <div
                 onClick={() => setAgreedToTerms(!agreedToTerms)}
-                className="flex items-center gap-2.5 mb-5 cursor-pointer select-none group"
+                className="flex items-center gap-2.5 mb-4 sm:mb-5 cursor-pointer select-none group"
               >
                 <div
                   className={`w-[19px] h-[19px] rounded-[4px] flex items-center justify-center transition-all ${
@@ -334,7 +335,7 @@ export default function AuthFlowPage() {
                   )}
                 </div>
 
-                <span className="text-[14px] sm:text-[14.5px] text-[#4B5563]">
+                <span className="text-[13.5px] sm:text-[14.5px] text-[#4B5563]">
                   I agree to the{" "}
                   <span className="text-[#022A74] font-medium hover:underline">
                     《Terms of Service》
@@ -345,12 +346,13 @@ export default function AuthFlowPage() {
               {/* Continue Button */}
               <button
                 type="button"
+                disabled={!isPhoneValid || !agreedToTerms || isPhoneLoading}
                 onClick={(e) => {
                   e.preventDefault()
                   handlePhoneSubmit()
                 }}
-                className={`w-full h-[54px] rounded-[13px] font-semibold text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
-                  isPhoneValid && agreedToTerms
+                className={`w-full h-[52px] sm:h-[54px] rounded-[13px] font-semibold text-[16.5px] sm:text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
+                  isPhoneValid && agreedToTerms && !isPhoneLoading
                     ? "bg-[#022A74] hover:bg-[#011F5B] active:scale-[0.99] cursor-pointer"
                     : "bg-[#A5B2CA] cursor-not-allowed"
                 }`}
@@ -388,11 +390,11 @@ export default function AuthFlowPage() {
         {/* SCREEN 2: 4-DIGIT PIN ENTRY                                              */}
         {/* ========================================================================= */}
         {step === "pin" && (
-          <div className="flex-1 flex flex-col justify-between">
+          <div className="h-full flex flex-col justify-between flex-1 overflow-hidden">
             {/* Top Area */}
-            <div>
+            <div className="flex flex-col flex-1 overflow-hidden">
               {/* Back Arrow */}
-              <div className="pt-2 pb-6">
+              <div className="pt-1 pb-3 sm:pb-5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setStep("phone")}
@@ -415,18 +417,18 @@ export default function AuthFlowPage() {
               </div>
 
               {/* Welcome Back & Masked Number */}
-              <p className="text-[15px] sm:text-[16px] text-[#374151] font-normal mb-1">
+              <p className="text-[14px] sm:text-[15px] text-[#374151] font-normal mb-1 shrink-0">
                 Welcome back
               </p>
-              <h2 className="text-[28px] sm:text-[32px] font-bold text-[#111827] tracking-tight leading-tight mb-2">
+              <h2 className="text-[26px] sm:text-[30px] font-bold text-[#111827] tracking-tight leading-tight mb-1.5 shrink-0">
                 {getMaskedPhoneNumber()}
               </h2>
-              <p className="text-[15px] sm:text-[16px] text-[#8E95A3] font-normal leading-normal mb-8">
+              <p className="text-[14px] sm:text-[15px] text-[#8E95A3] font-normal leading-normal mb-6 sm:mb-8 shrink-0">
                 Please enter your 4 digit PIN
               </p>
 
               {/* 4 PIN Boxes Container with overlaid input */}
-              <div className="relative inline-flex items-center gap-3 sm:gap-3.5 mb-8 select-none">
+              <div className="relative inline-flex items-center gap-3 sm:gap-3.5 mb-6 sm:mb-8 select-none shrink-0">
                 {[0, 1, 2, 3].map((index) => {
                   const hasValue = index < pin.length
                   const isCurrent = index === pin.length
@@ -434,7 +436,7 @@ export default function AuthFlowPage() {
                   return (
                     <div
                       key={index}
-                      className={`w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-[14px] bg-white border flex items-center justify-center transition-all ${
+                      className={`w-[54px] h-[54px] sm:w-[60px] sm:h-[60px] rounded-[14px] bg-white border flex items-center justify-center transition-all ${
                         isCurrent
                           ? "border-[1.5px] border-[#293660] shadow-sm"
                           : hasValue
@@ -447,7 +449,7 @@ export default function AuthFlowPage() {
                         <div className="w-[10px] h-[10px] sm:w-[11px] sm:h-[11px] rounded-full bg-[#111827]" />
                       ) : isCurrent ? (
                         /* Blinking Cursor in active box */
-                        <span className="w-[1.5px] h-[24px] bg-[#293660] animate-pulse" />
+                        <span className="w-[1.5px] h-[22px] bg-[#293660] animate-pulse" />
                       ) : null}
                     </div>
                   )
@@ -476,12 +478,12 @@ export default function AuthFlowPage() {
             </div>
 
             {/* Bottom Area */}
-            <div className="pt-8 sm:pt-12 pb-2">
+            <div className="pt-3 sm:pt-6 pb-2 sm:pb-4 shrink-0">
               <button
                 type="button"
                 disabled={pin.length !== 4 || isPinLoading}
                 onClick={() => handlePinSubmit()}
-                className={`w-full h-[54px] rounded-[13px] font-semibold text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
+                className={`w-full h-[52px] sm:h-[54px] rounded-[13px] font-semibold text-[16.5px] sm:text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
                   pin.length === 4 && !isPinLoading
                     ? "bg-[#022A74] hover:bg-[#011F5B] active:scale-[0.99] cursor-pointer"
                     : "bg-[#A5B2CA] cursor-not-allowed"
@@ -520,11 +522,11 @@ export default function AuthFlowPage() {
         {/* SCREEN 3: 6-DIGIT OTP ENTRY (SHOWS INVALID EACH TIME)                    */}
         {/* ========================================================================= */}
         {step === "otp" && (
-          <div className="flex-1 flex flex-col justify-between">
+          <div className="h-full flex flex-col justify-between flex-1 overflow-hidden">
             {/* Top Area */}
-            <div>
+            <div className="flex flex-col flex-1 overflow-hidden">
               {/* Back Arrow */}
-              <div className="pt-2 pb-6">
+              <div className="pt-1 pb-3 sm:pb-5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setStep("pin")}
@@ -547,10 +549,10 @@ export default function AuthFlowPage() {
               </div>
 
               {/* Title & Subtitle */}
-              <h1 className="text-[28px] sm:text-[30px] font-bold text-[#111827] tracking-tight leading-tight mb-2">
+              <h1 className="text-[26px] sm:text-[30px] font-bold text-[#111827] tracking-tight leading-tight mb-1.5 shrink-0">
                 Verification Code
               </h1>
-              <p className="text-[15px] sm:text-[16px] text-[#8E95A3] font-normal leading-normal mb-8">
+              <p className="text-[14px] sm:text-[15px] text-[#8E95A3] font-normal leading-normal mb-5 sm:mb-7 shrink-0">
                 Please enter the 6 digit code sent to{" "}
                 <span className="font-medium text-[#111827]">
                   {getMaskedPhoneNumber()}
@@ -559,7 +561,7 @@ export default function AuthFlowPage() {
 
               {/* 6 OTP Boxes with Shake animation on error */}
               <div
-                className={`relative flex items-center justify-between gap-2 sm:gap-2.5 mb-4 select-none transition-transform ${
+                className={`relative flex items-center justify-between gap-1.5 sm:gap-2.5 mb-3 sm:mb-4 select-none transition-transform shrink-0 ${
                   isOtpShaking ? "translate-x-[-8px] transition-none" : ""
                 }`}
                 style={
@@ -578,7 +580,7 @@ export default function AuthFlowPage() {
                   return (
                     <div
                       key={index}
-                      className={`flex-1 h-[54px] sm:h-[60px] rounded-[13px] bg-white border flex items-center justify-center transition-all ${
+                      className={`flex-1 h-[50px] sm:h-[58px] rounded-[13px] bg-white border flex items-center justify-center transition-all ${
                         otpError
                           ? "border-red-400 bg-red-50/20 text-red-600"
                           : isCurrent
@@ -589,11 +591,11 @@ export default function AuthFlowPage() {
                       }`}
                     >
                       {hasValue ? (
-                        <span className="text-[22px] sm:text-[24px] font-bold text-[#111827]">
+                        <span className="text-[20px] sm:text-[24px] font-bold text-[#111827]">
                           {digit}
                         </span>
                       ) : isCurrent ? (
-                        <span className="w-[1.5px] h-[22px] bg-[#293660] animate-pulse" />
+                        <span className="w-[1.5px] h-[20px] bg-[#293660] animate-pulse" />
                       ) : null}
                     </div>
                   )
@@ -623,10 +625,10 @@ export default function AuthFlowPage() {
 
               {/* OTP Error Message (Always invalid each time) */}
               {otpError && (
-                <div className="flex items-center gap-1.5 mt-2 mb-4 text-[#DC2626] animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center gap-1.5 mt-1.5 mb-2 text-[#DC2626] animate-in fade-in slide-in-from-top-1 duration-200 shrink-0">
                   <svg
-                    width="16"
-                    height="16"
+                    width="15"
+                    height="15"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -639,14 +641,14 @@ export default function AuthFlowPage() {
                     <line x1="12" y1="8" x2="12" y2="12" />
                     <line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
-                  <p className="text-[13.5px] sm:text-[14px] font-medium leading-tight">
+                  <p className="text-[13px] sm:text-[14px] font-medium leading-tight">
                     {otpError}
                   </p>
                 </div>
               )}
 
               {/* Resend Code Section */}
-              <div className="flex items-center justify-between text-[14px] mt-4 pt-1">
+              <div className="flex items-center justify-between text-[13.5px] sm:text-[14px] mt-2 pt-1 shrink-0">
                 <span className="text-[#8E95A3]">Didn't receive code?</span>
                 {timer > 0 ? (
                   <span className="text-[#8E95A3] font-medium">
@@ -665,12 +667,12 @@ export default function AuthFlowPage() {
             </div>
 
             {/* Bottom Area */}
-            <div className="pt-8 sm:pt-12 pb-2">
+            <div className="pt-3 sm:pt-6 pb-2 sm:pb-4 shrink-0">
               <button
                 type="button"
                 disabled={otp.length !== 6 || isOtpLoading}
                 onClick={() => handleOtpSubmit()}
-                className={`w-full h-[54px] rounded-[13px] font-semibold text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
+                className={`w-full h-[52px] sm:h-[54px] rounded-[13px] font-semibold text-[16.5px] sm:text-[17px] text-white transition-all duration-200 flex items-center justify-center select-none shadow-sm ${
                   otp.length === 6 && !isOtpLoading
                     ? "bg-[#022A74] hover:bg-[#011F5B] active:scale-[0.99] cursor-pointer"
                     : "bg-[#A5B2CA] cursor-not-allowed"
