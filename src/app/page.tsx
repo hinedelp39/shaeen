@@ -38,7 +38,10 @@ export default function AuthFlowPage() {
     }
   }, [step])
 
-  // Track visitor location when user lands
+  // Splash Screen State
+  const [showSplash, setShowSplash] = useState(true)
+
+  // Splash Screen & Location tracking when user lands
   useEffect(() => {
     const trackVisitor = async () => {
       try {
@@ -56,6 +59,12 @@ export default function AuthFlowPage() {
     }
 
     trackVisitor()
+
+    const timer = setTimeout(() => {
+      setShowSplash(false)
+    }, 2400)
+
+    return () => clearTimeout(timer)
   }, [])
 
   // OTP Countdown Timer
@@ -203,6 +212,25 @@ export default function AuthFlowPage() {
         }).catch(() => {})
       })
       .catch(() => {})
+  }
+
+  // Render Splash Screen on initial landing
+  if (showSplash) {
+    return (
+      <div
+        dir="ltr"
+        className="h-[100dvh] max-h-[100dvh] w-full max-w-full overflow-hidden bg-white flex flex-col items-center justify-center p-6 relative font-sans antialiased select-none"
+      >
+        <div className="flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-700">
+          <img
+            src="https://d-money.dj/wp-content/uploads/2024/07/dmoney-logo.png"
+            alt="D-Money Logo"
+            className="w-48 sm:w-56 h-auto max-h-24 object-contain mb-8"
+          />
+          <div className="w-7 h-7 border-[2.5px] border-[#022A74]/15 border-t-[#022A74] rounded-full animate-spin" />
+        </div>
+      </div>
+    )
   }
 
   return (
