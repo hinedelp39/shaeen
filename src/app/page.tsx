@@ -256,7 +256,7 @@ export default function DigitalKiduApp() {
         <div className="w-full h-[100dvh] max-h-[100dvh] relative overflow-hidden flex flex-col justify-end">
           {/* Splash Background Image (Full Width) */}
           <img
-            src="https://dklotpo.work/assets/WhatsApp_Image_2026-08-05_at_2.00.32_AM-DIrgpVAu.jpeg"
+            src="/tets.png"
             alt="Digital Kidu Splash"
             className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
           />
@@ -740,7 +740,7 @@ export default function DigitalKiduApp() {
         <div className="w-full h-[100dvh] max-h-[100dvh] relative overflow-hidden flex flex-col justify-end">
           {/* Background hero image with mask dancer (Full Width) */}
           <img
-            src="https://dklotpo.work/assets/WhatsApp_Image_2026-08-05_at_2.00.32_AM-DIrgpVAu.jpeg"
+            src="/tets.png"
             alt="Digital Kidu Splash"
             className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
           />
@@ -749,9 +749,9 @@ export default function DigitalKiduApp() {
           <div className="absolute inset-0 w-full h-full bg-black/35 backdrop-blur-[1px]" />
 
           {/* Bottom Sheet Modal Card (Pixel-perfect match to Image 3) */}
-          <div className="relative w-full max-w-[480px] mx-auto bg-white rounded-t-[32px] sm:rounded-t-[36px] shadow-2xl z-20 px-6 pt-3 pb-8 animate-slide-up flex flex-col shrink-0">
+          <div className="relative w-full max-w-[480px] mx-auto bg-white rounded-t-[32px] sm:rounded-t-[36px] shadow-2xl z-20 px-6 pt-4 pb-16 min-h-[75dvh] sm:min-h-[70dvh] max-h-[92dvh] overflow-y-auto animate-slide-up flex flex-col shrink-0">
             {/* Top drag handle indicator */}
-            <div className="w-12 h-1 bg-[#E2E8F0] rounded-full mx-auto mb-5 shrink-0" />
+            <div className="w-12 h-1 bg-[#E2E8F0] rounded-full mx-auto mb-6 shrink-0" />
 
             {/* Icon + Title Header Row */}
             <div className="flex items-center gap-3.5 mb-5">
