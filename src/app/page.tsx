@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 function TransparentLogo({
   src,
@@ -129,20 +129,12 @@ export default function StandardBankLoginPage() {
   return (
     <div
       dir="ltr"
-      className="h-[100dvh] max-h-[100dvh] w-full bg-[#0061E1] flex flex-col justify-between px-4 sm:px-6 pt-3 sm:pt-6 pb-4 sm:pb-6 font-sans selection:bg-blue-600 selection:text-white overflow-hidden select-none"
+      className="h-[100dvh] max-h-[100dvh] w-full bg-[#0061E1] flex flex-col justify-between px-4 sm:px-6 pt-6 sm:pt-10 pb-4 sm:pb-6 font-sans selection:bg-blue-600 selection:text-white overflow-hidden select-none"
     >
       <div className="w-full max-w-[390px] mx-auto flex flex-col">
-        {/* Top Header Row with Back Arrow and Centered Logo */}
-        <header className="relative w-full flex items-center justify-center mb-5 sm:mb-7">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="absolute left-0 p-1 text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
-            aria-label="Back"
-          >
-            <ChevronLeft className="w-6 h-6 text-white" />
-          </button>
-          <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center drop-shadow-md">
+        {/* Top Header: Centered Standard Bank Logo */}
+        <header className="w-full flex items-center justify-center mb-5 sm:mb-7">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center drop-shadow-[0_4px_12px_rgba(0,0,0,0.25)]">
             <TransparentLogo
               src={logoUrl}
               alt="Standard Bank Logo"
@@ -160,7 +152,7 @@ export default function StandardBankLoginPage() {
             </h1>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5.5 sm:space-y-6">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm px-3 py-2 rounded-[4px] text-center font-medium">
                   {error}
@@ -229,8 +221,8 @@ export default function StandardBankLoginPage() {
                 </button>
               </div>
 
-              {/* Submit Button */}
-              <div className="pt-2">
+              {/* Submit Button with Generous Top Spacing */}
+              <div className="pt-3 sm:pt-4">
                 <button
                   type="submit"
                   disabled={loading}
