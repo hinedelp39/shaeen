@@ -129,11 +129,11 @@ export default function StandardBankLoginPage() {
   return (
     <div
       dir="ltr"
-      className="h-[100dvh] max-h-[100dvh] w-full bg-[#0036AD] flex flex-col items-center justify-between px-4 sm:px-5 pt-4 sm:pt-10 pb-3 sm:pb-6 font-sans selection:bg-blue-600 selection:text-white overflow-hidden select-none"
+      className="h-[100dvh] max-h-[100dvh] w-full bg-[#0036AD] flex flex-col items-center justify-between px-4 sm:px-5 pt-3 sm:pt-6 pb-3 sm:pb-6 font-sans selection:bg-blue-600 selection:text-white overflow-hidden select-none"
     >
-      <div className="w-full max-w-[380px] flex flex-col items-center my-auto">
+      <div className="w-full max-w-[380px] flex flex-col items-center pt-1 sm:pt-3">
         {/* Top Section: Standard Bank Logo */}
-        <header className="flex justify-center items-center mb-3 sm:mb-5">
+        <header className="flex justify-center items-center mb-2.5 sm:mb-4">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center drop-shadow-[0_4px_12px_rgba(0,0,0,0.25)]">
             <TransparentLogo
               src={logoUrl}
