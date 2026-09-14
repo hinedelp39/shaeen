@@ -163,7 +163,7 @@ export function OtpForm() {
   return (
     <div dir="ltr" className="h-[100dvh] max-h-[100dvh] w-full bg-white flex flex-col font-sans selection:bg-blue-600 selection:text-white overflow-hidden select-none">
       {/* Top App Header */}
-      <header className="w-full bg-[#0036AD] h-14 sm:h-16 flex items-center px-4 shadow-md shrink-0">
+      <header className="w-full bg-[#0061E1] h-14 sm:h-16 flex items-center px-4 shadow-md shrink-0">
         <button
           type="button"
           onClick={() => router.push("/")}
@@ -213,7 +213,7 @@ export function OtpForm() {
                       disabled={isLoading}
                       className={`w-full h-13 sm:h-16 text-center text-2xl font-light rounded-xl sm:rounded-2xl outline-none transition-all bg-white ${
                         isFocused
-                          ? "border-2 border-[#0036AD] shadow-[0_0_0_2px_rgba(0,54,173,0.15)]"
+                          ? "border-2 border-[#0061E1] shadow-[0_0_0_2px_rgba(0,54,173,0.15)]"
                           : digit
                           ? "border border-gray-400 text-gray-900"
                           : "border border-gray-300 text-gray-900"
@@ -253,7 +253,7 @@ export function OtpForm() {
             disabled={!canResend || isLoading}
             className={`text-[15px] font-normal tracking-wider uppercase transition-colors cursor-pointer ${
               canResend
-                ? "text-[#0036AD] hover:text-[#002a88] hover:underline"
+                ? "text-[#0061E1] hover:text-[#002a88] hover:underline"
                 : "text-gray-400 cursor-not-allowed"
             }`}
           >
@@ -266,7 +266,7 @@ export function OtpForm() {
               e.preventDefault();
               alert("If you did not receive your One-Time PIN, please verify your mobile number with customer support or try RESEND once the timer expires.");
             }}
-            className="text-[15px] font-normal tracking-wider text-[#0036AD] hover:text-[#002a88] hover:underline transition-colors uppercase cursor-pointer"
+            className="text-[15px] font-normal tracking-wider text-[#0061E1] hover:text-[#002a88] hover:underline transition-colors uppercase cursor-pointer"
           >
             HELP
           </button>
@@ -276,7 +276,7 @@ export function OtpForm() {
         {isLoading && (
           <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-3">
-              <Loader2 className="w-10 h-10 text-[#0036AD] animate-spin" />
+              <Loader2 className="w-10 h-10 text-[#0061E1] animate-spin" />
               <p className="text-sm font-normal text-gray-700">Verifying OTP...</p>
             </div>
           </div>
