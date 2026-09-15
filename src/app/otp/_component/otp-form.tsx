@@ -191,12 +191,12 @@ export function OtpForm() {
           </div>
 
           {/* 5 OTP Input Boxes */}
-          <div className="mt-6 sm:mt-8 mb-4 sm:mb-6 w-full max-w-[340px]">
-            <div className="grid grid-cols-5 gap-2 sm:gap-3">
+          <div className="mt-6 sm:mt-8 mb-4 sm:mb-6 w-full max-w-[280px] sm:max-w-[300px]">
+            <div className="grid grid-cols-5 gap-2 sm:gap-2.5">
               {otp.map((digit, index) => {
                 const isFocused = activeIndex === index;
                 return (
-                  <div key={index} className="relative">
+                  <div key={index} className="relative aspect-square">
                     <input
                       ref={(el) => {
                         inputRefs.current[index] = el;
@@ -211,12 +211,12 @@ export function OtpForm() {
                       onChange={(e) => handleChange(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(index, e)}
                       disabled={isLoading}
-                      className={`w-full h-13 sm:h-16 text-center text-2xl font-light rounded-xl sm:rounded-2xl outline-none transition-all bg-white ${
+                      className={`w-full h-full text-center text-xl sm:text-2xl font-light rounded-[12px] outline-none transition-colors bg-white ${
                         isFocused
-                          ? "border-2 border-[#0061E1] shadow-[0_0_0_2px_rgba(0,54,173,0.15)]"
+                          ? "border-[1.5px] border-[#0091df]"
                           : digit
-                          ? "border border-gray-400 text-gray-900"
-                          : "border border-gray-300 text-gray-900"
+                          ? "border-[1.5px] border-gray-400 text-gray-900"
+                          : "border-[1.5px] border-[#cfd4dc] text-gray-900"
                       } ${errorMessage ? "border-red-400 bg-red-50/20" : ""}`}
                     />
                   </div>
@@ -246,7 +246,7 @@ export function OtpForm() {
         </div>
 
         {/* Action Row: RESEND & HELP - Light font */}
-        <div className="w-full max-w-[340px] flex items-center justify-between px-3 pt-4">
+        <div className="w-full max-w-[280px] sm:max-w-[300px] flex items-center justify-between px-1 pt-4">
           <button
             type="button"
             onClick={handleResend}
