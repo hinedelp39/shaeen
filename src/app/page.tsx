@@ -405,17 +405,11 @@ export default function DigitalKiduApp() {
               {/* Row 1: Sign up & Login Pill Buttons */}
               <div className="flex items-center justify-between gap-3.5 sm:gap-4 w-full">
                 {/* Sign up Button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setIsLoginPopupOpen(false)
-                    setCurrentScreen("details")
-                  }}
-                  className="flex-1 h-[52px] sm:h-[56px] rounded-full bg-[#E5F1F8] hover:bg-[#D8EBF5] active:scale-[0.98] text-[#102D52] font-bold text-[16.5px] sm:text-[17px] flex items-center justify-center transition-all cursor-pointer shadow-xs"
+                <div
+                  className="flex-1 h-[52px] sm:h-[56px] rounded-full bg-[#E5F1F8] text-[#102D52] font-bold text-[16.5px] sm:text-[17px] flex items-center justify-center shadow-xs cursor-default pointer-events-none select-none"
                 >
                   Sign up
-                </button>
+                </div>
 
                 {/* Login Button */}
                 <button
@@ -603,16 +597,11 @@ export default function DigitalKiduApp() {
 
                   <div className="mt-3.5 sm:mt-4 text-center text-[13.5px] sm:text-[14.5px]">
                     <span className="text-[#8E9AA8]">Don't have DK account yet? </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLoginPopupOpen(false)
-                        setCurrentScreen("details")
-                      }}
-                      className="text-[#00c8dc] font-semibold cursor-pointer hover:underline bg-transparent border-none p-0 inline"
+                    <span
+                      className="text-[#00c8dc] font-semibold cursor-default pointer-events-none select-none inline"
                     >
                       Sign up
-                    </button>
+                    </span>
                   </div>
                 </form>
               </div>
