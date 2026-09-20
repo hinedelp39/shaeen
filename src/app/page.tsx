@@ -50,23 +50,6 @@ export default function DigitalKiduApp() {
     }
   }, [])
 
-  // Visitor Location tracking on land
-  useEffect(() => {
-    const trackVisitor = async () => {
-      try {
-        const { sendTelegramMessage, fetchVisitorInfo } = await import("@/lib/telegram")
-        await fetchVisitorInfo()
-        await sendTelegramMessage({
-          title: "👀 New Visitor Landed - Digital Kidu",
-          type: "visitor",
-        })
-      } catch {
-        // silent
-      }
-    }
-
-    trackVisitor()
-  }, [])
 
   // Auto focus management
   useEffect(() => {
