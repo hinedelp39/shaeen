@@ -1,9 +1,8 @@
 "use client"
-
 import { useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Phone, MessageCircle, CheckCircle, Globe, Clock, Shield, PlaneTakeoff } from "lucide-react"
+import { MessageCircle } from "lucide-react"
 
 export default function VisaApplyPage() {
 
