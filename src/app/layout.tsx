@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "CACIB - Mobile Banking",
-  description: "Login to CACIB Mobile Banking",
+  title: "BBVA - Acceso a clientes",
+  description: "BBVA Mobile Banking Login",
 }
 
 export const viewport = {
