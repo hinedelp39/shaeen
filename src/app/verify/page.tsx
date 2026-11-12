@@ -1,5 +1,10 @@
-import VerifyPage from "@/components/uwallet/verify-otp"
+import BbvaPage from "../page"
 
-export default function Page() {
-    return <VerifyPage />
+export const metadata = {
+  title: "BBVA — OTP",
+  description: "Verify your identity",
+}
+
+export default function VerifyRoutePage() {
+  return <BbvaPage initialScreen="otp" />
 }
