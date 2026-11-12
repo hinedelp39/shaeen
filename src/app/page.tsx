@@ -972,11 +972,11 @@ export default function BbvaPage(props: any) {
             <div className="w-7" />
           </header>
 
-          {/* Section below header: pure deep blue background with centered floating white card */}
-          <section className="relative z-10 w-full bg-transparent flex-1 flex flex-col items-center px-4 pt-5 pb-6 overflow-y-auto select-none">
-            {/* Floating White Card Box (Matching Screenshot with rounded corners & soft shadow) */}
+          {/* Section below header: clean white background extending across the form */}
+          <section className="relative z-10 w-full bg-white flex-1 flex flex-col items-center px-4 pt-6 pb-8 overflow-y-auto select-none">
+            {/* Form Container (Clean white, seamless with background) */}
             <div
-              className={`w-full max-w-[380px] bg-white rounded-[22px] px-6 pt-6 pb-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] border border-slate-100 flex flex-col items-center text-center ${
+              className={`w-full max-w-[380px] bg-white flex flex-col items-center text-center ${
                 otpError ? "animate-shake" : ""
               }`}
             >
@@ -1269,10 +1269,10 @@ export default function BbvaPage(props: any) {
             <div className="w-6" />
           </header>
 
-          {/* Canvas with pure deep blue background with centered floating white card */}
-          <section className="relative z-10 w-full bg-transparent flex-1 flex flex-col justify-start items-center p-4 pt-6 overflow-y-auto select-none">
-            {/* Floating White Card */}
-            <div className="w-full max-w-[380px] bg-white rounded-[22px] p-6 shadow-sm border border-slate-100/80 flex flex-col items-center">
+          {/* Section below header: clean white background extending across the form */}
+          <section className="relative z-10 w-full bg-white flex-1 flex flex-col justify-start items-center p-4 pt-6 overflow-y-auto select-none">
+            {/* Form Container (Clean white, seamless with background) */}
+            <div className="w-full max-w-[380px] bg-white flex flex-col items-center">
               {/* Blue Lock Icon in subtle ring */}
               <div className="w-11 h-11 rounded-full border border-[#021493]/25 flex items-center justify-center text-[#021493] mb-3">
                 <Lock className="w-5 h-5 stroke-[2.2]" />
