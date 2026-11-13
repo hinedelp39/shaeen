@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "BIBD - Acceso a clientes",
+  title: "BIBD Mobile Banking",
   description: "BIBD Mobile Banking",
 }
 

