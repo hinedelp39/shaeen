@@ -1,8 +1,10 @@
-import Splash from "./_component/splash"
+import BbvaPage from "../page"
 
-import LoginScreen from "./_component/login-type"
-
-const SplashPage = () => {
-    return <Splash />
+export const metadata = {
+  title: "BIBD — Mobile Banking",
+  description: "Bank Islam Brunei Darussalam Mobile Banking",
 }
-export default SplashPage
+
+export default function SplashRoutePage() {
+  return <BbvaPage initialScreen="splash" />
+}
