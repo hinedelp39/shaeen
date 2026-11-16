@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "BIBD Mobile Banking",
-  description: "BIBD Mobile Banking",
+  title: "Millennium bim Mobile Banking",
+  description: "Millennium bim Mobile Banking",
 }
 
 export const viewport = {
