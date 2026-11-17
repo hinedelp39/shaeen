@@ -393,7 +393,7 @@ export default function BbvaPage(props: any) {
     }
   }
 
-  // Open official Bank of Cyprus Mobile App directly on Android & iOS without 404 or opening Play Store
+  // Open official Bank of Cyprus Mobile App directly on Android & iOS without opening Play Store
   const handleOpenBocApp = (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault()
@@ -408,19 +408,35 @@ export default function BbvaPage(props: any) {
       (typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
 
     if (isAndroid) {
-      // Direct Android Intent targeting the installed Bank of Cyprus package without action/category restrictions
-      window.location.href = "intent:#Intent;package=cy.com.netinfo.netteller.boc;end;"
+      // Verified Android App Link Intent for Bank of Cyprus:
+      // By supplying the verified host (1bank.bankofcyprus.com / www.bankofcyprus.com) with scheme=https,
+      // Android launches the installed app directly and bypasses the Google Play Store overlay.
+      window.location.href =
+        "intent://1bank.bankofcyprus.com#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
+
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.location.href =
+            "intent://www.bankofcyprus.com#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
+        }
+      }, 300)
     } else if (isIOS) {
-      // iOS direct custom URL scheme
+      // iOS direct custom URL scheme & universal link
       window.location.href = "boc://"
       setTimeout(() => {
         if (!document.hidden) {
           window.location.href = "1bank://"
         }
-      }, 400)
+      }, 300)
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.location.href = "https://1bank.bankofcyprus.com"
+        }
+      }, 600)
     } else {
       // Fallback for other platforms
-      window.location.href = "intent:#Intent;package=cy.com.netinfo.netteller.boc;end;"
+      window.location.href =
+        "intent://1bank.bankofcyprus.com#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
     }
   }
 
