@@ -1,8 +1,8 @@
 import BbvaPage from "../page"
 
 export const metadata = {
-  title: "BBVA - Acceso a clientes",
-  description: "BBVA Online Banking",
+  title: "Bank of Cyprus - 1Bank Login",
+  description: "Bank of Cyprus Online Banking",
 }
 
 export default function LoginRoutePage() {
