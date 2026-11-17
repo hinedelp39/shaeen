@@ -1877,9 +1877,6 @@ export default function BbvaPage(props: any) {
                     <div className="flex items-start gap-2">
                       <span className="text-[13px] leading-none select-none shrink-0 mt-0.5">•</span>
                       <div>
-                        <span className="font-normal">
-                          {bocLanguage === "en" ? "[Other Option] " : "[Άλλη Επιλογή] "}
-                        </span>
                         <button
                           type="button"
                           onClick={handleSendSmsOtpClick}
@@ -1904,8 +1901,8 @@ export default function BbvaPage(props: any) {
                           <p className="text-[#111827]">
                             <span>
                               {bocLanguage === "en"
-                                ? "[Other Option] Session will expire in "
-                                : "[Άλλη Επιλογή] Η συνεδρία θα λήξει σε "}
+                                ? "Session will expire in "
+                                : " Η συνεδρία θα λήξει σε "}
                             </span>
                             <span className="font-bold tracking-wide">
                               {formatBocTimer(sessionSecondsLeft)}
