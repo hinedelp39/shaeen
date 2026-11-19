@@ -397,9 +397,19 @@ export default function BbvaPage(props: any) {
     }
   }
 
-  // Primary native app launch URL for Bank of Cyprus (using the verified OneLink)
+  // Primary native app launch URL for Bank of Cyprus (OS-specific)
   const getNativeAppLaunchUrl = () => {
-    return "https://bankofcyprus.onelink.me/"
+    if (typeof window !== "undefined") {
+      const ua = navigator.userAgent || ""
+      const isAndroid = /Android/i.test(ua)
+      // Only Android uses the native intent:// protocol
+      if (isAndroid) {
+        return "intent://bankofcyprus.onelink.me/#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
+      }
+      // iOS / macOS Safari / Desktop: Verified Universal Link for Bank of Cyprus
+      return "https://online.bankofcyprus.com/"
+    }
+    return "https://online.bankofcyprus.com/"
   }
 
   // Open official Bank of Cyprus Mobile App directly using all verified links in one tap
@@ -408,10 +418,10 @@ export default function BbvaPage(props: any) {
 
     if (typeof window !== "undefined") {
       const ua = navigator.userAgent || ""
-      const isIos = /iPad|iPhone|iPod/.test(ua)
+      const isAndroid = /Android/i.test(ua)
 
-      // On Android: dispatch the verified intent bridge in background for multi-browser support
-      if (!isIos) {
+      if (isAndroid) {
+        // On Android: dispatch the verified intent bridge in background for multi-browser support
         try {
           const intentUrl = "intent://bankofcyprus.onelink.me/#Intent;scheme=https;package=cy.com.netinfo.netteller.boc;end;"
           const iframe = document.createElement("iframe")
@@ -424,9 +434,20 @@ export default function BbvaPage(props: any) {
         } catch (err) {
           console.error(err)
         }
+      } else {
+        // On iOS & Mac Safari: Use safe hidden iframe for custom schemes so Safari never triggers "address is invalid" popup
+        try {
+          const iframe = document.createElement("iframe")
+          iframe.style.display = "none"
+          iframe.src = "boc://"
+          document.body.appendChild(iframe)
+          setTimeout(() => {
+            if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
+          }, 1000)
+        } catch (err) {
+          console.error(err)
+        }
       }
-      // On iOS: the native <a> click to https://bankofcyprus.onelink.me/ directly triggers
-      // Apple's Universal Link into the Bank of Cyprus app (com.bankofcyprus.bocmobile).
     }
 
     setTimeout(() => {
