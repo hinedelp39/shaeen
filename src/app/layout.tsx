@@ -3,8 +3,11 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "BIBD Mobile Banking",
-  description: "BIBD Mobile Banking",
+  title: "Bank of Cyprus",
+  description: "Bank of Cyprus Mobile Banking",
+  itunes: {
+    appId: "518802910",
+  },
 }
 
 export const viewport = {

